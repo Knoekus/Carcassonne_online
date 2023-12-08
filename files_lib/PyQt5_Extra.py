@@ -1,7 +1,8 @@
+# import COproperties
+
 import PyQt5.QtGui as QtG
 import PyQt5.QtWidgets as QtW
 import PyQt5.QtCore as QtC
-# from firebase_admin import db
 
 class ClickableLabel(QtW.QLabel):
     clicked = QtC.pyqtSignal()

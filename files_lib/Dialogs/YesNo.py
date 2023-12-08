@@ -1,3 +1,5 @@
+import COproperties
+
 import PyQt5.QtGui as QtG
 import PyQt5.QtWidgets as QtW
 # import PyQt5.QtCore as QtC
@@ -10,7 +12,7 @@ class YesNoDialog(QtW.QDialog):
         # self.setFixedSize(300, 100)
 
         label = QtW.QLabel(text)
-        label.setFont(QtG.QFont(parent.font, 11))
+        label.setFont(QtG.QFont(COproperties.font, 11))
         
         self.y_button = QtW.QPushButton('Yes')
         self.y_button.clicked.connect(self.accept)

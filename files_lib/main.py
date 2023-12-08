@@ -11,6 +11,7 @@ import PyQt5.QtWidgets as QtW
 import PyQt5.QtCore as QtC
 import PyQt5_Extra as QtE
 
+import COproperties
 from Screens.Lobby import LobbyScreen
 from Dialogs.Username import UsernameDialog
 from Dialogs.YesNo import YesNoDialog
@@ -26,18 +27,10 @@ if hasattr(QtC.Qt, 'AA_UseHighDpiPixmaps'):
 class MenuScreen(QtW.QMainWindow):
     #%% Visuals
     def _Menu_init(self):
-        #%% Parameters
-        self.font = 'Microsoft Sans Serif' # for all fonts: QtG.QFontDatabase().families()
-        
-        # colours = [(255,255,255,0), (255,20,20), (255, 125, 0), (255,255,0), (20,255,20), (50,50,255), (204, 50, 255)]
-        # colours are in hex so they can be saved as a single variable, instead of 4 integers as RGBA
-        self.colours = ['ffffff00',  'ff1414ff',  'ff7d00ff',   'ffff00ff',   '14ff14ff',   '3232ffff',    'cc32ffff']
-        
-        self.expansions = [r'The River', r'Inns && Cathedrals']
-         
         #%% Window settings
         self.setWindowTitle('Menu')
         self.setGeometry(100, 100, 400, 300)
+        self.showMaximized()
         
         #%% Firebase reference preparation
         self.refs = {
@@ -47,7 +40,7 @@ class MenuScreen(QtW.QMainWindow):
     def _Menu_title(self):
         self.title_label = QtW.QLabel('Menu')
         self.title_label.setAlignment(QtC.Qt.AlignCenter)
-        self.title_label.setFont(QtG.QFont(self.font, 20, QtG.QFont.Bold))
+        self.title_label.setFont(QtG.QFont(COproperties.font, 20, QtG.QFont.Bold))
     
     def _Menu_lobby(self):
         self.create_lobby_button = QtW.QPushButton('Create lobby')
@@ -63,7 +56,7 @@ class MenuScreen(QtW.QMainWindow):
     
     def _Menu_close(self):
         self.close_button = QtW.QPushButton('Close program')
-        self.close_button.clicked.connect(self.close_program)
+        self.close_button.clicked.connect(self.close)
         
     def __init__(self, test):
         super().__init__()
@@ -87,23 +80,23 @@ class MenuScreen(QtW.QMainWindow):
         self.mainWidget = QtW.QWidget()
         self.mainWidget.setLayout(layout)
         self.setCentralWidget(self.mainWidget)
-
-    #%% Functionality
-    def close_program(self):
+    
+    def closeEvent(self, event):
         title = 'Close program?'
         text = 'Are you sure you want to close the program?'
         yesNoDialog = YesNoDialog(self, title, text)
         result = yesNoDialog.exec_()
-        if result == QtW.QDialog.Accepted:
-            self.close()
-            QtW.qApp.quit()
-            
+        
+        # Ignore if not accepted, else continue (close)
+        if result != QtW.QDialog.Accepted:
+            event.ignore()
+
+    #%% Functionality
     def create_lobby(self):
         if self.test == True: # test mode
             self.lobby_key = 'test'
             self.username = 'user1'
             
-            # self.make_references()
             self.save_lobby_to_database()
             self.open_lobby_screen()
         else:
@@ -112,7 +105,6 @@ class MenuScreen(QtW.QMainWindow):
             
             # In the meantime, create the actual lobby
             self.lobby_key = self.generate_lobby_key()
-            # self.make_references()
             
             # Retrieve username info
             result = username_dialog.exec_()
@@ -129,7 +121,6 @@ class MenuScreen(QtW.QMainWindow):
             self.lobby_key = 'test'
             self.username = 'user2'
             
-            # self.make_references()
             self.save_connection_to_lobby()
             self.open_lobby_screen()
         else:
@@ -137,7 +128,6 @@ class MenuScreen(QtW.QMainWindow):
             if lobby_key in self.Refs('', prefix='lobbies').get():
                 # In the meantime, create the references to the lobby
                 self.lobby_key = lobby_key
-                # self.make_references()
                 if self.Refs('open').get() == True:
                     username_dialog = UsernameDialog(self)
                     result = username_dialog.exec_()
@@ -206,15 +196,15 @@ class MenuScreen(QtW.QMainWindow):
     def save_lobby_to_database(self):
         self.Refs('open').set(True)
         self.Refs('admin').set(self.username)
-        for colour in self.colours[1:]:
+        for colour in COproperties.colours[1:]:
             self.Refs(f'colours/{colour}').set(0)
-        for expansion in self.expansions:
+        for expansion in COproperties.expansions:
             self.Refs(f'expansions/{expansion}').set(0)
         self.save_connection_to_lobby()
 
     def save_connection_to_lobby(self):
         self.Refs(f'connections/{self.username}').set(0)
-        self.Refs(f'players/{self.username}/colour').set(self.colours[0]) # start with blank colour
+        self.Refs(f'players/{self.username}/colour').set(COproperties.colours[0]) # start with blank colour
 
     def remove_connection(self, username):
         time.sleep(random.randint(0, 10)/10) # hopefully make removing multiple connections more asynchronous
@@ -223,8 +213,7 @@ class MenuScreen(QtW.QMainWindow):
         if len(lobby_conns) > 1:
             # Make colour available again
             colour = self.Refs(f'players/{username}/colour').get()
-            if colour != self.colours[0]:
-                # self.Refs('colours', item=colour, load='add_del')
+            if colour != COproperties.colours[0]:
                 self.Refs(f'colours/{colour}').set(0) # available again
             
             self.Refs(f'connections/{username}').delete()
@@ -239,7 +228,6 @@ class MenuScreen(QtW.QMainWindow):
             self.Refs(f'lobbies/{self.lobby_key}', prefix='').delete()
 
     def open_lobby_screen(self):
-        # lobby_screen = LobbyScreen(self, self.lobby_key, self.username)
         lobby_screen = LobbyScreen(self)
         self.hide()
         lobby_screen.show()
