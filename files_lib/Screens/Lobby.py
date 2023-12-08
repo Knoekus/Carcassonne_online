@@ -9,14 +9,14 @@ import sys
 if r"..\Dialogs" not in sys.path:
     sys.path.append(r"..\Dialogs")
 
-import COproperties
+import prop_s
 from Dialogs.YesNo import YesNoDialog
 
 #%% Colour picker
 class ColourPicker(QtW.QWidget):
     def _ColourPicker_init(self):
         self.current_colour = self.lobby.Refs(f'players/{self.lobby.username}/colour')
-        self.colour_picker_buttons = {x:None for x in COproperties.colours}
+        self.colour_picker_buttons = {x:None for x in prop_s.colours}
         
         # Listener
         self.player_colours_updater = PlayerColoursUpdater(self.lobby.Refs)
@@ -26,11 +26,11 @@ class ColourPicker(QtW.QWidget):
         
     def _ColourPicker_header(self):
         self.header = QtW.QLabel('Pick your colour')
-        self.header.setFont(QtG.QFont(COproperties.font, 16, QtG.QFont.Bold))
+        self.header.setFont(QtG.QFont(prop_s.font, 16, QtG.QFont.Bold))
     
     def _ColourPicker_list(self):
         self.list = QtW.QHBoxLayout()
-        for colour in COproperties.colours:
+        for colour in prop_s.colours:
             self.draw_colours(colour)
         
     def __init__(self, lobby):
@@ -72,13 +72,13 @@ class ColourPicker(QtW.QWidget):
         for i in reversed(range(self.list.count())):
             widget = self.list.itemAt(i).widget()
             widget.setParent(None)
-        self.draw_colours(COproperties.colours)
+        self.draw_colours(prop_s.colours)
     
     def draw_colours(self, colours):
         if type(colours) is not type(list()):
             colours = [colours]
         else:
-            colours = COproperties.colours
+            colours = prop_s.colours
         
         for colour in colours:
             if self.colour_picker_buttons[colour] == None:
@@ -86,7 +86,7 @@ class ColourPicker(QtW.QWidget):
                 button.clicked.connect(self.Select_colour(colour))
                 button.setStyleSheet(self.colour_stylesheet(colour))
                 self.list.addWidget(button)
-                if colour == COproperties.colours[0]: # initiate with checkmark in transparent
+                if colour == prop_s.colours[0]: # initiate with checkmark in transparent
                     button.setIcon(QtG.QIcon(r'.\Images\checkmark_icon.png'))
                     button.setIconSize(QtC.QSize(50,50))
             else:
@@ -108,7 +108,7 @@ class ColourPicker(QtW.QWidget):
             
             # If new colour selected and it's still free or it's blank
             if button_colour != current_colour and\
-               (self.lobby.Refs(f'colours/{button_colour}').get() == 0 or button_colour == COproperties.colours[0]):
+               (self.lobby.Refs(f'colours/{button_colour}').get() == 0 or button_colour == prop_s.colours[0]):
                 # Remove checkmark from old selected colour
                 self.colour_picker_buttons[current_colour].setIcon(QtG.QIcon())
                 
@@ -118,9 +118,9 @@ class ColourPicker(QtW.QWidget):
                 
                 # If current colour not blank, set old colour to be free and occupy new colour
                 colours_update = {}
-                if current_colour != COproperties.colours[0]:
+                if current_colour != prop_s.colours[0]:
                     colours_update[current_colour] = 0
-                if button_colour != COproperties.colours[0]:
+                if button_colour != prop_s.colours[0]:
                     colours_update[button_colour] = 1
                 self.lobby.Refs('colours').update(colours_update) # update to only cause 1 event change
                 self.lobby.Refs(f'players/{self.lobby.username}/colour').set(button_colour)
@@ -173,7 +173,7 @@ class PlayerList(QtW.QWidget):
     
     def _PlayerList_header(self):
         self.header = QtW.QLabel('Player list')
-        self.header.setFont(QtG.QFont(COproperties.font, 16, QtG.QFont.Bold))
+        self.header.setFont(QtG.QFont(prop_s.font, 16, QtG.QFont.Bold))
     
     def _PlayerList_list(self):
         self.list = QtW.QGridLayout()
@@ -233,7 +233,7 @@ class PlayerList(QtW.QWidget):
             # allow admin to choose new admin
             if player == admin:
                 admin_label = QtW.QLabel('(leader)')
-                admin_label.setFont(QtG.QFont(COproperties.font, 12))
+                admin_label.setFont(QtG.QFont(prop_s.font, 12))
                 self.list.addWidget(admin_label, idx, 0, alignment = QtC.Qt.AlignCenter)
             
             # colour indicator
@@ -250,7 +250,7 @@ class PlayerList(QtW.QWidget):
             else:
                 username = QtW.QLabel(player)
             username.setText(f'{player}')
-            username.setFont(QtG.QFont(COproperties.font, 12))
+            username.setFont(QtG.QFont(prop_s.font, 12))
             
             # Put indicator and username in layout
             self.list.addWidget(indicator, idx, 1, alignment = QtC.Qt.AlignCenter)
@@ -287,7 +287,7 @@ class PlayerList(QtW.QWidget):
                 # multiple connections
                 for player in connections:
                     colour = self.lobby.Refs(f'players/{player}/colour').get()
-                    if colour == COproperties.colours[0]:
+                    if colour == prop_s.colours[0]:
                         # not everybody chose a colour yet
                         self.lobby.start_button.setEnabled(False)
                         self.lobby.start_button.setToolTip('Not all players have chosen a colour yet.')
@@ -385,7 +385,7 @@ class ExpansionsList(QtW.QWidget):
     
     def _ExpansionsList_header(self):
         self.header = QtW.QLabel('Expansions')
-        self.header.setFont(QtG.QFont(COproperties.font, 16, QtG.QFont.Bold))
+        self.header.setFont(QtG.QFont(prop_s.font, 16, QtG.QFont.Bold))
     
     def _ExpansionsList_list(self):
         self.list = QtW.QGridLayout()
@@ -414,7 +414,7 @@ class ExpansionsList(QtW.QWidget):
         for idx, expansion in enumerate(expansions):
             # Add switch
             button = self.expansions_switches[expansion] = QtW.QCheckBox(expansion)
-            button.setFont(QtG.QFont(COproperties.font, 12))
+            button.setFont(QtG.QFont(prop_s.font, 12))
             button.setChecked(self.lobby.Refs(f'expansions/{expansion}').get())
             self.list.addWidget(button, idx, 1)
             button.clicked.connect(self.Expansions_clicked(button))
@@ -491,10 +491,10 @@ class LobbyScreen(QtW.QMainWindow):
     
     def _Lobby_title(self):
         self.title_label = QtW.QLabel(f'Lobby: {self.lobby_key}')
-        self.title_label.setFont(QtG.QFont(COproperties.font, 20, QtG.QFont.Bold))
+        self.title_label.setFont(QtG.QFont(prop_s.font, 20, QtG.QFont.Bold))
         
         self.joined_as_label = QtW.QLabel(f'Joined as: {self.username}')
-        self.joined_as_label.setFont(QtG.QFont(COproperties.font, 12))
+        self.joined_as_label.setFont(QtG.QFont(prop_s.font, 12))
     
     def _Lobby_leave_start(self):
         self.leave_button = QtW.QPushButton('Leave')
@@ -517,7 +517,7 @@ class LobbyScreen(QtW.QMainWindow):
         if self.test == 1:
             self.chat_display = QtW.QTextEdit()
             self.chat_display.setReadOnly(True)
-            self.chat_display.setFont(QtG.QFont(COproperties.font, 12))
+            self.chat_display.setFont(QtG.QFont(prop_s.font, 12))
             
             self.chat_input = QtW.QLineEdit()
             self.chat_input.setPlaceholderText('Type here...')
@@ -625,7 +625,7 @@ class LobbyScreen(QtW.QMainWindow):
                 # multiple connections
                 for player in connections:
                     colour = self.Refs(f'players/{player}/colour').get()
-                    if colour == COproperties.colours[0]:
+                    if colour == prop_s.colours[0]:
                         # not everybody chose a colour yet
                         self.start_button.setEnabled(False)
                         self.start_button.setToolTip('Not all players have chosen a colour yet.')
