@@ -278,6 +278,7 @@ class PlayerList(QtW.QWidget):
             except:
                 # this can happen when a player leaves the lobby: the reference to the colour doesnt exist anymore.
                 None
+        self.update_start_button()
     
     def update_start_button(self):
         # Enable start button for admin
@@ -299,6 +300,7 @@ class PlayerList(QtW.QWidget):
                 else:
                     # everyone chose a colour
                     self.lobby.start_button.setEnabled(True)
+                    self.lobby.start_button.setToolTip('Start game.')
         else:
             # for non-admins
             self.lobby.start_button.setEnabled(False)
@@ -420,8 +422,14 @@ class ExpansionsList(QtW.QWidget):
             button = self.expansions_switches[expansion] = QtW.QCheckBox(expansion)
             button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.lobby.font_size]))
             button.setChecked(self.lobby.Refs(f'expansions/{expansion}').get())
+            button.setStyleSheet(f"""QCheckBox::indicator{{
+                                      width:  {prop_s.font_sizes[1+self.lobby.font_size]}px;
+                                      height: {prop_s.font_sizes[0+self.lobby.font_size]}px;
+                                      }}""") # make a little wider
+            
             self.list.addWidget(button, idx, 1)
             button.clicked.connect(self.Expansions_clicked(button))
+            
             if admin != self.lobby.username:
                 button.setEnabled(False)
                 button.setToolTip('Only the lobby leader can select expansions.')
@@ -623,31 +631,11 @@ class LobbyScreen(QtW.QMainWindow):
             time.sleep(1)
         self.close()
         QtW.qApp.quit()
-    
-    def update_start_button(self):
-        # Enable start button for admin
-        if self.username == self.Refs('admin').get():
-            connections = self.Refs('connections').get()
-            if len(connections) == 1:
-                # only one connection
-                self.start_button.setEnabled(False)
-                self.start_button.setToolTip('Need at least one more player to start.')
-            else:
-                # multiple connections
-                for player in connections:
-                    colour = self.Refs(f'players/{player}/colour').get()
-                    if colour == prop_s.colours[0]:
-                        # not everybody chose a colour yet
-                        self.start_button.setEnabled(False)
-                        self.start_button.setToolTip('Not all players have chosen a colour yet.')
-                        break
-                else:
-                    # everyone chose a colour
-                    self.start_button.setEnabled(True)
-        else:
-            # for non-admins
-            self.start_button.setEnabled(False)
-            self.start_button.setToolTip('Only the lobby leader can start the game.')
+        
+        #=== Now do something like this :) ===#
+        # game_screen = GameScreen(self)
+        # self.hide()
+        # game_screen.show()
 
     # @QtC.pyqtSlot(dict)
     def update_chat_display(self, event):
