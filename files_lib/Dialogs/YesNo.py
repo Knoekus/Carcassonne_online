@@ -12,12 +12,14 @@ class YesNoDialog(QtW.QDialog):
         # self.setFixedSize(300, 100)
 
         label = QtW.QLabel(text)
-        label.setFont(QtG.QFont(prop_s.font, 11))
+        label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+parent.font_size]))
         
         self.y_button = QtW.QPushButton('Yes')
+        self.y_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[-2+parent.font_size]))
         self.y_button.clicked.connect(self.accept)
         
         self.n_button = QtW.QPushButton('No')
+        self.n_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[-2+parent.font_size]))
         self.n_button.clicked.connect(self.close)
         
         layout = QtW.QVBoxLayout()

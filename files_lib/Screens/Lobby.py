@@ -26,7 +26,7 @@ class ColourPicker(QtW.QWidget):
         
     def _ColourPicker_header(self):
         self.header = QtW.QLabel('Pick your colour')
-        self.header.setFont(QtG.QFont(prop_s.font, 16, QtG.QFont.Bold))
+        self.header.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size], QtG.QFont.Bold))
     
     def _ColourPicker_list(self):
         self.list = QtW.QHBoxLayout()
@@ -41,9 +41,9 @@ class ColourPicker(QtW.QWidget):
         self._ColourPicker_header()
         self._ColourPicker_list()
         
-        layout = QtW.QGridLayout()
-        layout.addWidget(self.header, 0, 0, 1, 1)
-        layout.addLayout(self.list,   1, 0, 1, 1)
+        layout = QtW.QVBoxLayout()
+        layout.addWidget(self.header)
+        layout.addLayout(self.list)
         self.setLayout(layout)
     
     def colour_stylesheet(self, colour):
@@ -173,7 +173,7 @@ class PlayerList(QtW.QWidget):
     
     def _PlayerList_header(self):
         self.header = QtW.QLabel('Player list')
-        self.header.setFont(QtG.QFont(prop_s.font, 16, QtG.QFont.Bold))
+        self.header.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size], QtG.QFont.Bold))
     
     def _PlayerList_list(self):
         self.list = QtW.QGridLayout()
@@ -199,9 +199,13 @@ class PlayerList(QtW.QWidget):
         self._PlayerList_header()
         self._PlayerList_list()
         
-        layout = QtW.QGridLayout()
-        layout.addWidget(self.header, 0, 0, 1, 1)
-        layout.addLayout(self.list,   1, 0, 1, 1)
+        # layout = QtW.QGridLayout()
+        # layout.addWidget(self.header, 0, 0, 1, 1)
+        # layout.addLayout(self.list,   1, 0, 1, 1)
+        
+        layout = QtW.QVBoxLayout()
+        layout.addWidget(self.header)
+        layout.addLayout(self.list)
         self.setLayout(layout)
     
     def indicator_stylesheet(self, colour):
@@ -233,7 +237,7 @@ class PlayerList(QtW.QWidget):
             # allow admin to choose new admin
             if player == admin:
                 admin_label = QtW.QLabel('(leader)')
-                admin_label.setFont(QtG.QFont(prop_s.font, 12))
+                admin_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.lobby.font_size]))
                 self.list.addWidget(admin_label, idx, 0, alignment = QtC.Qt.AlignCenter)
             
             # colour indicator
@@ -250,7 +254,7 @@ class PlayerList(QtW.QWidget):
             else:
                 username = QtW.QLabel(player)
             username.setText(f'{player}')
-            username.setFont(QtG.QFont(prop_s.font, 12))
+            username.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.lobby.font_size]))
             
             # Put indicator and username in layout
             self.list.addWidget(indicator, idx, 1, alignment = QtC.Qt.AlignCenter)
@@ -385,7 +389,7 @@ class ExpansionsList(QtW.QWidget):
     
     def _ExpansionsList_header(self):
         self.header = QtW.QLabel('Expansions')
-        self.header.setFont(QtG.QFont(prop_s.font, 16, QtG.QFont.Bold))
+        self.header.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size], QtG.QFont.Bold))
     
     def _ExpansionsList_list(self):
         self.list = QtW.QGridLayout()
@@ -414,7 +418,7 @@ class ExpansionsList(QtW.QWidget):
         for idx, expansion in enumerate(expansions):
             # Add switch
             button = self.expansions_switches[expansion] = QtW.QCheckBox(expansion)
-            button.setFont(QtG.QFont(prop_s.font, 12))
+            button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.lobby.font_size]))
             button.setChecked(self.lobby.Refs(f'expansions/{expansion}').get())
             self.list.addWidget(button, idx, 1)
             button.clicked.connect(self.Expansions_clicked(button))
@@ -485,22 +489,23 @@ class LobbyScreen(QtW.QMainWindow):
         self.lobby_key = self.menu_screen.lobby_key
         self.username = self.menu_screen.username
         self.Refs = self.menu_screen.Refs
-        # self.font = self.menu_screen.font
-        # self.colours = self.menu_screen.colours
         self.test = self.menu_screen.test
+        self.font_size = self.menu_screen.font_size
     
     def _Lobby_title(self):
         self.title_label = QtW.QLabel(f'Lobby: {self.lobby_key}')
-        self.title_label.setFont(QtG.QFont(prop_s.font, 20, QtG.QFont.Bold))
+        self.title_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[5+self.font_size], QtG.QFont.Bold))
         
         self.joined_as_label = QtW.QLabel(f'Joined as: {self.username}')
-        self.joined_as_label.setFont(QtG.QFont(prop_s.font, 12))
+        self.joined_as_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.font_size]))
     
     def _Lobby_leave_start(self):
         self.leave_button = QtW.QPushButton('Leave')
+        self.leave_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.font_size]))
         self.leave_button.clicked.connect(self.leave_lobby)
         
         self.start_button = QtW.QPushButton('Start')
+        self.start_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.font_size]))
         self.start_button.clicked.connect(self.start_game_admin)
         self.start_button.setEnabled(False)
         self.start_button.setToolTip('Only the lobby leader can start the game.')
@@ -517,12 +522,14 @@ class LobbyScreen(QtW.QMainWindow):
         if self.test == 1:
             self.chat_display = QtW.QTextEdit()
             self.chat_display.setReadOnly(True)
-            self.chat_display.setFont(QtG.QFont(prop_s.font, 12))
+            self.chat_display.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.font_size]))
             
             self.chat_input = QtW.QLineEdit()
+            self.chat_input.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.font_size]))
             self.chat_input.setPlaceholderText('Type here...')
             
             self.send_button = QtW.QPushButton('Send')
+            self.send_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.font_size]))
             self.send_button.clicked.connect(self.send_chat_message)
             self.chat_input.returnPressed.connect(self.send_button.click)
             
@@ -541,29 +548,33 @@ class LobbyScreen(QtW.QMainWindow):
 
         # Create a layout and add the components
         self.main_layout = QtW.QGridLayout()
-        self.main_layout.addWidget(self.title_label,            0, 0, alignment=QtC.Qt.AlignCenter)
-        self.main_layout.addWidget(self.joined_as_label,        1, 0, alignment=QtC.Qt.AlignCenter)
+        self.main_layout.addWidget(self.title_label,            1, 0, alignment=QtC.Qt.AlignCenter)
+        self.main_layout.addWidget(self.joined_as_label,        2, 0, alignment=QtC.Qt.AlignCenter)
         
-        self.main_layout.addWidget(QtE.QHSeparationLine(),      2, 0)
+        self.main_layout.addWidget(QtE.QHSeparationLine(),      3, 0)
         
         colour_picker = ColourPicker(self)
-        self.main_layout.addWidget(colour_picker,               3, 0)
+        self.main_layout.addWidget(colour_picker,               4, 0)
         player_list = PlayerList(self)
-        self.main_layout.addWidget(player_list,                 4, 0)
+        self.main_layout.addWidget(player_list,                 5, 0)
         expansions_list = ExpansionsList(self)
-        self.main_layout.addWidget(expansions_list,             5, 0)
+        self.main_layout.addWidget(expansions_list,             6, 0)
         
-        self.main_layout.addWidget(QtE.QHSeparationLine(),      9, 0)
-        self.main_layout.addLayout(self.continue_layout,       10, 0)
+        self.main_layout.addWidget(QtE.QHSeparationLine(),      7, 0)
+        self.main_layout.addLayout(self.continue_layout,        8, 0)
         
         if self.test == 1:
-            self.main_layout.addWidget(QtE.QHSeparationLine(),     11, 0)
-            self.main_layout.addWidget(self.chat_display,          12, 0)
-            self.main_layout.addLayout(self.input_layout,          13, 0)
+            self.main_layout.addWidget(QtE.QHSeparationLine(),  9, 0)
+            self.main_layout.addWidget(self.chat_display,      10, 0)
+            self.main_layout.addLayout(self.input_layout,      11, 0)
+        
+        self.main_layout.setRowStretch(0, 1)
+        self.main_layout.setRowStretch(100, 1)
         
         self.mainWidget = QtW.QWidget()
         self.mainWidget.setLayout(self.main_layout)
         self.setCentralWidget(self.mainWidget)
+        self.showMaximized()
         
         # Updater threads
         self.start_game_updater = StartGameUpdater(self.Refs)
