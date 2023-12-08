@@ -31,6 +31,7 @@ class MenuScreen(QtW.QMainWindow):
         self.setWindowTitle('Menu')
         self.setGeometry(100, 100, 400, 300)
         self.showMaximized()
+        self.font_size = 5 # 0-15
         
         #%% Firebase reference preparation
         self.refs = {
@@ -39,23 +40,28 @@ class MenuScreen(QtW.QMainWindow):
         
     def _Menu_title(self):
         self.title_label = QtW.QLabel('Menu')
+        self.title_label.setStyleSheet("padding:10") 
         self.title_label.setAlignment(QtC.Qt.AlignCenter)
-        self.title_label.setFont(QtG.QFont(prop_s.font, 20, QtG.QFont.Bold))
+        self.title_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[6+self.font_size], QtG.QFont.Bold)) # size 20
     
     def _Menu_lobby(self):
         self.create_lobby_button = QtW.QPushButton('Create lobby')
+        self.create_lobby_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.font_size]))
         self.create_lobby_button.clicked.connect(self.create_lobby)
 
         self.join_lobby_button = QtW.QPushButton('Join lobby')
+        self.join_lobby_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.font_size]))
         self.join_lobby_button.clicked.connect(self.join_lobby)
 
         self.lobby_key_input = QtW.QLineEdit()
+        self.lobby_key_input.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.font_size]))
         self.lobby_key_input.setAlignment(QtC.Qt.AlignCenter)
         self.lobby_key_input.setPlaceholderText('Enter lobby key...')
         self.lobby_key_input.returnPressed.connect(self.join_lobby_button.click)
     
     def _Menu_close(self):
         self.close_button = QtW.QPushButton('Close program')
+        self.close_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.font_size]))
         self.close_button.clicked.connect(self.close)
         
     def __init__(self, test):
@@ -70,26 +76,31 @@ class MenuScreen(QtW.QMainWindow):
         layout = QtW.QGridLayout()
         layout.setColumnStretch(0, 1) # equal-sized columns
         layout.setColumnStretch(1, 1) # equal-sized columns
-        layout.addWidget(self.title_label,         0, 0, 1, 2)
-        layout.addWidget(self.create_lobby_button, 1, 0, 1, 2)
-        layout.addWidget(self.lobby_key_input,     2, 0, 1, 1)
-        layout.addWidget(self.join_lobby_button,   2, 1, 1, 1)
-        layout.addWidget(QtE.QHSeparationLine(),   3, 0, 1, 2)
-        layout.addWidget(self.close_button,        4, 0, 1, 2)
+        layout.addWidget(self.title_label,         1, 0, 1, 2)
+        layout.addWidget(QtE.QHSeparationLine(),   2, 0, 1, 2)
+        layout.addWidget(self.create_lobby_button, 3, 0, 1, 2)
+        layout.addWidget(self.lobby_key_input,     4, 0, 1, 1)
+        layout.addWidget(self.join_lobby_button,   4, 1, 1, 1)
+        layout.addWidget(QtE.QHSeparationLine(),   5, 0, 1, 2)
+        layout.addWidget(self.close_button,        6, 0, 1, 2)
+        
+        layout.setRowStretch(0, 1)
+        layout.setRowStretch(100, 1)
         
         self.mainWidget = QtW.QWidget()
         self.mainWidget.setLayout(layout)
         self.setCentralWidget(self.mainWidget)
     
     def closeEvent(self, event):
-        title = 'Close program?'
-        text = 'Are you sure you want to close the program?'
-        yesNoDialog = YesNoDialog(self, title, text)
-        result = yesNoDialog.exec_()
-        
-        # Ignore if not accepted, else continue (close)
-        if result != QtW.QDialog.Accepted:
-            event.ignore()
+        if self.test != 1:
+            title = 'Close program?'
+            text = 'Are you sure you want to close the program?'
+            yesNoDialog = YesNoDialog(self, title, text)
+            result = yesNoDialog.exec_()
+            
+            # Ignore if not accepted, else continue (close)
+            if result != QtW.QDialog.Accepted:
+                event.ignore()
 
     #%% Functionality
     def create_lobby(self):
