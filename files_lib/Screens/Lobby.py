@@ -370,6 +370,107 @@ class PlayerListColoursUpdater(QtC.QThread):
         # if event.data is not None:
         self.run()
 
+#%% Expansions list
+class ExpansionsList(QtW.QWidget):
+    def _ExpansionsList_init(self):
+        self.expansions_switches = dict()
+        
+        # Listener
+        self.expansions_updater = ExpansionsUpdater(self.lobby.Refs)
+        self.expansions_updater.updateSignal.connect(self.update_expansions_list)
+        self.expansions_updater.listen_for_updates()
+        self.expansions_updater.start()
+    
+    def _ExpansionsList_header(self):
+        self.header = QtW.QLabel('Expansions')
+        self.header.setFont(QtG.QFont(self.lobby.font, 16, QtG.QFont.Bold))
+    
+    def _ExpansionsList_list(self):
+        self.list = QtW.QGridLayout()
+        self.list.setColumnMinimumWidth(0, 10) # extra 10px padding
+        self.draw_expansions_list()
+    
+    def __init__(self, lobby):
+        super().__init__()
+        self.lobby = lobby
+        
+        self._ExpansionsList_init()
+        self._ExpansionsList_header()
+        self._ExpansionsList_list()
+        
+        layout = QtW.QGridLayout()
+        layout.addWidget(self.header, 0, 0, 1, 1)
+        layout.addLayout(self.list,   1, 0, 1, 1)
+        self.setLayout(layout)
+    
+    def draw_expansions_list(self):
+        # Get data
+        admin = self.lobby.Refs('admin').get()
+        expansions = self.lobby.Refs('expansions').get().keys()
+        
+        # Draw switches
+        for idx, expansion in enumerate(expansions):
+            # Add switch
+            button = self.expansions_switches[expansion] = QtW.QCheckBox(expansion)
+            button.setFont(QtG.QFont(self.lobby.font, 12))
+            button.setChecked(self.lobby.Refs(f'expansions/{expansion}').get())
+            self.list.addWidget(button, idx, 1)
+            button.clicked.connect(self.Expansions_clicked(button))
+            if admin != self.lobby.username:
+                button.setEnabled(False)
+                button.setToolTip('Only the lobby leader can select expansions.')
+    
+    def Expansions_clicked(self, button):
+        def clicked():
+            state = button.checkState()
+            expansion = button.text()
+            if state == 0: # unchecked
+                self.lobby.Refs(f'expansions/{expansion}').set(0)
+            elif state == 2: # checked
+                self.lobby.Refs(f'expansions/{expansion}').set(1)
+        return clicked
+
+    def update_expansions_list(self):
+        # Get data
+        admin = self.lobby.Refs('admin').get()
+        expansions_info = self.lobby.Refs('expansions').get()
+        
+        # Edit switches
+        for expansion in self.expansions_switches.keys():
+            # Check or uncheck
+            button = self.expansions_switches[expansion]
+            button.setChecked(expansions_info[expansion])
+            
+            # Enable or disable
+            if admin == self.lobby.username:
+                button.setEnabled(True)
+                button.setToolTip('')
+            else:
+                button.setEnabled(False)
+                button.setToolTip('Only the lobby leader can select expansions.')
+    
+class ExpansionsUpdater(QtC.QThread):
+    updateSignal = QtC.pyqtSignal()
+
+    def __init__(self, refs):
+        super().__init__()
+        self.Refs = refs
+
+    def run(self):
+        # Get current connections
+        players = self.Refs('connections').get()
+        if players != None:
+            self.updateSignal.emit()
+    
+    def listen_for_updates(self):
+        # when these references update, they trigger a function
+        self.Refs('expansions').listen(self.on_expansions_update)
+        self.Refs('admin').listen(self.on_expansions_update)
+    
+    def on_expansions_update(self, event):
+        # if event.data is not None:
+        self.run()
+
 #%% Lobby screen
 class LobbyScreen(QtW.QMainWindow):
     #%% Visuals
@@ -392,12 +493,6 @@ class LobbyScreen(QtW.QMainWindow):
         
         self.joined_as_label = QtW.QLabel(f'Joined as: {self.username}')
         self.joined_as_label.setFont(QtG.QFont(self.font, 12))
-    
-    def _Lobby_expansions(self):
-        self.expansions_list_header = QtW.QLabel('Expansions')
-        self.expansions_list_header.setFont(QtG.QFont(self.font, 16, QtG.QFont.Bold))
-        
-        self.draw_expansions_list(init=True)
     
     def _Lobby_leave_start(self):
         self.leave_button = QtW.QPushButton('Leave')
@@ -439,7 +534,6 @@ class LobbyScreen(QtW.QMainWindow):
         
         self._Lobby_init()
         self._Lobby_title()
-        # self._Lobby_expansions()
         self._Lobby_leave_start()
         self._Lobby_chat()
 
@@ -454,9 +548,8 @@ class LobbyScreen(QtW.QMainWindow):
         self.main_layout.addWidget(colour_picker,               3, 0)
         player_list = PlayerList(self)
         self.main_layout.addWidget(player_list,                 4, 0)
-        
-        # self.main_layout.addWidget(self.expansions_list_header, 7, 0)
-        # self.main_layout.addLayout(self.expansions_list,        8, 0)
+        expansions_list = ExpansionsList(self)
+        self.main_layout.addWidget(expansions_list,             5, 0)
         
         self.main_layout.addWidget(QtE.QHSeparationLine(),      9, 0)
         self.main_layout.addLayout(self.continue_layout,       10, 0)
@@ -476,62 +569,10 @@ class LobbyScreen(QtW.QMainWindow):
         self.start_game_updater.listen_for_updates()
         self.start_game_updater.start()
         
-        # self.expansions_updater = ExpansionsUpdater(self.Refs)
-        # self.expansions_updater.updateSignal.connect(self.update_expansions_list)
-        # self.expansions_updater.listen_for_updates()
-        # self.expansions_updater.start()
-        
         if self.test == 1:
             self.Refs('chat').listen(self.update_chat_display)
     
     #%% Functionality
-    def draw_expansions_list(self, init=False):
-        if init == True:
-            # admin = self.Refs('admin').get()
-            self.expansions_list = QtW.QGridLayout()
-            self.expansions_list.setColumnMinimumWidth(0, 10) # extra 10px padding
-            expansions = self.Refs('expansions').get().keys()
-            self.expansions_switches = dict()
-            for idx, expansion in enumerate(expansions):
-                # Add a switch
-                button = self.expansions_switches[expansion] = QtW.QCheckBox(expansion)
-                button.setFont(QtG.QFont(self.font, 12))
-                button.setChecked(self.Refs(f'expansions/{expansion}').get())
-                self.expansions_list.addWidget(button, idx, 1)
-                button.clicked.connect(self.Expansions_clicked(button))
-                # if admin != self.username:
-                button.setEnabled(False)
-    
-    def Expansions_clicked(self, button):
-        def clicked():
-            state = button.checkState()
-            expansion = button.text()
-            if state == 0: # unchecked
-                self.Refs(f'expansions/{expansion}').set(0)
-            elif state == 2: # checked
-                self.Refs(f'expansions/{expansion}').set(1)
-        return clicked
-    
-    # def draw_player_colours(self, player_list):
-    #     for idx, player in enumerate(player_list):
-    #         # Add colour indicator
-    #         colour = self.Refs(f'players/{player}/colour').get()
-    #         button = self.player_colours[player] = QtW.QPushButton()
-    #         button.setEnabled(False)
-    #         button.setStyleSheet(f'''QPushButton:disabled {{
-    #                                     background-color: rgb{tuple(int(colour[1:][i:i+2], 16) for i in (0, 2, 4, 6))};
-    #                                     min-width:  20px;
-    #                                     max-width:  20px;
-    #                                     min-height: 20px;
-    #                                     max-height: 20px;
-    #                                     border-radius: 14px;
-    #                                     border-style: solid;
-    #                                     border-width: 2px;
-    #                                     border-color: rgb(50,50,50);
-    #                                     padding: 2px;
-    #                                 }}''')
-    #         self.player_list.addWidget(button, idx, 1, alignment = QtC.Qt.AlignCenter)
-    
     def leave_lobby(self):
         title = 'Leave lobby?'
         text = 'Are you sure you want to leave the lobby?'
@@ -582,80 +623,6 @@ class LobbyScreen(QtW.QMainWindow):
             # for non-admins
             self.start_button.setEnabled(False)
             self.start_button.setToolTip('Only the lobby leader can start the game.')
-    
-    # def update_player_list(self, player_list):
-    #     for i in reversed(range(self.player_list.count())):
-    #         self.player_list.itemAt(i).widget().setParent(None)
-        
-    #     admin = self.Refs('admin').get()
-        
-    #     # Enable start button for admin
-    #     self.update_start_button()
-        
-    #     # Add player colour indicators
-    #     self.draw_player_colours(player_list)
-        
-    #     # Add player labels
-    #     for idx, player in enumerate(player_list):
-    #         # allow admin to choose new admin
-    #         if player == admin:
-    #             label = QtW.QLabel('(leader)')
-    #             label.setFont(QtG.QFont(self.font, 12))
-    #             self.player_list.addWidget(label, idx, 0, alignment = QtC.Qt.AlignCenter)
-            
-    #         if self.username == admin and player != admin:
-    #             label = QtE.ClickableLabel(self)
-    #             label.clicked.connect(self.make_admin(player))
-    #             label.setToolTip("Click to make lobby leader.")
-    #         else:
-    #             label = QtW.QLabel(player)
-    #         label.setText(f'{player}')
-    #         label.setFont(QtG.QFont(self.font, 12))
-    #         self.player_list.addWidget(label, idx, 2, alignment=QtC.Qt.AlignLeft)
-    #     self.player_list.setColumnMinimumWidth(0, 60)
-    #     self.player_list.setColumnMinimumWidth(1, 40)
-    #     self.player_list.setColumnStretch(2, 1000)            
-    
-    # def update_player_colours(self, player_list):
-    #     # Update colour indicators of player list
-    #     for i in reversed(range(self.player_list.count())):
-    #         widget = self.player_list.itemAt(i).widget()
-    #         if type(widget) == type(QtW.QPushButton()):
-    #             widget.setParent(None)
-        
-    #     # Get current player list
-    #     players = self.Refs('connections').get()
-    #     if players != None:
-    #         player_list = []
-    #         for player in players:
-    #             if player is not None:
-    #                 player_list.append(player)
-        
-    #     self.draw_player_colours(player_list)
-        
-    #     # Update colour picker buttons
-    #     for i in reversed(range(self.colour_picker.count())):
-    #         widget = self.colour_picker.itemAt(i).widget()
-    #         widget.setParent(None)
-    #     self.draw_colourPicker()
-        
-    #     # Enable start button for admin
-    #     self.update_start_button()
-        
-    def update_expansions_list(self):
-        admin = self.Refs('admin').get()
-        expansions_info = self.Refs('expansions').get()
-        for expansion in self.expansions_switches.keys():
-            # Check or uncheck
-            button = self.expansions_switches[expansion]
-            button.setChecked(expansions_info[expansion])
-            # Enable or disable
-            if admin == self.username:
-                button.setEnabled(True)
-                button.setToolTip('')
-            else:
-                button.setEnabled(False)
-                button.setToolTip('Only the lobby leader can select expansions.')
 
     # @QtC.pyqtSlot(dict)
     def update_chat_display(self, event):
@@ -702,29 +669,6 @@ class LobbyScreen(QtW.QMainWindow):
         event.accept()
 
 #%% Updaters
-class ExpansionsUpdater(QtC.QThread):
-    updateSignal = QtC.pyqtSignal()
-
-    def __init__(self, refs):
-        super().__init__()
-        self.Refs = refs
-
-    def run(self):
-        # Get current connections
-        players = self.Refs('connections').get()
-        
-        if players != None:
-            self.updateSignal.emit()
-    
-    def listen_for_updates(self):
-        # when these references update, they trigger a function
-        self.Refs('expansions').listen(self.on_expansions_update)
-        self.Refs('admin').listen(self.on_expansions_update)
-    
-    def on_expansions_update(self, event):
-        # if event.data is not None:
-        self.run()
-
 class StartGameUpdater(QtC.QThread):
     updateSignal = QtC.pyqtSignal()
     
