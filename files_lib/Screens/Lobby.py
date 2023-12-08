@@ -414,7 +414,7 @@ class ExpansionsList(QtW.QWidget):
     def draw_expansions_list(self):
         # Get data
         admin = self.lobby.Refs('admin').get()
-        expansions = self.lobby.Refs('expansions').get().keys()
+        expansions = prop_s.expansions
         
         # Draw switches
         for idx, expansion in enumerate(expansions):
