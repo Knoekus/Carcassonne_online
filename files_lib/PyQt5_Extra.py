@@ -1,4 +1,4 @@
-# import COproperties
+# import prop_s
 
 import PyQt5.QtGui as QtG
 import PyQt5.QtWidgets as QtW

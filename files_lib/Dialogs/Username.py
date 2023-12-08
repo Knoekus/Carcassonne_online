@@ -1,4 +1,4 @@
-import COproperties
+import prop_s
 
 import PyQt5.QtGui as QtG
 import PyQt5.QtWidgets as QtW
@@ -13,12 +13,12 @@ class UsernameDialog(QtW.QDialog):
         layout = QtW.QVBoxLayout()
         
         label = QtW.QLabel('Your username should have 2-20 characters.')
-        label.setFont(QtG.QFont(COproperties.font, 11))
+        label.setFont(QtG.QFont(prop_s.font, 11))
         
         self.username_input = QtW.QLineEdit()
         self.username_input.setAlignment(QtC.Qt.AlignCenter)
         self.username_input.setPlaceholderText('Enter username...')
-        self.username_input.setFont(QtG.QFont(COproperties.font, 11))
+        self.username_input.setFont(QtG.QFont(prop_s.font, 11))
         
         self.ok_button = QtW.QPushButton('OK')
         self.ok_button.clicked.connect(self.button_clicked)

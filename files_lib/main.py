@@ -11,7 +11,7 @@ import PyQt5.QtWidgets as QtW
 import PyQt5.QtCore as QtC
 import PyQt5_Extra as QtE
 
-import COproperties
+import prop_s
 from Screens.Lobby import LobbyScreen
 from Dialogs.Username import UsernameDialog
 from Dialogs.YesNo import YesNoDialog
@@ -40,7 +40,7 @@ class MenuScreen(QtW.QMainWindow):
     def _Menu_title(self):
         self.title_label = QtW.QLabel('Menu')
         self.title_label.setAlignment(QtC.Qt.AlignCenter)
-        self.title_label.setFont(QtG.QFont(COproperties.font, 20, QtG.QFont.Bold))
+        self.title_label.setFont(QtG.QFont(prop_s.font, 20, QtG.QFont.Bold))
     
     def _Menu_lobby(self):
         self.create_lobby_button = QtW.QPushButton('Create lobby')
@@ -196,15 +196,15 @@ class MenuScreen(QtW.QMainWindow):
     def save_lobby_to_database(self):
         self.Refs('open').set(True)
         self.Refs('admin').set(self.username)
-        for colour in COproperties.colours[1:]:
+        for colour in prop_s.colours[1:]:
             self.Refs(f'colours/{colour}').set(0)
-        for expansion in COproperties.expansions:
+        for expansion in prop_s.expansions:
             self.Refs(f'expansions/{expansion}').set(0)
         self.save_connection_to_lobby()
 
     def save_connection_to_lobby(self):
         self.Refs(f'connections/{self.username}').set(0)
-        self.Refs(f'players/{self.username}/colour').set(COproperties.colours[0]) # start with blank colour
+        self.Refs(f'players/{self.username}/colour').set(prop_s.colours[0]) # start with blank colour
 
     def remove_connection(self, username):
         time.sleep(random.randint(0, 10)/10) # hopefully make removing multiple connections more asynchronous
@@ -213,7 +213,7 @@ class MenuScreen(QtW.QMainWindow):
         if len(lobby_conns) > 1:
             # Make colour available again
             colour = self.Refs(f'players/{username}/colour').get()
-            if colour != COproperties.colours[0]:
+            if colour != prop_s.colours[0]:
                 self.Refs(f'colours/{colour}').set(0) # available again
             
             self.Refs(f'connections/{username}').delete()
