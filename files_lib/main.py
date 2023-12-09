@@ -6,15 +6,15 @@ import time
 import firebase_admin
 from firebase_admin import credentials, db
 
-import PyQt5.QtGui as QtG
+import PyQt5.QtGui     as QtG
 import PyQt5.QtWidgets as QtW
-import PyQt5.QtCore as QtC
-import PyQt5_Extra as QtE
+import PyQt5.QtCore    as QtC
+import PyQt5_Extra     as QtE
 
 import prop_s
-from Screens.Lobby import LobbyScreen
+from Screens.Lobby    import LobbyScreen
 from Dialogs.Username import UsernameDialog
-from Dialogs.YesNo import YesNoDialog
+from Dialogs.YesNo    import YesNoDialog
 
 #%% Scaling
 if hasattr(QtC.Qt, 'AA_EnableHighDpiScaling'):
