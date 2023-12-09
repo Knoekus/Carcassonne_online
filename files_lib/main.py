@@ -258,7 +258,7 @@ if __name__ == '__main__':
     
     app = QtW.QApplication(sys.argv)
     app.setStyle('Breeze') # ['Breeze', 'Oxygen', 'QtCurve', 'Windows', 'Fusion']
-    app.setWindowIcon(QtG.QIcon(r'..\files_lib\Images\Coin_icon.png'))
+    app.setWindowIcon(QtG.QIcon(r'.\Images\Coin_icon.png'))
     
     menu_screen = MenuScreen(test=1)
     menu_screen.show()

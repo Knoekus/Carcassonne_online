@@ -1,15 +1,33 @@
 import sys
 if __name__ != '__main__': # regular call
+    import PyQt5.QtGui     as QtG
+    import PyQt5.QtWidgets as QtW
+    import PyQt5.QtCore    as QtC
+    import PyQt5_Extra     as QtE
     from firebase_admin import db
+
+    import time
+    import sys
+    import prop_s
+
     if r"..\Dialogs" not in sys.path:
         sys.path.append(r"..\Dialogs")
     from Dialogs.YesNo import YesNoDialog
+    
 else: # direct test call
+    import PyQt5.QtGui     as QtG
+    import PyQt5.QtWidgets as QtW
+    import PyQt5.QtCore    as QtC
+    
     import firebase_admin
     from firebase_admin import credentials, db
-    if r".." not in sys.path:
-        sys.path.append(r"..")
-    if r"..\..\Dialogs" not in sys.path:
+    
+    if r"..\..\files_lib" not in sys.path:
+        sys.path.append(r"..\..\files_lib")
+    import PyQt5_Extra
+    import prop_s
+    
+    if r"..\Dialogs" not in sys.path:
         sys.path.append(r"..\..\Dialogs")
     from Dialogs.YesNo import YesNoDialog
     
@@ -20,26 +38,25 @@ else: # direct test call
             firebase_admin.initialize_app(cred, {
                 'databaseURL': 'https://clientserver1-default-rtdb.europe-west1.firebasedatabase.app/'
             })
-            
-import PyQt5.QtGui     as QtG
-import PyQt5.QtWidgets as QtW
-import PyQt5.QtCore    as QtC
-import PyQt5_Extra     as QtE
-import prop_s
 
 #%% Game screen
-class GameScreen(QtW.QMainWindow):
+# class GameScreen(QtW.QMainWindow):
+class GameScreen(QtW.QWidget):
+    #%% Visuals
     def __init__(self, lobby):
         super().__init__()
+        self.menu_screen = lobby.menu_screen
         self.lobby = lobby
         
         self._Game_init()
         self._Game_layout()
         
-        self.mainWidget = QtW.QWidget()
-        self.mainWidget.setLayout(self.mainLayout)
-        self.setCentralWidget(self.mainWidget)
+        # self.mainWidget = QtW.QWidget()
+        # self.mainWidget.setLayout(self.mainLayout)
+        # self.setCentralWidget(self.mainWidget)
+        self.setLayout(self.mainLayout)
         self.showMaximized()
+        print("Hallo")
     
     def _Game_init(self):
         self.setWindowTitle('Carcassonne Online')
@@ -53,9 +70,9 @@ class GameScreen(QtW.QMainWindow):
         self.mainLayout = QtW.QGridLayout()
         
         if __name__ != '__main__':
-            image = QtG.QPixmap(r'..\files_lib\Images\tile_logo.png')
+            image = QtG.QPixmap(r'.\Images\tile_logo.png')
         else:
-            image = QtG.QPixmap(r'..\..\files_lib\Images\tile_logo.png')
+            image = QtG.QPixmap(r'..\Images\tile_logo.png')
         label = QtW.QLabel()
         label.setPixmap(image)
         
@@ -63,6 +80,19 @@ class GameScreen(QtW.QMainWindow):
         
         self.leave_button = QtW.QPushButton('Leave')
         self.mainLayout.addWidget(self.leave_button, 1, 0, 1, 1)
+    
+    #%% Functionality
+    def closeEvent(self, event):
+        title = 'Close program?'
+        text = 'Are you sure you want to close the program?'
+        yesNoDialog = YesNoDialog(self, title, text)
+        result = yesNoDialog.exec_()
+        
+        # Ignore if not accepted, else continue (close)
+        if result != QtW.QDialog.Accepted:
+            event.ignore()
+        else:
+            self.lobby.remove_connection(self.username)
 
 #%% Main
 if __name__ == '__main__':
@@ -76,6 +106,10 @@ if __name__ == '__main__':
         def __init__(self):
             self.username = 'Knoekus'
             self.font_size = 5
+            self.menu_screen = None
+            
+        def remove_connection(self, username):
+            None
         
         def Refs(self, key, item=None, load='get_set', prefix='lobby'):
             '''load : reference type
