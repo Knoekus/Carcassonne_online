@@ -490,20 +490,17 @@ class ExpansionsUpdater(QtC.QThread):
         self.run()
 
 #%% Lobby screen
-class LobbyScreen(QtW.QMainWindow):
-# class LobbyScreen(QtW.QWidget):
+# class LobbyScreen(QtW.QMainWindow):
+class LobbyScreen(QtW.QWidget):
     #%% Visuals
     def _Lobby_init(self):
-        # Window settings
-        self.setWindowTitle('Lobby')
-        self.setGeometry(100, 100, 400, 400)
-        
         # References from menu screen
         self.lobby_key = self.menu_screen.lobby_key
         self.username = self.menu_screen.username
         self.Refs = self.menu_screen.Refs
         self.test = self.menu_screen.test
         self.font_size = self.menu_screen.font_size
+        self.stacked = self.menu_screen.stacked
         
         # Functions
         self.remove_connection = self.menu_screen.remove_connection
@@ -594,15 +591,15 @@ class LobbyScreen(QtW.QMainWindow):
         self.main_layout.setRowStretch(0, 1)
         self.main_layout.setRowStretch(100, 1)
         
-        self.mainWidget = QtW.QWidget()
-        self.mainWidget.setLayout(self.main_layout)
+        # self.mainWidget = QtW.QWidget()
+        self.setLayout(self.main_layout)
         
-        self.stacked = QtW.QStackedWidget()
-        self.stacked.addWidget(self.mainWidget)
+        # self.stacked = QtW.QStackedWidget()
+        # self.stacked = self.menu_screen.stacked
+        # self.stacked.addWidget(self)
         
-        self.setCentralWidget(self.stacked)
-        # self.setLayout(self.main_layout)
-        self.showMaximized()
+        # self.setCentralWidget(self.stacked)
+        # self.showMaximized()
         
         if self.test == 1:
             self.Refs('chat').listen(self.update_chat_display)
@@ -640,15 +637,12 @@ class LobbyScreen(QtW.QMainWindow):
             self.Refs('open').set(False)
     
     def start_game(self):
-        #=== Now do something like this :) ===#
         self.start_game_updater.disconnect() # don't listen to updates anymore
         game_screen = GameScreen(self)
-        # self.hide()
-        # game_screen.show()
+
         self.stacked.addWidget(game_screen)
         self.stacked.setCurrentWidget(game_screen)
-        self.setWindowTitle(f'Carcassonne Online - {self.username}')
-        print("Game started.")
+        self.menu_screen.setWindowTitle(f'Carcassonne Online - {self.username}')
 
     # @QtC.pyqtSlot(dict)
     def update_chat_display(self, event):

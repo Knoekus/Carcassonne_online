@@ -40,7 +40,6 @@ else: # direct test call
             })
 
 #%% Game screen
-# class GameScreen(QtW.QMainWindow):
 class GameScreen(QtW.QWidget):
     #%% Visuals
     def __init__(self, lobby):
@@ -51,12 +50,7 @@ class GameScreen(QtW.QWidget):
         self._Game_init()
         self._Game_layout()
         
-        # self.mainWidget = QtW.QWidget()
-        # self.mainWidget.setLayout(self.mainLayout)
-        # self.setCentralWidget(self.mainWidget)
         self.setLayout(self.mainLayout)
-        self.showMaximized()
-        print("Hallo")
     
     def _Game_init(self):
         self.setWindowTitle('Carcassonne Online')
@@ -138,7 +132,7 @@ if __name__ == '__main__':
                 db.reference(f'{prefix}/{key}').set(entries)
     
     game_screen = GameScreen(LobbyTest())
-    game_screen.show()
+    game_screen.showMaximized()
     game_screen.activateWindow()
     game_screen.raise_() # raise to top
     sys.exit(app.exec_())
