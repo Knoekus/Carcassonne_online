@@ -491,6 +491,7 @@ class ExpansionsUpdater(QtC.QThread):
 
 #%% Lobby screen
 class LobbyScreen(QtW.QMainWindow):
+# class LobbyScreen(QtW.QWidget):
     #%% Visuals
     def _Lobby_init(self):
         # Window settings
@@ -503,6 +504,9 @@ class LobbyScreen(QtW.QMainWindow):
         self.Refs = self.menu_screen.Refs
         self.test = self.menu_screen.test
         self.font_size = self.menu_screen.font_size
+        
+        # Functions
+        self.remove_connection = self.menu_screen.remove_connection
     
     def _Lobby_title(self):
         self.title_label = QtW.QLabel(f'Lobby: {self.lobby_key}')
@@ -556,6 +560,7 @@ class LobbyScreen(QtW.QMainWindow):
             self.input_layout.addWidget(self.send_button)
         
     def __init__(self, menu_screen):
+        # super().__init__(menu_screen)
         super().__init__()
         self.menu_screen = menu_screen
         
@@ -591,7 +596,12 @@ class LobbyScreen(QtW.QMainWindow):
         
         self.mainWidget = QtW.QWidget()
         self.mainWidget.setLayout(self.main_layout)
-        self.setCentralWidget(self.mainWidget)
+        
+        self.stacked = QtW.QStackedWidget()
+        self.stacked.addWidget(self.mainWidget)
+        
+        self.setCentralWidget(self.stacked)
+        # self.setLayout(self.main_layout)
         self.showMaximized()
         
         if self.test == 1:
@@ -633,8 +643,11 @@ class LobbyScreen(QtW.QMainWindow):
         #=== Now do something like this :) ===#
         self.start_game_updater.disconnect() # don't listen to updates anymore
         game_screen = GameScreen(self)
-        self.hide()
-        game_screen.show()
+        # self.hide()
+        # game_screen.show()
+        self.stacked.addWidget(game_screen)
+        self.stacked.setCurrentWidget(game_screen)
+        self.setWindowTitle(f'Carcassonne Online - {self.username}')
         print("Game started.")
 
     # @QtC.pyqtSlot(dict)
