@@ -23,8 +23,9 @@ class QHSeparationLine(QtW.QFrame):
     self.setMinimumWidth(1)
     self.setFixedHeight(height)
     self.setFrameShape(QtW.QFrame.HLine)
-    self.setFrameShadow(QtW.QFrame.Sunken)
-    # self.setSizePolicy(QtW.QSizePolicy.Preferred, QtW.QSizePolicy.Minimum)
+    # self.setFrameShadow(QtW.QFrame.Sunken)
+    self.setFrameShadow(QtW.QFrame.Plain)
+    self.setSizePolicy(QtW.QSizePolicy.Preferred, QtW.QSizePolicy.Minimum)
     # policy = QtW.QSizePolicy.setHorizontalStretch(self, 0.8)
     return
 
@@ -37,6 +38,22 @@ class QVSeparationLine(QtW.QFrame):
     self.setFixedWidth(width)
     self.setMinimumHeight(1)
     self.setFrameShape(QtW.QFrame.VLine)
-    self.setFrameShadow(QtW.QFrame.Sunken)
+    # self.setFrameShadow(QtW.QFrame.Sunken)
+    self.setFrameShadow(QtW.QFrame.Plain)
     self.setSizePolicy(QtW.QSizePolicy.Minimum, QtW.QSizePolicy.Preferred)
     return
+
+class QImage(QtW.QLabel):
+  '''
+  an image in a label\n
+  '''
+  def __init__(self, file, width=None, height=None):
+      super().__init__()
+      image = QtG.QPixmap(file)
+      self.setPixmap(image)
+      self.setScaledContents(True)
+      if width is not None:
+          self.setFixedWidth(width)
+      if height is not None:
+          self.setFixedHeight(height)
+      return
