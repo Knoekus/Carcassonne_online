@@ -1,16 +1,20 @@
-import PyQt5.QtGui as QtG
+import PyQt5.QtGui     as QtG
 import PyQt5.QtWidgets as QtW
-import PyQt5.QtCore as QtC
-import PyQt5_Extra as QtE
+import PyQt5.QtCore    as QtC
+import PyQt5_Extra     as QtE
 from firebase_admin import db
 
 import time
 import sys
+import prop_s
+
 if r"..\Dialogs" not in sys.path:
     sys.path.append(r"..\Dialogs")
-
-import prop_s
 from Dialogs.YesNo import YesNoDialog
+
+if r"Screens" not in sys.path:
+    sys.path.append(r"..\Screens")
+from Screens.Game import GameScreen
 
 #%% Colour picker
 class ColourPicker(QtW.QWidget):
@@ -525,6 +529,12 @@ class LobbyScreen(QtW.QMainWindow):
         # equal size for all columns
         for idx in range(5):
             self.continue_layout.setColumnStretch(idx, 1)
+        
+        # Updater threads
+        self.start_game_updater = StartGameUpdater(self.Refs)
+        self.start_game_updater.updateSignal.connect(self.start_game)
+        self.start_game_updater.listen_for_updates()
+        self.start_game_updater.start()
     
     def _Lobby_chat(self):
         if self.test == 1:
@@ -584,12 +594,6 @@ class LobbyScreen(QtW.QMainWindow):
         self.setCentralWidget(self.mainWidget)
         self.showMaximized()
         
-        # Updater threads
-        self.start_game_updater = StartGameUpdater(self.Refs)
-        self.start_game_updater.updateSignal.connect(self.start_game)
-        self.start_game_updater.listen_for_updates()
-        self.start_game_updater.start()
-        
         if self.test == 1:
             self.Refs('chat').listen(self.update_chat_display)
     
@@ -626,16 +630,12 @@ class LobbyScreen(QtW.QMainWindow):
             self.Refs('open').set(False)
     
     def start_game(self):
-        if self.test == 1:
-            self.chat_display.append(f'--> {self.username}: Start game whoooooooooooooo!!!!')
-            time.sleep(1)
-        self.close()
-        QtW.qApp.quit()
-        
         #=== Now do something like this :) ===#
-        # game_screen = GameScreen(self)
-        # self.hide()
-        # game_screen.show()
+        self.start_game_updater.disconnect() # don't listen to updates anymore
+        game_screen = GameScreen(self)
+        self.hide()
+        game_screen.show()
+        print("Game started.")
 
     # @QtC.pyqtSlot(dict)
     def update_chat_display(self, event):
