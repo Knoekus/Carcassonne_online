@@ -89,7 +89,9 @@ class MenuScreen(QtW.QMainWindow):
         
         self.mainWidget = QtW.QWidget()
         self.mainWidget.setLayout(layout)
-        self.setCentralWidget(self.mainWidget)
+        self.stacked = QtW.QStackedWidget()
+        self.stacked.addWidget(self.mainWidget)
+        self.setCentralWidget(self.stacked)
     
     def closeEvent(self, event):
         if self.test != 1:
@@ -240,8 +242,12 @@ class MenuScreen(QtW.QMainWindow):
 
     def open_lobby_screen(self):
         lobby_screen = LobbyScreen(self)
-        self.hide()
-        lobby_screen.show()
+        # # self.hide()
+        # lobby_screen.show()
+        
+        self.stacked.addWidget(lobby_screen)
+        self.stacked.setCurrentWidget(lobby_screen)
+        self.setWindowTitle(f'Lobby - {self.lobby_key}')
 
 #%% Firebase initialization
 def FirebaseInit():
