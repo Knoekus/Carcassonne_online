@@ -57,26 +57,12 @@ class GameScreen(QtW.QWidget):
     
     def _Game_layout(self):
         self.mainLayout = QtW.QGridLayout()
-        
-        self.mainLayout.addWidget(self._Game_new_tile(),  0, 0, 4, 1)
-        self.mainLayout.addWidget(self._Game_title(),     0, 1, 1, 1)
-        self.mainLayout.addWidget(QtE.QHSeparationLine(), 1, 1, 1, 1)
-        self.mainLayout.addLayout(self._Game_players(),   2, 1, 1, 1)
-        self.mainLayout.addWidget(self._Game_board(),     3, 1, 2, 1)
-        
-        self.mainLayout.setRowStretch(0, 1)
-        self.mainLayout.setRowStretch(1, 0)
-        self.mainLayout.setRowStretch(2, 2)
-        self.mainLayout.setRowStretch(3, 1)
-        self.mainLayout.setRowStretch(self.mainLayout.rowCount()-1, 9)
-        
-    def _Game_new_tile(self):
-        if __name__ == '__main__': # independent call
-            new_tile = QtE.QImage(r'..\Images\tile_logo.png', 250, 250)
-        else: # call from lobby
-            new_tile = QtE.QImage(r'.\Images\tile_logo.png')
-        new_tile.setStyleSheet("padding:10") 
-        return new_tile
+        self.mainLayout.addWidget(self._Game_title(),                        0, 0, 1, 3)
+        self.mainLayout.addWidget(QtE.QHSeparationLine(colour=(80, 80, 80)), 1, 0, 1, 3) # slightly grey line
+        self.mainLayout.addLayout(self._Game_players(),                      2, 0, 1, 3)
+        self.mainLayout.addWidget(QtE.QHSeparationLine(colour=(80, 80, 80)), 3, 0, 1, 3)
+        self.mainLayout.addLayout(self._Game_left_column(),                  4, 0, 1, 1) # leave column 1 out for correct padding around board
+        self.mainLayout.addLayout(self._Game_right_column(),                 4, 2, 1, 1)
     
     def _Game_title(self):
         title = QtW.QLabel("Carcassonne Online")
@@ -86,13 +72,14 @@ class GameScreen(QtW.QWidget):
 
     def _Game_players(self):
         if __name__ == '__main__':
-            player_list = [f'Player {idx}' for idx in range(1, len(prop_s.colours))]
+            # player_list = [f'Player {idx}' for idx in range(1, len(prop_s.colours))]
+            player_list = [f'Player {idx}' for idx in range(1, 5)]
         else:
             # Get a new player list
             players = self.lobby.Refs('connections').get()
             player_list = [player for player in players if player is not None]
         
-        players = QtW.QGridLayout()
+        self.players = QtW.QGridLayout()
         for idx, player in enumerate(player_list):
             name   = QtW.QLabel(f'{player}')
             name.setFont(QtG.QFont(prop_s.font,prop_s.font_sizes[1+self.font_size], QtG.QFont.Bold))
@@ -101,22 +88,65 @@ class GameScreen(QtW.QWidget):
             points.setFont(QtG.QFont(prop_s.font,prop_s.font_sizes[1+self.font_size]))
             points.setAlignment(QtC.Qt.AlignCenter)
             
-            players.addWidget(name,   1, idx)
-            players.addWidget(points, 2, idx)
+            self.players.addWidget(name,   1, idx)
+            self.players.addWidget(points, 2, idx)
         
-        # Go from left to right, so fill in the blank spots
-        for padding in range(idx, len(prop_s.colours)-1):
-            players.addWidget(QtW.QLabel(), 1, padding)
+        # Fill in the blank spots, so float all players to left
+        # for padding in range(idx, len(prop_s.colours)-1):
+        #     players.addWidget(QtW.QLabel(), 1, padding)
             
-        # players.setRowStretch(0, 1)
-        # players.setRowStretch(1, 1)
-        players.setRowStretch(3, 1)
-            
-        return players
+        return self.players
     
-    def _Game_board(self):
-        board = QtW.QScrollArea()
-        return board
+    def _Game_inventory(self):
+        # Label
+        inventory_label = QtW.QLabel('Inventory')
+        inventory_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size], QtG.QFont.Bold))
+        
+        self.inventory = QtW.QGridLayout()
+        self.inventory.addWidget(inventory_label, 0, 0)
+        
+    def _Game_left_column(self):
+        # New tile
+        tile_size = 200
+        if __name__ == '__main__': # independent call
+            self.new_tile = QtE.QImage(r'..\Images\tile_logo.png', tile_size, tile_size)
+        else: # call from lobby
+            self.new_tile = QtE.QImage(r'.\Images\tile_logo.png', tile_size, tile_size)
+        
+        # Tiles left
+        self.tiles_left = QtW.QLabel('0 tiles left.')
+        self.tiles_left.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.lobby.font_size]))
+        self.tiles_left.setAlignment(QtC.Qt.AlignCenter)
+        
+        # Inventory
+        self._Game_inventory()
+        
+        # End turn
+        self.button_end_turn = QtW.QPushButton('End turn')
+        self.button_end_turn.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size]))
+        
+        # Left column
+        self.leftColumn  = QtW.QVBoxLayout()
+        self.leftColumn.addWidget(self.new_tile)
+        self.leftColumn.addWidget(self.tiles_left)
+        self.leftColumn.addWidget(QtE.QHSeparationLine(colour=(80,80,80), height=1))
+        self.leftColumn.addLayout(self.inventory)
+        
+        self.leftColumn.addStretch()
+        self.leftColumn.addWidget(QtE.QHSeparationLine(colour=(80,80,80), height=10))
+        self.leftColumn.addWidget(self.button_end_turn)
+        
+        return self.leftColumn
+        
+    def _Game_right_column(self):
+        # Board
+        self.board = QtW.QScrollArea()
+        '''The board will consist of rows of QHBoxLayouts, where we can insert widgets at index i.'''
+        
+        # Right column
+        self.rightColumn = QtW.QVBoxLayout()
+        self.rightColumn.addWidget(self.board)
+        return self.rightColumn
     
     #%% Functionality
     def closeEvent(self, event):
