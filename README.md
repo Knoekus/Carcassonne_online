@@ -2,7 +2,7 @@
 Digital, online version of the German board game Carcassonne.
 
 ## Installation
-After installation of Anaconda:
+After installation of Python using Anaconda:
 
 pip install firebase-admin
 
