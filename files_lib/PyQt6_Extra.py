@@ -1,9 +1,11 @@
 # import prop_s
 
-import PyQt5.QtGui as QtG
-import PyQt5.QtWidgets as QtW
-import PyQt5.QtCore as QtC
+import PyQt6.QtGui as QtG
+import PyQt6.QtWidgets as QtW
+import PyQt6.QtCore as QtC
+
 import PIL
+from PIL.ImageQt import ImageQt
 
 class ClickableLabel(QtW.QLabel):
     clicked = QtC.pyqtSignal()
@@ -24,14 +26,13 @@ class QHSeparationLine(QtW.QFrame):
     self.setMinimumWidth(1)
     self.setFixedHeight(height)
     
-    self.setFrameShape(QtW.QFrame.HLine)
-    # self.setFrameShadow(QtW.QFrame.Sunken)
-    self.setFrameShadow(QtW.QFrame.Plain)
+    self.setFrameShape(QtW.QFrame.Shape.HLine)
+    self.setFrameShadow(QtW.QFrame.Shadow.Plain)
     # self.setSizePolicy(QtW.QSizePolicy.Preferred, QtW.QSizePolicy.Minimum)
     # policy = QtW.QSizePolicy.setHorizontalStretch(self, 0.8)
     
     pal = self.palette()
-    pal.setColor(QtG.QPalette.WindowText, QtG.QColor(colour[0], colour[1], colour[2]))
+    pal.setColor(QtG.QPalette.ColorRole.WindowText, QtG.QColor(colour[0], colour[1], colour[2]))
     self.setPalette(pal)
     return
 
@@ -44,13 +45,12 @@ class QVSeparationLine(QtW.QFrame):
     self.setMinimumHeight(1)
     self.setFixedWidth(width)
     
-    self.setFrameShape(QtW.QFrame.VLine)
-    # self.setFrameShadow(QtW.QFrame.Sunken)
-    self.setFrameShadow(QtW.QFrame.Plain)
+    self.setFrameShape(QtW.QFrame.Shape.VLine)
+    self.setFrameShadow(QtW.QFrame.Shadow.Plain)
     # self.setSizePolicy(QtW.QSizePolicy.Minimum, QtW.QSizePolicy.Preferred)
     
     pal = self.palette()
-    pal.setColor(QtG.QPalette.WindowText, QtG.QColor(colour[0], colour[1], colour[2]))
+    pal.setColor(QtG.QPalette.ColorRole.WindowText, QtG.QColor(colour[0], colour[1], colour[2]))
     self.setPalette(pal)
     return
 
@@ -82,18 +82,14 @@ class ClickableImage(QImage):
     def mousePressEvent(self, event):
         self.clicked.emit()
 
-# def GreenScreenImage(file):
-#     im = PIL.Image.open(file)
-#     pixelMap = im.load()
+def GreenScreenPixmap(file):
+    img1 = PIL.Image.open(file)
+    pixels1 = img1.load()
+    for i in range(img1.size[0]): # for every pixel:
+        for j in range(img1.size[1]):
+            if pixels1[i,j] == (0, 255, 0, 255): # if full green
+                pixels1[i,j] = (0, 0, 0, 0)      # make transparent
     
-#     img = PIL.Image.new( im.mode, im.size)
-#     pixelsNew = img.load()
-#     for i in range(img.size[0]):
-#         for j in range(img.size[1]):
-#             if pixelMap[i,j] == (0, 255, 0, 255):
-#                 pixelMap[i,j] = (0,0,0,0) # transparent
-#             else:
-#                 pixelsNew[i,j] = pixelMap[i,j]
-    
-    
-#     return img
+    img2 = ImageQt(img1).copy()
+    pixmap = QtG.QPixmap.fromImage(img2)
+    return pixmap
