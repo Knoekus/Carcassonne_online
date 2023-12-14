@@ -1,7 +1,7 @@
 if __name__ == '__main__': # direct test call
-    import PyQt5.QtGui     as QtG
-    import PyQt5.QtWidgets as QtW
-    import PyQt5.QtCore    as QtC
+    import PyQt6.QtGui     as QtG
+    import PyQt6.QtWidgets as QtW
+    import PyQt6.QtCore    as QtC
     
     import firebase_admin
     from firebase_admin import credentials, db
@@ -9,8 +9,9 @@ if __name__ == '__main__': # direct test call
     import sys
     if r"..\..\files_lib" not in sys.path:
         sys.path.append(r"..\..\files_lib")
-    import PyQt5_Extra     as QtE
+    import PyQt6_Extra     as QtE
     import prop_s
+    import numpy as np
     
     if r"..\Dialogs" not in sys.path:
         sys.path.append(r"..\..\Dialogs")
@@ -30,7 +31,8 @@ else: # call from lobby
     import PyQt5_Extra     as QtE
     from firebase_admin import db
 
-    import prop_s    
+    import prop_s
+    import numpy as np
     import sys
     if r"..\Dialogs" not in sys.path:
         sys.path.append(r"..\Dialogs")
@@ -65,9 +67,10 @@ class GameScreen(QtW.QWidget):
         self.mainLayout.addLayout(self._Game_right_column(),                 4, 2, 1, 1)
     
     def _Game_title(self):
-        title = QtW.QLabel("Carcassonne Online")
-        title.setFont(QtG.QFont(prop_s.font,prop_s.font_sizes[5+self.font_size], QtG.QFont.Bold))
-        title.setAlignment(QtC.Qt.AlignCenter)
+        title = QtW.QLabel("Carcassonne Online", alignment=QtC.Qt.AlignmentFlag.AlignCenter)
+        font = QtG.QFont(prop_s.font, prop_s.font_sizes[5+self.font_size])
+        font.setBold(True)
+        title.setFont(font)
         return title
 
     def _Game_players(self):
@@ -81,12 +84,13 @@ class GameScreen(QtW.QWidget):
         
         self.players = QtW.QGridLayout()
         for idx, player in enumerate(player_list):
-            name   = QtW.QLabel(f'{player}')
-            name.setFont(QtG.QFont(prop_s.font,prop_s.font_sizes[1+self.font_size], QtG.QFont.Bold))
-            name.setAlignment(QtC.Qt.AlignCenter)
-            points = QtW.QLabel('0')
-            points.setFont(QtG.QFont(prop_s.font,prop_s.font_sizes[1+self.font_size]))
-            points.setAlignment(QtC.Qt.AlignCenter)
+            name = QtW.QLabel(f'{player}', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
+            font = QtG.QFont(prop_s.font, prop_s.font_sizes[1+self.lobby.font_size])
+            font.setBold(True)
+            name.setFont(font)
+            
+            points = QtW.QLabel('0', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
+            points.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[1+self.font_size]))
             
             self.players.addWidget(name,   1, idx)
             self.players.addWidget(points, 2, idx)
@@ -96,14 +100,6 @@ class GameScreen(QtW.QWidget):
         #     players.addWidget(QtW.QLabel(), 1, padding)
             
         return self.players
-    
-    def _Game_inventory(self):
-        # Label
-        inventory_label = QtW.QLabel('Inventory')
-        inventory_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size], QtG.QFont.Bold))
-        
-        self.inventory = QtW.QGridLayout()
-        self.inventory.addWidget(inventory_label, 0, 0)
         
     def _Game_left_column(self):
         # New tile
@@ -114,9 +110,8 @@ class GameScreen(QtW.QWidget):
             self.new_tile = QtE.QImage(r'.\Images\tile_logo.png', tile_size, tile_size)
         
         # Tiles left
-        self.tiles_left = QtW.QLabel('0 tiles left.')
+        self.tiles_left = QtW.QLabel('0 tiles left.', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
         self.tiles_left.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.lobby.font_size]))
-        self.tiles_left.setAlignment(QtC.Qt.AlignCenter)
         
         # Inventory
         self._Game_inventory()
@@ -137,7 +132,34 @@ class GameScreen(QtW.QWidget):
         self.leftColumn.addWidget(self.button_end_turn)
         
         return self.leftColumn
+    
+    def _Game_inventory(self):
+        self.inventory = QtW.QGridLayout()
         
+        # Label
+        inventory_label = QtW.QLabel('Inventory', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
+        font = QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size])
+        font.setBold(True)
+        inventory_label.setFont(font)
+        
+        self.inventory.addWidget(inventory_label, 0, 0, 1, 4)
+        
+        #===== Initial inventory =====#
+        def _Meeple_standard():
+            tile_size = 50
+            if __name__ == '__main__': # independent call
+                file = r'..\Images\Meeples\Blue\SF.png'
+            else: # call from lobby
+                file = r'.\Images\Meeples\Blue\SF.png'
+            pixmap = QtE.GreenScreenPixmap(file)
+            meeple = QtE.QImage(pixmap, tile_size, tile_size)
+            return meeple
+        
+        self.meeples_standard = dict()
+        for idx in range(7): # start with 7 standard meeples
+            self.meeples_standard[idx] = _Meeple_standard()
+            self.inventory.addWidget(self.meeples_standard[idx], np.floor((idx)/4).astype(int)+1, idx%4, 1, 1)
+    
     def _Game_right_column(self):
         # Board
         self.board = QtW.QScrollArea()
@@ -206,4 +228,4 @@ if __name__ == '__main__':
     game_screen.showMaximized()
     game_screen.activateWindow()
     game_screen.raise_() # raise to top
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
