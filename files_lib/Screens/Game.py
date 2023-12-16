@@ -92,6 +92,9 @@ class GameScreen(QtW.QWidget):
         self.Tiles = Tiles(self)
         numbers = [8, 9, 4, 1, 3, 3, 3, 4, 5, 4, 2, 1, 2, 3, 2, 3, 2, 3, 2, 3, 1, 1, 2, 1]
         self.Tiles.Add_tiles(1, numbers)
+        
+        # Materials
+        self.materials = ['grass', 'road', 'city', 'monastery']
     
     def _Game_layout(self):
         # Title

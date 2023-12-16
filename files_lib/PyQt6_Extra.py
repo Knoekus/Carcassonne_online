@@ -3,6 +3,7 @@
 import PyQt6.QtGui as QtG
 import PyQt6.QtWidgets as QtW
 import PyQt6.QtCore as QtC
+import tile_data
 
 import PIL
 from PIL.ImageQt import ImageQt
@@ -82,21 +83,38 @@ class QImage(QtW.QLabel):
   
 class ClickableImage(QImage):
     clicked = QtC.pyqtSignal()
-    enabled = None
-    def __init__(self, file, width=None, height=None, parent=None):
+    def __init__(self, file, width=None, height=None):
         super().__init__(file, width, height)
-        self.enable()
+        self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
+    
+    def mousePressEvent(self, event):
+        self.clicked.emit()
+
+class Tile(ClickableImage):
+    def __init__(self, file, size):
+        super().__init__(file, size, size)
+        self.clickable = False
+        self.disable()
+    
+    def set_tile(self, file, tile_idx, tile_letter, game):
+        self.draw_image(file)
+        
+        self.material_data = dict()
+        for material in game.materials:
+            try:
+                self.material_data[material] = tile_data.tiles[tile_idx, tile_letter][material]
+            except: None
     
     def disable(self):
         self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.ArrowCursor))
-        self.enabled = False
+        self.clickable = False
     
     def enable(self):
         self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
-        self.enabled = True
+        self.clickable = True
     
     def mousePressEvent(self, event):
-        if self.enabled == True:
+        if self.clickable == True:
             self.clicked.emit()
 
 def GreenScreenPixmap(file):
