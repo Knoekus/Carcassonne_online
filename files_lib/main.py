@@ -6,15 +6,15 @@ import time
 import firebase_admin
 from firebase_admin import credentials, db
 
-import PyQt5.QtGui as QtG
+import PyQt5.QtGui     as QtG
 import PyQt5.QtWidgets as QtW
-import PyQt5.QtCore as QtC
-import PyQt5_Extra as QtE
+import PyQt5.QtCore    as QtC
+import PyQt5_Extra     as QtE
 
 import prop_s
-from Screens.Lobby import LobbyScreen
+from Screens.Lobby    import LobbyScreen
 from Dialogs.Username import UsernameDialog
-from Dialogs.YesNo import YesNoDialog
+from Dialogs.YesNo    import YesNoDialog
 
 #%% Scaling
 if hasattr(QtC.Qt, 'AA_EnableHighDpiScaling'):
@@ -89,7 +89,9 @@ class MenuScreen(QtW.QMainWindow):
         
         self.mainWidget = QtW.QWidget()
         self.mainWidget.setLayout(layout)
-        self.setCentralWidget(self.mainWidget)
+        self.stacked = QtW.QStackedWidget()
+        self.stacked.addWidget(self.mainWidget)
+        self.setCentralWidget(self.stacked)
     
     def closeEvent(self, event):
         if self.test != 1:
@@ -240,8 +242,12 @@ class MenuScreen(QtW.QMainWindow):
 
     def open_lobby_screen(self):
         lobby_screen = LobbyScreen(self)
-        self.hide()
-        lobby_screen.show()
+        # # self.hide()
+        # lobby_screen.show()
+        
+        self.stacked.addWidget(lobby_screen)
+        self.stacked.setCurrentWidget(lobby_screen)
+        self.setWindowTitle(f'Lobby - {self.lobby_key}')
 
 #%% Firebase initialization
 def FirebaseInit():
@@ -258,7 +264,7 @@ if __name__ == '__main__':
     
     app = QtW.QApplication(sys.argv)
     app.setStyle('Breeze') # ['Breeze', 'Oxygen', 'QtCurve', 'Windows', 'Fusion']
-    app.setWindowIcon(QtG.QIcon(r'..\files_lib\Images\Coin_icon.png'))
+    app.setWindowIcon(QtG.QIcon(r'.\Images\Coin_icon.png'))
     
     menu_screen = MenuScreen(test=1)
     menu_screen.show()

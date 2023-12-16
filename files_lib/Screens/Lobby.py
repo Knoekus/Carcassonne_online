@@ -1,16 +1,20 @@
-import PyQt5.QtGui as QtG
+import PyQt5.QtGui     as QtG
 import PyQt5.QtWidgets as QtW
-import PyQt5.QtCore as QtC
-import PyQt5_Extra as QtE
+import PyQt5.QtCore    as QtC
+import PyQt5_Extra     as QtE
 from firebase_admin import db
 
 import time
 import sys
+import prop_s
+
 if r"..\Dialogs" not in sys.path:
     sys.path.append(r"..\Dialogs")
-
-import prop_s
 from Dialogs.YesNo import YesNoDialog
+
+if r"Screens" not in sys.path:
+    sys.path.append(r"..\Screens")
+from Screens.Game import GameScreen
 
 #%% Colour picker
 class ColourPicker(QtW.QWidget):
@@ -486,19 +490,20 @@ class ExpansionsUpdater(QtC.QThread):
         self.run()
 
 #%% Lobby screen
-class LobbyScreen(QtW.QMainWindow):
+# class LobbyScreen(QtW.QMainWindow):
+class LobbyScreen(QtW.QWidget):
     #%% Visuals
     def _Lobby_init(self):
-        # Window settings
-        self.setWindowTitle('Lobby')
-        self.setGeometry(100, 100, 400, 400)
-        
         # References from menu screen
         self.lobby_key = self.menu_screen.lobby_key
         self.username = self.menu_screen.username
         self.Refs = self.menu_screen.Refs
         self.test = self.menu_screen.test
         self.font_size = self.menu_screen.font_size
+        self.stacked = self.menu_screen.stacked
+        
+        # Functions
+        self.remove_connection = self.menu_screen.remove_connection
     
     def _Lobby_title(self):
         self.title_label = QtW.QLabel(f'Lobby: {self.lobby_key}')
@@ -525,6 +530,12 @@ class LobbyScreen(QtW.QMainWindow):
         # equal size for all columns
         for idx in range(5):
             self.continue_layout.setColumnStretch(idx, 1)
+        
+        # Updater threads
+        self.start_game_updater = StartGameUpdater(self.Refs)
+        self.start_game_updater.updateSignal.connect(self.start_game)
+        self.start_game_updater.listen_for_updates()
+        self.start_game_updater.start()
     
     def _Lobby_chat(self):
         if self.test == 1:
@@ -546,6 +557,7 @@ class LobbyScreen(QtW.QMainWindow):
             self.input_layout.addWidget(self.send_button)
         
     def __init__(self, menu_screen):
+        # super().__init__(menu_screen)
         super().__init__()
         self.menu_screen = menu_screen
         
@@ -579,16 +591,15 @@ class LobbyScreen(QtW.QMainWindow):
         self.main_layout.setRowStretch(0, 1)
         self.main_layout.setRowStretch(100, 1)
         
-        self.mainWidget = QtW.QWidget()
-        self.mainWidget.setLayout(self.main_layout)
-        self.setCentralWidget(self.mainWidget)
-        self.showMaximized()
+        # self.mainWidget = QtW.QWidget()
+        self.setLayout(self.main_layout)
         
-        # Updater threads
-        self.start_game_updater = StartGameUpdater(self.Refs)
-        self.start_game_updater.updateSignal.connect(self.start_game)
-        self.start_game_updater.listen_for_updates()
-        self.start_game_updater.start()
+        # self.stacked = QtW.QStackedWidget()
+        # self.stacked = self.menu_screen.stacked
+        # self.stacked.addWidget(self)
+        
+        # self.setCentralWidget(self.stacked)
+        # self.showMaximized()
         
         if self.test == 1:
             self.Refs('chat').listen(self.update_chat_display)
@@ -626,16 +637,12 @@ class LobbyScreen(QtW.QMainWindow):
             self.Refs('open').set(False)
     
     def start_game(self):
-        if self.test == 1:
-            self.chat_display.append(f'--> {self.username}: Start game whoooooooooooooo!!!!')
-            time.sleep(1)
-        self.close()
-        QtW.qApp.quit()
-        
-        #=== Now do something like this :) ===#
-        # game_screen = GameScreen(self)
-        # self.hide()
-        # game_screen.show()
+        self.start_game_updater.disconnect() # don't listen to updates anymore
+        game_screen = GameScreen(self)
+
+        self.stacked.addWidget(game_screen)
+        self.stacked.setCurrentWidget(game_screen)
+        self.menu_screen.setWindowTitle(f'Carcassonne Online - {self.username}')
 
     # @QtC.pyqtSlot(dict)
     def update_chat_display(self, event):
