@@ -1,3 +1,4 @@
+#%% Imports
 if __name__ == '__main__': # direct test call
     import PyQt6.QtGui     as QtG
     import PyQt6.QtWidgets as QtW
@@ -7,6 +8,8 @@ if __name__ == '__main__': # direct test call
     from firebase_admin import credentials, db
     
     import numpy as np
+    import string
+    
     import sys
     if r"..\..\files_lib" not in sys.path:
         sys.path.append(r"..\..\files_lib")
@@ -16,6 +19,7 @@ if __name__ == '__main__': # direct test call
     if r"..\Screens" not in sys.path:
         sys.path.append(r"..\..\Screens")
     from Screens.Expansions import Expansions
+    from Screens.Tiles import Tiles
     
     if r"..\Dialogs" not in sys.path:
         sys.path.append(r"..\..\Dialogs")
@@ -37,10 +41,14 @@ else: # call from lobby
 
     import prop_s
     import numpy as np
+    import string
+    
     import sys
     if r"..\Screens" not in sys.path:
         sys.path.append(r"..\Screens")
     from Screens.Expansions import Expansions
+    from Screens.Tiles import Tiles
+    
     if r"..\Dialogs" not in sys.path:
         sys.path.append(r"..\Dialogs")
     from Dialogs.YesNo import YesNoDialog
@@ -59,14 +67,31 @@ class GameScreen(QtW.QWidget):
         self.setLayout(self.mainLayout)
         
         # Expansions
-        Expansions(self)
-        # self.meeples_standard[0].setParent(None) # hide image from inventory
+        self.Expansions = Expansions(self)
+        
+        # Game phase 1
+        self.Tiles.Board_init()
+        if self.Expansions.expansions[r'The River'] == 0:
+            # Default start with tile H
+            self.Tiles.Place_tile((1, 'H'), 0, 0)
+        else:
+            # Start with a spring
+            self.Tiles.Place_tile((2, 'D'), 0, 0)
+            for i in range(1,6):
+                self.Tiles.Place_tile((2, 'A'), 0, i)
+            for i in [-1, 1, 2, -2]:
+                self.Tiles.Place_tile((2, 'B'), i, 4)
     
     def _Game_init(self):
         # References from lobby
         self.username = self.lobby.username
         self.Refs = self.lobby.Refs
         self.font_size = self.lobby.font_size
+        
+        # Tiles
+        self.Tiles = Tiles(self)
+        numbers = [8, 9, 4, 1, 3, 3, 3, 4, 5, 4, 2, 1, 2, 3, 2, 3, 2, 3, 2, 3, 1, 1, 2, 1]
+        self.Tiles.Add_tiles(1, numbers)
     
     def _Game_layout(self):
         # Title
@@ -123,8 +148,9 @@ class GameScreen(QtW.QWidget):
             self.new_tile = QtE.QImage(r'.\Images\tile_logo.png', new_tile_size, new_tile_size)
         
         # Tiles left
-        self.tiles_left = QtW.QLabel('0 tiles left.', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
-        self.tiles_left.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.lobby.font_size]))
+        self.tiles_left = sum(self.tiles.values())
+        self.tiles_left_label = QtW.QLabel(f'{self.tiles_left} tiles left.', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
+        self.tiles_left_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.lobby.font_size]))
         
         # Inventory
         self.inventory_label = QtW.QLabel('Inventory', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
@@ -140,7 +166,7 @@ class GameScreen(QtW.QWidget):
         # Left column
         self.leftColumn = QtW.QVBoxLayout()
         self.leftColumn.addWidget(self.new_tile)
-        self.leftColumn.addWidget(self.tiles_left)
+        self.leftColumn.addWidget(self.tiles_left_label)
         self.leftColumn.addWidget(QtE.QHSeparationLine(colour=(80,80,80), height=1))
         self.leftColumn.addWidget(self.inventory_label)
         self.leftColumn.addLayout(self.inventory)
@@ -176,12 +202,17 @@ class GameScreen(QtW.QWidget):
         
     def _Game_right_column(self):
         # Board
-        self.board = QtW.QScrollArea()
-        '''The board will consist of rows of QHBoxLayouts, where we can insert widgets at index i.'''
+        self.board_widget = QtW.QWidget()
+        self.board_base = QtW.QVBoxLayout()
+        self.board_base.setSpacing(prop_s.tile_spacing)
+        
+        self.board_scroll_area = QtW.QScrollArea()
+        self.board_scroll_area.setWidget(self.board_widget)
+        self.board_scroll_area.setWidgetResizable(True)
         
         # Right column
         self.rightColumn = QtW.QVBoxLayout()
-        self.rightColumn.addWidget(self.board)
+        self.rightColumn.addWidget(self.board_scroll_area)
         return self.rightColumn
     
     #%% Functionality
