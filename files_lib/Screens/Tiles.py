@@ -49,12 +49,11 @@ class Tiles():
         number = rnd.choice(range(number_of_pngs))
         
         # Place tile
-        self.game.board_tiles[row][col].draw_image(path+f'\\{number}.png')
+        self.game.board_tiles[row][col].set_tile(path+f'\\{number}.png', tile_idx, tile_letter, self.game)
         self.game.board_widget.setLayout(self.game.board_base)
     
     def _New_tile(self, row, col):
-        empty_tile = QtE.ClickableImage(None, prop_s.tile_size, prop_s.tile_size)
-        empty_tile.disable()
+        empty_tile = QtE.Tile(None, prop_s.tile_size)
         self.game.board_tiles[row][col] = empty_tile
         return empty_tile
     
