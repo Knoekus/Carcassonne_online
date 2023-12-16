@@ -60,30 +60,44 @@ class QImage(QtW.QLabel):
     '''
     def __init__(self, file, width=None, height=None):
         super().__init__()
-        if type(file) == str:
-            self.pixmap = QtG.QPixmap(file)
-            self.setPixmap(self.pixmap)
-        elif type(file) == type(QtG.QPixmap()):
-            self.setPixmap(file)
-            
         self.setScaledContents(True)
         if width is not None:
             self.setFixedWidth(width)
         if height is not None:
             self.setFixedHeight(height)
-      
+        
+        if file != None:
+            self.draw_image(file)
+        
         #===== Uncomment for help during development =====#
         # self.setStyleSheet("background-color:rgba(255,0,0,100)")
         return
+    
+    def draw_image(self, file):
+        if type(file) == str:
+            self.pixmap = QtG.QPixmap(file)
+            self.setPixmap(self.pixmap)
+        elif type(file) == type(QtG.QPixmap()):
+            self.setPixmap(file)
   
 class ClickableImage(QImage):
     clicked = QtC.pyqtSignal()
+    enabled = None
     def __init__(self, file, width=None, height=None, parent=None):
         super().__init__(file, width, height)
+        self.enable()
+    
+    def disable(self):
+        self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.ArrowCursor))
+        self.enabled = False
+    
+    def enable(self):
         self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
+        self.enabled = True
     
     def mousePressEvent(self, event):
-        self.clicked.emit()
+        if self.enabled == True:
+            self.clicked.emit()
 
 def GreenScreenPixmap(file):
     img1 = PIL.Image.open(file)
