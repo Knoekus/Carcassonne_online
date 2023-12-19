@@ -6,13 +6,14 @@ import time
 import firebase_admin
 from firebase_admin import credentials, db
 
-import PyQt5.QtGui     as QtG
-import PyQt5.QtWidgets as QtW
-import PyQt5.QtCore    as QtC
-import PyQt5_Extra     as QtE
+import PyQt6.QtGui     as QtG
+import PyQt6.QtWidgets as QtW
+import PyQt6.QtCore    as QtC
+import PyQt6_Extra     as QtE
 
 import prop_s
 from Screens.Lobby    import LobbyScreen
+from Screens.Game     import GameScreen
 from Dialogs.Username import UsernameDialog
 from Dialogs.YesNo    import YesNoDialog
 
@@ -39,10 +40,13 @@ class MenuScreen(QtW.QMainWindow):
             }
         
     def _Menu_title(self):
-        self.title_label = QtW.QLabel('Menu')
+        self.title_label = QtW.QLabel('Menu', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
         self.title_label.setStyleSheet("padding:10") 
-        self.title_label.setAlignment(QtC.Qt.AlignCenter)
-        self.title_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[6+self.font_size], QtG.QFont.Bold)) # size 20
+        # self.title_label.setAlignment(QtC.Qt.AlignCenter)
+        # self.title_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[6+self.font_size], QtG.QFont.Bold)) # size 20
+        font = QtG.QFont(prop_s.font, prop_s.font_sizes[6+self.font_size])
+        font.setBold(True)
+        self.title_label.setFont(font)
     
     def _Menu_lobby(self):
         self.create_lobby_button = QtW.QPushButton('Create lobby')
@@ -53,9 +57,9 @@ class MenuScreen(QtW.QMainWindow):
         self.join_lobby_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.font_size]))
         self.join_lobby_button.clicked.connect(self.join_lobby)
 
-        self.lobby_key_input = QtW.QLineEdit()
+        self.lobby_key_input = QtW.QLineEdit(alignment=QtC.Qt.AlignmentFlag.AlignCenter)
         self.lobby_key_input.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.font_size]))
-        self.lobby_key_input.setAlignment(QtC.Qt.AlignCenter)
+        # self.lobby_key_input.setAlignment(QtC.Qt.AlignCenter)
         self.lobby_key_input.setPlaceholderText('Enter lobby key...')
         self.lobby_key_input.returnPressed.connect(self.join_lobby_button.click)
     
@@ -98,7 +102,7 @@ class MenuScreen(QtW.QMainWindow):
             title = 'Close program?'
             text = 'Are you sure you want to close the program?'
             yesNoDialog = YesNoDialog(self, title, text)
-            result = yesNoDialog.exec_()
+            result = yesNoDialog.exec()
             
             # Ignore if not accepted, else continue (close)
             if result != QtW.QDialog.Accepted:
@@ -112,6 +116,11 @@ class MenuScreen(QtW.QMainWindow):
             
             self.save_lobby_to_database()
             self.open_lobby_screen()
+            
+            # Add player 2
+            self.Refs('connections/fake_user').set(0)
+            self.Refs('players/fake_user/colour').set(prop_s.colours[1]) # give colour
+            self.Refs(f'colours/{prop_s.colours[1]}').set(1)
         else:
             # Open the username dialog
             username_dialog = UsernameDialog(self)
@@ -120,7 +129,7 @@ class MenuScreen(QtW.QMainWindow):
             self.lobby_key = self.generate_lobby_key()
             
             # Retrieve username info
-            result = username_dialog.exec_()
+            result = username_dialog.exec()
             if result == QtW.QDialog.Accepted:
                 self.username = username_dialog.get_username()
                 self.save_lobby_to_database()
@@ -143,7 +152,7 @@ class MenuScreen(QtW.QMainWindow):
                 self.lobby_key = lobby_key
                 if self.Refs('open').get() == True:
                     username_dialog = UsernameDialog(self)
-                    result = username_dialog.exec_()
+                    result = username_dialog.exec()
                     if result == QtW.QDialog.Accepted:
                         self.username = username_dialog.get_username()
                         if not self.is_username_taken():
@@ -242,10 +251,8 @@ class MenuScreen(QtW.QMainWindow):
 
     def open_lobby_screen(self):
         lobby_screen = LobbyScreen(self)
-        # # self.hide()
-        # lobby_screen.show()
-        
         self.stacked.addWidget(lobby_screen)
+        
         self.stacked.setCurrentWidget(lobby_screen)
         self.setWindowTitle(f'Lobby - {self.lobby_key}')
 
@@ -270,4 +277,4 @@ if __name__ == '__main__':
     menu_screen.show()
     menu_screen.activateWindow()
     menu_screen.raise_() # raise to top
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

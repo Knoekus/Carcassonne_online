@@ -1,12 +1,13 @@
 import prop_s
 
-import PyQt5.QtGui as QtG
-import PyQt5.QtWidgets as QtW
+import PyQt6.QtGui as QtG
+import PyQt6.QtWidgets as QtW
 # import PyQt5.QtCore as QtC
 
 class YesNoDialog(QtW.QDialog):
     def __init__(self, parent=None, title=None, text=None):
         super().__init__(parent)
+        # super().__init__()
     
         self.setWindowTitle(title)
         # self.setFixedSize(300, 100)

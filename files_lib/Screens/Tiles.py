@@ -39,7 +39,7 @@ class Tiles():
         # Get tile folder
         tile_idx, tile_letter = tile
         tile_title  = prop_s.tile_titles[tile_idx-1]
-        if self.lobby_key == 'test':
+        if self.lobby_key == 'test2':
             path = f'..\\Images\\{tile_title}\\{tile_idx}{tile_letter}'
         else: # call from lobby
             path = f'.\\Images\\{tile_title}\\{tile_idx}{tile_letter}'
@@ -51,6 +51,13 @@ class Tiles():
         # Place tile
         self.game.board_tiles[row][col].set_tile(path+f'\\{number}.png', tile_idx, tile_letter, self.game)
         self.game.board_widget.setLayout(self.game.board_base)
+        
+        # Update tiles left
+        self.game.tiles[f'{tile_idx}{tile_letter}'] -= 1
+        self.game.lobby.send_feed_message(event          = 'placed_tile',
+                                          tile_idx       = tile_idx,
+                                          tile_letter    = tile_letter,
+                                          row = row, col = col)
     
     def _New_tile(self, row, col):
         empty_tile = QtE.Tile(None, prop_s.tile_size)

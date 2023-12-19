@@ -33,10 +33,10 @@ if __name__ == '__main__': # direct test call
                 'databaseURL': 'https://clientserver1-default-rtdb.europe-west1.firebasedatabase.app/'
             })
 else: # call from lobby
-    import PyQt5.QtGui     as QtG
-    import PyQt5.QtWidgets as QtW
-    import PyQt5.QtCore    as QtC
-    import PyQt5_Extra     as QtE
+    import PyQt6.QtGui     as QtG
+    import PyQt6.QtWidgets as QtW
+    import PyQt6.QtCore    as QtC
+    import PyQt6_Extra     as QtE
     from firebase_admin import db
 
     import prop_s
@@ -44,14 +44,14 @@ else: # call from lobby
     import string
     
     import sys
-    if r"..\Screens" not in sys.path:
-        sys.path.append(r"..\Screens")
+    # if r"Screens" not in sys.path:
+    #     sys.path.append(r"..\Screens")
     from Screens.Expansions import Expansions
     from Screens.Tiles import Tiles
     
-    if r"..\Dialogs" not in sys.path:
-        sys.path.append(r"..\Dialogs")
-    from Dialogs.YesNo import YesNoDialog
+    # if r"..\Dialogs" not in sys.path:
+    #     sys.path.append(r"..\Dialogs")
+    # from Dialogs.YesNo import YesNoDialog
 
 #%% Game screen
 class GameScreen(QtW.QWidget):
@@ -245,16 +245,16 @@ if __name__ == '__main__':
             self.username = 'Knoekus'
             self.font_size = 5
             self.menu_screen = None
-            self.lobby_key = 'test'
-            self._Create_test_lobby()
-        
-        def _Create_test_lobby(self):
+            self.lobby_key = 'test2'
+
+            # References
             self.Refs('admin').set('user1')
             for exp in prop_s.expansions:
                 self.Refs(f'expansions/{exp}').set(1) # add all expansions
             self.Refs('open').set(False)
             self.Refs('connections').set({'user1':0, 'user2':0})
             self.Refs('players').set({'user1':{'colour':"ffffff00"}, 'user2':{'colour':"ffff00ff"}})
+            self.Refs('feed').set([])
         
         def Refs(self, key, item=None, load='get_set', prefix='lobby'):
             '''load : reference type
@@ -281,8 +281,31 @@ if __name__ == '__main__':
                 else: # item should be added
                     entries.append(item)
                 db.reference(f'{prefix}/{key}').set(entries)
+        
+        def send_feed_message(self, **kwargs):
+            print('\n', kwargs)
+            if len(kwargs.keys()) > 0: # call from internal game
+                chat_message = {'username': self.username}
+                for arg in kwargs.keys():
+                    chat_message[arg] = kwargs[arg]
+                    
+                if self.Refs('feed').push(chat_message):
+                    print('sent')
+                
+            else: # call from the chat input box
+                message = self.chat_input.text().strip()
     
-    game_screen = GameScreen(LobbyTest())
+                if len(message)>0:
+                    chat_message = {
+                        'username': self.username,
+                        'message': message
+                    }
+                    if self.Refs('feed').push(chat_message):
+                        print('sent')
+    
+    game_screen = GameScreen()
+    game_screen.init_call(LobbyTest())
+    
     game_screen.showMaximized()
     game_screen.activateWindow()
     game_screen.raise_() # raise to top

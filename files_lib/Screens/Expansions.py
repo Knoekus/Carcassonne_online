@@ -1,7 +1,6 @@
 import PyQt6.QtGui     as QtG
 import PyQt6.QtWidgets as QtW
 import PyQt6.QtCore    as QtC
-import firebase_admin
 
 import string
 import sys
@@ -18,7 +17,7 @@ class Expansions():
         if self.expansions[r'The Abbot'] == 1:
             self._Exp_The_Abbot()
         if self.expansions[r'The River'] == 1:
-            self._Exp_The_River
+            self._Exp_The_River()
         if self.expansions[r'Inns && Cathedrals'] == 1:
             self._Exp_Inns_Cathedrals()
         
@@ -27,7 +26,7 @@ class Expansions():
     def _Exp_The_Abbot(self):
         #%% Add abbot meeple to inventory
         tile_size = 50
-        if self.lobby_key == 'test':
+        if self.lobby_key == 'test2':
             file = r'..\Images\Meeples\Blue\AB.png'
         else: # call from lobby
             file = r'.\Images\Meeples\Blue\AB.png'
@@ -57,7 +56,7 @@ class Expansions():
     def _Exp_Inns_Cathedrals(self):
         #%% Add big meeple to inventory
         tile_size = 50
-        if self.lobby_key == 'test':
+        if self.lobby_key == 'test2':
             file = r'..\Images\Meeples\Blue\BF.png'
         else: # call from lobby
             file = r'.\Images\Meeples\Blue\BF.png'
