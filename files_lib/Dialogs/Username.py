@@ -1,8 +1,8 @@
 import prop_s
 
-import PyQt5.QtGui as QtG
-import PyQt5.QtWidgets as QtW
-import PyQt5.QtCore as QtC
+import PyQt6.QtGui as QtG
+import PyQt6.QtWidgets as QtW
+import PyQt6.QtCore as QtC
 
 class UsernameDialog(QtW.QDialog):
     def __init__(self, parent=None):
@@ -15,9 +15,8 @@ class UsernameDialog(QtW.QDialog):
         label = QtW.QLabel('Your username should have 2-20 characters.')
         label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+parent.font_size]))
         
-        self.username_input = QtW.QLineEdit()
+        self.username_input = QtW.QLineEdit(alignment=QtC.Qt.AlignmentFlag.AlignCenter)
         self.username_input.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+parent.font_size]))
-        self.username_input.setAlignment(QtC.Qt.AlignCenter)
         self.username_input.setPlaceholderText('Enter username...')
         
         self.ok_button = QtW.QPushButton('OK')

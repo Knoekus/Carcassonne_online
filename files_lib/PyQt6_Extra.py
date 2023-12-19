@@ -12,7 +12,7 @@ class ClickableLabel(QtW.QLabel):
     clicked = QtC.pyqtSignal()
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setCursor(QtG.QCursor(QtC.Qt.PointingHandCursor))
+        self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
     
     def mousePressEvent(self, event):
         self.new_admin = self.text()
