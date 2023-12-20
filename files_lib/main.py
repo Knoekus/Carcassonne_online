@@ -12,8 +12,8 @@ import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
 import prop_s
-from Screens.Lobby    import LobbyScreen
-from Screens.Game     import GameScreen
+from Classes.Lobby    import LobbyScreen
+from Classes.Game     import GameScreen
 from Dialogs.Username import UsernameDialog
 from Dialogs.YesNo    import YesNoDialog
 

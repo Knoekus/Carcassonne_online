@@ -1,12 +1,10 @@
 import PyQt6.QtGui     as QtG
 import PyQt6.QtWidgets as QtW
 import PyQt6.QtCore    as QtC
+import PyQt6_Extra     as QtE
 
 import string
 import sys
-if r"..\..\files_lib" not in sys.path:
-    sys.path.append(r"..\..\files_lib")
-import PyQt6_Extra     as QtE
 
 class Expansions():
     def __init__(self, game):
