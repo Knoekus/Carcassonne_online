@@ -12,9 +12,9 @@ if r"..\Dialogs" not in sys.path:
     sys.path.append(r"..\Dialogs")
 from Dialogs.YesNo import YesNoDialog
 
-if r"..\Screens" not in sys.path:
-    sys.path.append(r"..\Screens")
-from Screens.Game import GameScreen
+if r"..\Classes" not in sys.path:
+    sys.path.append(r"..\Classes")
+from Classes.Game import GameScreen
 
 #%% Colour picker
 class ColourPicker(QtW.QWidget):
