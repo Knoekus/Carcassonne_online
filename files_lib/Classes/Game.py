@@ -82,14 +82,17 @@ class GameScreen(QtW.QWidget):
         self.Tiles.Board_init()
         if self.Expansions.expansions[r'The River'] == 0:
             # Default start with tile H
-            self.Tiles.Place_tile((1, 'H'), 0, 0)
+            file = self.Tiles.New_tile(1, 'H')[2]
+            self.Tiles.Place_tile(file, 1, 'H', 0, 0)
         else:
             # Start with a spring
-            self.Tiles.Place_tile((2, 'D'), 0, 0)
+            file = self.Tiles.New_tile(2, 'D')[2]
+            self.Tiles.Place_tile(file, 2, 'D', 0, 0)
         
         # Game phase 2
         # Make next tile available
-        # ...
+        file = self.Tiles.New_tile()[2]
+        self.new_tile_anim.swap_image(file, 1000)
     
     def _Game_init(self):
         # References from lobby
@@ -136,7 +139,7 @@ class GameScreen(QtW.QWidget):
                 
                 # Blinking animation
                 animation = Animation(name)
-                animation.add_blinking(1, 0.1, 4500, 200)
+                animation.add_blinking(1, 0.1, 2500, 200)
                 
                 self.players_name_anims[player] = animation
             
@@ -163,10 +166,11 @@ class GameScreen(QtW.QWidget):
             self.new_tile = QtE.QImage(r'..\Images\tile_logo.png', new_tile_size, new_tile_size)
         else: # call from lobby
             self.new_tile = QtE.QImage(r'.\Images\tile_logo.png', new_tile_size, new_tile_size)
+        self.new_tile_anim = Animation(self.new_tile)
         
         # Tiles left
-        self.tiles_left = sum(self.tiles.values())
-        self.tiles_left_label = QtW.QLabel(f'{self.tiles_left} tiles left.', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
+        self.tiles_left = 0
+        self.tiles_left_label = QtW.QLabel('... tiles left.', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
         self.tiles_left_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.lobby.font_size]))
         
         # Inventory
