@@ -8,6 +8,7 @@ import prop_s
 import os
 import random as rnd
 
+
 class Tiles():
     def __init__(self, game):
         self.game = game
@@ -15,15 +16,46 @@ class Tiles():
         self.game.tiles = dict()
     
     def Add_tiles(self, prefix, numbers):
+        self.game.tiles[prefix] = dict()
         for idx, number in enumerate(numbers):
             letter = string.ascii_uppercase[idx]
-            self.game.tiles[str(prefix)+letter] = number
+            self.game.tiles[prefix][letter] = number
     
     def Update_tiles_left_label(self):
-        self.game.tiles_left = sum(self.game.tiles.values())
+        self.game.tiles_left = sum([sum(expansion.values()) for expansion in self.game.tiles.values()])
         self.game.tiles_left_label.setText(f'{self.game.tiles_left} tiles left.')
     
-    def Place_tile(self, tile, row, col):
+    def New_tile(self, tile_idx=None, tile_letter=None):
+        # Choose new tile
+        if tile_idx == None and tile_letter == None:
+            # New idx and letter
+            tile_idx    = rnd.choice(list(self.game.tiles.keys()))
+            tile_letter = rnd.choice(list(self.game.tiles[tile_idx].keys()))
+        elif tile_idx != None and tile_letter == None: # if only expansion is given (e.g. for river building)
+            # Only new letter
+            tile_letter = rnd.choice(list(self.game.tiles[tile_idx].keys()))
+        # Get expansion title
+        tile_title  = prop_s.tile_titles[tile_idx-1]
+        
+        # Get tile folder
+        if self.lobby_key == 'test2':
+            path = f'..\\Images\\{tile_title}\\{tile_idx}{tile_letter}'
+        else: # call from lobby
+            path = f'.\\Images\\{tile_title}\\{tile_idx}{tile_letter}'
+        
+        # Choose a random design
+        number_of_pngs = len([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])-1
+        number = rnd.choice(range(number_of_pngs))
+        
+        # Get file
+        file = path+f'\\{number}.png'
+        
+        # Update tiles left
+        self.Update_tiles_left_label()
+    
+        return tile_idx, tile_letter, file
+    
+    def Place_tile(self, file, tile_idx, tile_letter, row, col):
         # Add new row if necessary
         if row < self.game.board_rows[0]:
             self._Board_new_row_above()
@@ -36,24 +68,19 @@ class Tiles():
         elif col > self.game.board_cols[1]:
             self._Board_new_col_right()
         
-        # Get tile folder
-        tile_idx, tile_letter = tile
-        tile_title  = prop_s.tile_titles[tile_idx-1]
-        if self.lobby_key == 'test2':
-            path = f'..\\Images\\{tile_title}\\{tile_idx}{tile_letter}'
-        else: # call from lobby
-            path = f'.\\Images\\{tile_title}\\{tile_idx}{tile_letter}'
-
-        # Choose a random design
-        number_of_pngs = len([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])-1
-        number = rnd.choice(range(number_of_pngs))
-        
         # Place tile
-        self.game.board_tiles[row][col].set_tile(path+f'\\{number}.png', tile_idx, tile_letter, self.game)
+        self.game.board_tiles[row][col].set_tile(file, tile_idx, tile_letter, self.game)
         self.game.board_widget.setLayout(self.game.board_base)
         
         # Update tiles left
-        self.game.tiles[f'{tile_idx}{tile_letter}'] -= 1
+        if self.game.tiles[tile_idx][tile_letter] > 1:
+            self.game.tiles[tile_idx][tile_letter] -= 1 # decrease number of tiles by 1
+        else:
+            if len(self.game.tiles[tile_idx].keys()) > 1:
+                self.game.tiles[tile_idx].pop(tile_letter) # delete tile if none left
+            else:
+                self.game.tiles.pop(tile_idx) # delete expansion if no tiles left
+            
         self.game.lobby.send_feed_message(event          = 'placed_tile',
                                           tile_idx       = tile_idx,
                                           tile_letter    = tile_letter,
