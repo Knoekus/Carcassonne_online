@@ -39,14 +39,15 @@ class Animation(QtC.QSequentialAnimationGroup):
         else:
             self.setLoopCount(loop_count) # -1: run until stopped
     
-    def swap_image(self, new_image, time):
+    def swap_image(self, new_image, tile_idx, tile_letter, time):
         parent = self.parent()
-        if type(parent) != type(QtE.QImage(None)):
-            raise Exception("Swap image of a QtE.QImage object.")
+        if type(parent) != type(QtE.Tile(None)):
+            raise Exception("Swap image of a QtE.Tile object.")
         
         # Swap image
         def Redraw_image():
-            parent.draw_image(new_image)
+            # parent.draw_image(new_image)
+            parent.set_tile(new_image, tile_idx, tile_letter, parent.parent())
             self.removeAnimation(animation1)
             self.addAnimation(animation2)
             self.finished.disconnect()
