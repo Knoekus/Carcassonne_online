@@ -80,30 +80,16 @@ class QImage(QtW.QLabel):
             self.setPixmap(self.pixmap)
         elif type(file) == type(QtG.QPixmap()):
             self.setPixmap(file)
+        elif file == None:
+            self.setPixmap(QtG.QPixmap())
   
 class ClickableImage(QImage):
     clicked = QtC.pyqtSignal()
+    clicked_l = QtC.pyqtSignal()
+    clicked_r = QtC.pyqtSignal()
     def __init__(self, file, width=None, height=None):
         super().__init__(file, width, height)
-        self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
-    
-    def mousePressEvent(self, event):
-        self.clicked.emit()
-
-class Tile(ClickableImage):
-    def __init__(self, file, size):
-        super().__init__(file, size, size)
         self.clickable = False
-        self.disable()
-    
-    def set_tile(self, file, tile_idx, tile_letter, game):
-        self.draw_image(file)
-        
-        self.material_data = dict()
-        for material in game.materials:
-            try:
-                self.material_data[material] = tile_data.tiles[tile_idx, tile_letter][material]
-            except: None
     
     def disable(self):
         self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.ArrowCursor))
@@ -113,9 +99,32 @@ class Tile(ClickableImage):
         self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
         self.clickable = True
     
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, QMouseEvent):
         if self.clickable == True:
             self.clicked.emit()
+            if QMouseEvent.button() == QtC.Qt.MouseButton.LeftButton:
+                self.clicked_l.emit()
+            elif QMouseEvent.button() == QtC.Qt.MouseButton.RightButton:
+                self.clicked_r.emit()
+
+class Tile(ClickableImage):
+    def __init__(self, file, size=None):
+        super().__init__(file, size, size)
+        self.disable()
+        self.index = None
+        self.letter = None
+        self.rotation = 0
+        self.material_data = dict()
+    
+    def set_tile(self, file, tile_idx, tile_letter, game):
+        self.index = tile_idx
+        self.letter = tile_letter
+        
+        self.draw_image(file)
+        for material in game.materials:
+            try:
+                self.material_data[material] = tile_data.tiles[tile_idx][tile_letter][material]
+            except: None # ignore material if it's not in the game (shouldn't be able to happen)
 
 def GreenScreenPixmap(file):
     img1 = PIL.Image.open(file)

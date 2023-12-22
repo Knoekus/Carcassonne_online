@@ -82,17 +82,16 @@ class GameScreen(QtW.QWidget):
         self.Tiles.Board_init()
         if self.Expansions.expansions[r'The River'] == 0:
             # Default start with tile H
-            file = self.Tiles.New_tile(1, 'H')[2]
+            file = self.Tiles.Choose_tile(1, 'H')[2]
             self.Tiles.Place_tile(file, 1, 'H', 0, 0)
         else:
             # Start with a spring
-            file = self.Tiles.New_tile(2, 'D')[2]
+            file = self.Tiles.Choose_tile(2, 'D')[2]
             self.Tiles.Place_tile(file, 2, 'D', 0, 0)
         
         # Game phase 2
         # Make next tile available
-        file = self.Tiles.New_tile()[2]
-        self.new_tile_anim.swap_image(file, 1000)
+        self.Tiles.New_tile(1)
     
     def _Game_init(self):
         # References from lobby
@@ -104,6 +103,7 @@ class GameScreen(QtW.QWidget):
         self.Tiles = Tiles(self)
         numbers = [8, 9, 4, 1, 3, 3, 3, 4, 5, 4, 2, 1, 2, 3, 2, 3, 2, 3, 2, 3, 1, 1, 2, 1]
         self.Tiles.Add_tiles(1, numbers)
+        self.options = set()
         
         # Materials
         self.materials = ['grass', 'road', 'city', 'monastery']
@@ -163,9 +163,11 @@ class GameScreen(QtW.QWidget):
         # New tile
         new_tile_size = 200
         if __name__ == '__main__': # independent call
-            self.new_tile = QtE.QImage(r'..\Images\tile_logo.png', new_tile_size, new_tile_size)
+            self.new_tile = QtE.Tile(r'..\Images\tile_logo.png', new_tile_size)
         else: # call from lobby
-            self.new_tile = QtE.QImage(r'.\Images\tile_logo.png', new_tile_size, new_tile_size)
+            self.new_tile = QtE.Tile(r'.\Images\tile_logo.png', new_tile_size)
+        self.new_tile.clicked_l.connect(self.Tiles.Rotate(-90))
+        self.new_tile.clicked_r.connect(self.Tiles.Rotate(90))
         self.new_tile_anim = Animation(self.new_tile)
         
         # Tiles left
@@ -302,7 +304,7 @@ if __name__ == '__main__':
             # References
             self.Refs('admin').set('user1')
             for exp in prop_s.expansions:
-                self.Refs(f'expansions/{exp}').set(1) # add all expansions
+                self.Refs(f'expansions/{exp}').set(0) # add all expansions
             
             self.Refs('open').set(False)
             self.Refs('connections').set({'user1':0, 'user2':0})
