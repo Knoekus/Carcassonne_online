@@ -31,7 +31,6 @@ class Tiles():
     def New_tile(self, tile_idx_in=None, tile_letter_in=None):
         while True:
             tile_idx, tile_letter, file = self.Choose_tile(tile_idx_in, tile_letter_in)
-
             # Give new tile the material data            
             for material in self.game.materials:
                 try:
@@ -41,12 +40,20 @@ class Tiles():
             # Allow tile if there are options to place it
             options = set()
             for idx in range(4): # try each orientation
-                self.game.new_tile.clicked_l.emit()
                 options |= self.Tile_options(tile_idx, tile_letter)
-                if len(options) > 0: break # if options are found before trying all rotations, don't try the rest
+                if len(options) > 0: 
+                    # if options are found before trying all rotations, don't try the rest and rotate back
+                    for idx2 in range(idx):
+                        self.game.new_tile.rotate(-90)
+                    break
+                else:
+                    # self.game.new_tile.clicked_l.emit()
+                    self.game.new_tile.rotate(90)
             if len(options) > 0:
-                self.game.new_tile.rotation = 0 # reset rotation
+                # self.game.new_tile.rotation = 0 # reset rotation
                 break
+            elif True:
+                print(f'\n{tile_idx}{tile_letter} is infeasible\n')
         
         # Update tiles left
         self.game.new_tile_anim.swap_image(file, tile_idx, tile_letter, 1000) # replaces set_tile, maybe relocate to QtE
@@ -194,7 +201,7 @@ class Tiles():
         
         return tile_idx, tile_letter, file
     
-    def Tile_options(self, tile_idx, tile_letter):
+    def Tile_options_deprecated(self, tile_idx, tile_letter):
         '''Find all options a tile to be placed. Includes rotation!'''
         #FIXME: function is currently not finding all proper options.
         new_tile_material_data = self.game.new_tile.material_data
@@ -254,21 +261,128 @@ class Tiles():
                                     # Material is not the same, discard possibility
                                     neighbour_tiles.remove((row_n, col_n))
                                     break
+                                
         return neighbour_tiles # type set
     
+    def Tile_options(self, tile_idx, tile_letter):
+        """Find all empty neighbour tiles where the new tile can be placed."""
+        def get_edge(data, pos:str):
+            if pos == 'N': # north
+                edge = data[0][1:-1]
+            elif pos == 'E': # east
+                edge = [data[x][-1] for x in range(len(data))][1:-1]
+            elif pos == 'S': # south
+                edge = data[-1][1:-1]
+            elif pos == 'W': # west
+                edge = [data[x][0] for x in range(len(data))][1:-1]
+            elif pos == 'all': # all edges
+                edge = get_edge(data, 'N') + get_edge(data, 'E') + get_edge(data, 'S') + get_edge(data, 'W')
+            else:
+                raise Exception("Unknown position of tile.")
+            # convert to booleans to only consider yes/no material, not number of material patch
+            return [bool(x) for x in edge]
+                
+        options = set()
+        # Find all tiles in the board
+        for row in self.game.board_tiles.keys():
+            for col in self.game.board_tiles[row].keys():
+                tile = self.game.board_tiles[row][col]
+                
+                # Find all empty neighbours
+                if len(tile.material_data) > 0: # if tile not empty
+                    neighbours = [(row-1, col), (row, col+1), (row+1, col), (row, col-1)]
+                    for pos, coords in enumerate(neighbours):
+                        neighbour_tile = self.game.board_tiles[coords[0]][coords[1]]
+                        
+                        # Check empty neighbour for feasibility
+                        if len(neighbour_tile.material_data) == 0: # if tile empty
+                            data_n_all = self.game.new_tile.material_data
+                            data_t_all = tile.material_data
+                            
+                            options.add(coords)
+                            # Check all materials
+                            for material in self.game.materials:
+                                # Ignore material if it's not in either tile
+                                if material not in data_n_all.keys() and material not in data_t_all.keys():
+                                    continue
+                                
+                                # Material is in both tiles
+                                elif material in data_n_all.keys() and material in data_t_all.keys():
+                                    data_n = data_n_all[material]
+                                    data_t = data_t_all[material]
+                                    if pos == 0: # north
+                                        # south of neighbour should match north of tile
+                                        edge_n = get_edge(data_n, 'S')
+                                        edge_t = get_edge(data_t, 'N')
+                                    elif pos == 1: # east
+                                        # west of neighbour should match east of tile
+                                        edge_n = get_edge(data_n, 'W')
+                                        edge_t = get_edge(data_t, 'E')
+                                    elif pos == 2: # south
+                                        # north of neighbour should match south of tile
+                                        edge_n = get_edge(data_n, 'N')
+                                        edge_t = get_edge(data_t, 'S')
+                                    elif pos == 3: # west
+                                        # east of neighbour should match west of tile
+                                        edge_n = get_edge(data_n, 'E')
+                                        edge_t = get_edge(data_t, 'W')
+                                    else:
+                                        raise Exception("Unknown position of tile.")
+                                    if edge_n != edge_t:
+                                        # print(f'   {material} does not match {coords}: \n     {[int(x) for x in edge_n]}\n     {[int(x) for x in edge_t]}')
+                                        options.remove(coords)
+                                        break # stop trying materials
+                                
+                                # Material is only in new tile
+                                elif material in data_n_all.keys():
+                                    data_n = data_n_all[material]
+                                    if pos == 0: # north
+                                        # south of neighbour should match north of tile
+                                        edge_n = get_edge(data_n, 'S')
+                                    elif pos == 1: # east
+                                        # west of neighbour should match east of tile
+                                        edge_n = get_edge(data_n, 'W')
+                                    elif pos == 2: # south
+                                        # north of neighbour should match south of tile
+                                        edge_n = get_edge(data_n, 'N')
+                                    elif pos == 3: # west
+                                        # east of neighbour should match west of tile
+                                        edge_n = get_edge(data_n, 'E')
+                                    else:
+                                        raise Exception("Unknown position of tile.")
+                                        
+                                    if sum(edge_n) > 0:
+                                        # Remove option if unique material is on edge of importance
+                                        # print(f'   {material} is unique in NEW and does not match {coords}')
+                                        options.remove(coords)
+                                        break # stop trying materials
+                                
+                                # Material is only in old tile
+                                elif material in data_t_all.keys():
+                                    data_t = data_t_all[material]
+                                    if pos == 0: # north
+                                        # south of neighbour should match north of tile
+                                        edge_t = get_edge(data_t, 'N')
+                                    elif pos == 1: # east
+                                        # west of neighbour should match east of tile
+                                        edge_t = get_edge(data_t, 'E')
+                                    elif pos == 2: # south
+                                        # north of neighbour should match south of tile
+                                        edge_t = get_edge(data_t, 'S')
+                                    elif pos == 3: # west
+                                        # east of neighbour should match west of tile
+                                        edge_t = get_edge(data_t, 'W')
+                                    else:
+                                        raise Exception("Unknown position of tile.")
+                                        
+                                    if sum(edge_t) > 0:
+                                        # Remove option if unique material is on edge of importance
+                                        # print(f'   {material} is unique in TILE and does not match {coords}')
+                                        options.remove(coords)
+                                        break # stop trying materials
+        return options
+    
     def Place_tile(self, file, tile_idx, tile_letter, row, col, rotation=0):
-        # # Add new row if necessary
-        # if row < self.game.board_rows[0]:
-        #     self._Board_new_row_above()
-        # elif row > self.game.board_rows[1]:
-        #     self._Board_new_row_below()
-        
-        # # Add new col if necessary
-        # if col < self.game.board_cols[0]:
-        #     self._Board_new_col_left()
-        # elif col > self.game.board_cols[1]:
-        #     self._Board_new_col_right()
-        
         # Place tile
         board_tile = self.game.board_tiles[row][col]
         board_tile.set_tile(file, tile_idx, tile_letter, self.game)
@@ -276,15 +390,12 @@ class Tiles():
         board_tile.rotating = True
         import numpy
         rotations = int(numpy.floor(rotation/90))
-        print(rotations)
         if rotations < 0:
             for idx in range(-rotations):
                 board_tile.rotate(-90)
         elif rotations > 0:
             for idx in range(rotations):
                 board_tile.rotate(90)
-        # board_tile.rotate(rotation)
-        print('rotated,', board_tile.rotation)
         board_tile.rotating = False
         # self.game.board_tiles[row][col].rotate(rotation)
         

@@ -134,7 +134,6 @@ class Tile(ClickableImage):
         if self.clickable == True:
             self.clicked.emit()
             if self.rotating == True:
-                print('received mouseclick')
                 if QMouseEvent.button() == QtC.Qt.MouseButton.LeftButton:
                     self.rotate(-90)
                 elif QMouseEvent.button() == QtC.Qt.MouseButton.RightButton:
