@@ -163,11 +163,12 @@ class GameScreen(QtW.QWidget):
         # New tile
         new_tile_size = 200
         if __name__ == '__main__': # independent call
-            self.new_tile = QtE.Tile(r'..\Images\tile_logo.png', new_tile_size)
+            self.new_tile = QtE.Tile(r'..\Images\tile_logo.png', new_tile_size, game=self, rotating=True)
         else: # call from lobby
-            self.new_tile = QtE.Tile(r'.\Images\tile_logo.png', new_tile_size)
-        self.new_tile.clicked_l.connect(self.Tiles.Rotate(-90))
-        self.new_tile.clicked_r.connect(self.Tiles.Rotate(90))
+            self.new_tile = QtE.Tile(r'.\Images\tile_logo.png', new_tile_size, game=self, rotating=True)
+        # self.new_tile.clicked.connect(self.Tiles.Show_options)
+        # self.new_tile.clicked_l.connect(self.Tiles.Rotate(-90))
+        # self.new_tile.clicked_r.connect(self.Tiles.Rotate(90))
         self.new_tile_anim = Animation(self.new_tile)
         
         # Tiles left

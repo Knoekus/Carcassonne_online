@@ -6,8 +6,11 @@ import string
 import prop_s
 import tile_data
 
+# from Classes.Animations import Animation
+
 import os
 import random as rnd
+import copy
 
 class Tiles():
     def __init__(self, game):
@@ -25,9 +28,9 @@ class Tiles():
         self.game.tiles_left = sum([sum(expansion.values()) for expansion in self.game.tiles.values()])
         self.game.tiles_left_label.setText(f'{self.game.tiles_left} tiles left.')
     
-    def New_tile(self, tile_idx=None, tile_letter=None):
+    def New_tile(self, tile_idx_in=None, tile_letter_in=None):
         while True:
-            tile_idx, tile_letter, file = self.Choose_tile(tile_idx, tile_letter)
+            tile_idx, tile_letter, file = self.Choose_tile(tile_idx_in, tile_letter_in)
 
             # Give new tile the material data            
             for material in self.game.materials:
@@ -36,16 +39,13 @@ class Tiles():
                 except: None # ignore material if it's not in the game (shouldn't be able to happen)
             
             # Allow tile if there are options to place it
-            # self.game.new_tile.clicked_l.disconnect()
-            # self.game.new_tile.clicked_l.connect(self.Rotate(-90, False))
             options = set()
             for idx in range(4): # try each orientation
                 self.game.new_tile.clicked_l.emit()
                 options |= self.Tile_options(tile_idx, tile_letter)
+                if len(options) > 0: break # if options are found before trying all rotations, don't try the rest
             if len(options) > 0:
                 self.game.new_tile.rotation = 0 # reset rotation
-                # self.game.new_tile.clicked_l.disconnect()
-                # self.game.new_tile.clicked_l.connect(self.Rotate(-90))
                 break
         
         # Update tiles left
@@ -63,13 +63,18 @@ class Tiles():
         self.Update_tiles_left_label()
         
         # Show placement options
-        self.Show_options(tile_idx, tile_letter)
+        self.Show_options()
     
-    def Show_options(self, tile_idx, tile_letter):
+    # def Show_options(self, tile_idx, tile_letter):
+    def Show_options(self):
+        tile_idx, tile_letter = self.game.new_tile.index, self.game.new_tile.letter
+        
         # Clear old options
         for option in self.game.options:
             row, col = option
-            self.game.board_tiles[row][col].set_tile(None, None, None, self.game)
+            tile = self.game.board_tiles[row][col]
+            tile.disable()
+            tile.set_tile(None, None, None, self.game)
             # self.game.board_tiles[row][col].swap_image(None, None, None, 1000) # replaces set_tile, maybe relocate to QtE
         
         # Get new options
@@ -84,10 +89,46 @@ class Tiles():
         # Set options' images
         for option in self.game.options:
             row, col = option
-            self.game.board_tiles[row][col].set_tile(file, None, None, self.game)
-            # self.game.board_tiles[row][col].swap_image(file, None, None, 1000) # replaces set_tile, maybe relocate to QtE
+            tile = self.game.board_tiles[row][col]
+            tile.enable()
+            tile.set_tile(file, None, None, self.game)
+            try: tile.clicked.disconnect()
+            except: None
+            tile.clicked.connect(self.Option_clicked(row, col))
+            # tile.swap_image(file, None, None, 1000) # replaces set_tile, maybe relocate to QtE
+            
+    def Option_clicked(self, row, col):
+        def clicked():
+            new_tile = self.game.new_tile
+            
+            # Get image and information
+            file        = copy.deepcopy(new_tile.file)
+            tile_idx    = copy.deepcopy(new_tile.index)
+            tile_letter = copy.deepcopy(new_tile.letter)
+            rotation    = copy.deepcopy(new_tile.rotation)
+            
+            # Place tile
+            self.Place_tile(file, tile_idx, tile_letter, row, col, rotation)
+            # print(self.game.board_tiles[row][col], self.game.board_tiles[row][col].file)
+            # self.game.board_tiles[row][col].rotate(rotation)
+            
+            # Reset new tile
+            if self.lobby_key == 'test2':
+                file = r'..\Images\tile_logo.png'
+            else: # call from lobby
+                file = r'.\Images\tile_logo.png'
+            new_tile.reset(file)
+            # self.New_tile(1)
+            
+            # Clear old options
+            for option in self.game.options:
+                opt_row, opt_col = option
+                tile = self.game.board_tiles[opt_row][opt_col]
+                tile.disable()
+                tile.set_tile(None, None, None, self.game)
+        return clicked
         
-    def Rotate(self, angle, visual=True):
+    def Rotate_deprecated(self, angle, visual=True):
         def rotate():
             new_tile = self.game.new_tile
             new_tile.rotation += angle
@@ -115,7 +156,15 @@ class Tiles():
                     
             new_tile.material_data = material_data_new
             self.Show_options(new_tile.index, new_tile.letter)
-        return rotate
+        
+        # Only allow rotations if a tile is shown
+        if self.lobby_key == 'test2':
+            file = r'..\Images\tile_logo.png'
+        else: # call from lobby
+            file = r'.\Images\tile_logo.png'
+            
+        if self.game.new_tile.pixmap != QtG.QPixmap(file):
+            return rotate
 
     def Choose_tile(self, tile_idx=None, tile_letter=None):
         # Choose new tile
@@ -147,6 +196,7 @@ class Tiles():
     
     def Tile_options(self, tile_idx, tile_letter):
         '''Find all options a tile to be placed. Includes rotation!'''
+        #FIXME: function is currently not finding all proper options.
         new_tile_material_data = self.game.new_tile.material_data
         
         # Find all empty neighbour tiles
@@ -204,23 +254,40 @@ class Tiles():
                                     # Material is not the same, discard possibility
                                     neighbour_tiles.remove((row_n, col_n))
                                     break
-        return neighbour_tiles
+        return neighbour_tiles # type set
     
-    def Place_tile(self, file, tile_idx, tile_letter, row, col):
-        # Add new row if necessary
-        if row < self.game.board_rows[0]:
-            self._Board_new_row_above()
-        elif row > self.game.board_rows[1]:
-            self._Board_new_row_below()
+    def Place_tile(self, file, tile_idx, tile_letter, row, col, rotation=0):
+        # # Add new row if necessary
+        # if row < self.game.board_rows[0]:
+        #     self._Board_new_row_above()
+        # elif row > self.game.board_rows[1]:
+        #     self._Board_new_row_below()
         
-        # Add new col if necessary
-        if col < self.game.board_cols[0]:
-            self._Board_new_col_left()
-        elif col > self.game.board_cols[1]:
-            self._Board_new_col_right()
+        # # Add new col if necessary
+        # if col < self.game.board_cols[0]:
+        #     self._Board_new_col_left()
+        # elif col > self.game.board_cols[1]:
+        #     self._Board_new_col_right()
         
         # Place tile
-        self.game.board_tiles[row][col].set_tile(file, tile_idx, tile_letter, self.game)
+        board_tile = self.game.board_tiles[row][col]
+        board_tile.set_tile(file, tile_idx, tile_letter, self.game)
+        
+        board_tile.rotating = True
+        import numpy
+        rotations = int(numpy.floor(rotation/90))
+        print(rotations)
+        if rotations < 0:
+            for idx in range(-rotations):
+                board_tile.rotate(-90)
+        elif rotations > 0:
+            for idx in range(rotations):
+                board_tile.rotate(90)
+        # board_tile.rotate(rotation)
+        print('rotated,', board_tile.rotation)
+        board_tile.rotating = False
+        # self.game.board_tiles[row][col].rotate(rotation)
+        
         self.game.board_widget.setLayout(self.game.board_base)
         self.game.new_tile.disable()
             
@@ -228,9 +295,30 @@ class Tiles():
                                           tile_idx       = tile_idx,
                                           tile_letter    = tile_letter,
                                           row = row, col = col)
+        
+        # Add new row if necessary
+        if row < self.game.board_rows[0]:
+            self._Board_new_row_above()
+            print('new row above')
+        elif row > self.game.board_rows[1]:
+            self._Board_new_row_below()
+            print('new row below')
+        
+        # Add new col if necessary
+        if col < self.game.board_cols[0]:
+            self._Board_new_col_left()
+            print('new column left')
+        elif col > self.game.board_cols[1]:
+            self._Board_new_col_right()
+            print('new column right')
     
     def _New_tile(self, row, col):
-        empty_tile = QtE.Tile(None, prop_s.tile_size)
+        if self.lobby_key == 'test2':
+            file = '..\\Images\\Coin_icon.png'
+        else: # call from lobby
+            file = '.\\Images\\Coin_icon.png'
+            
+        empty_tile = QtE.Tile(file, prop_s.tile_size, self.game)
         self.game.board_tiles[row][col] = empty_tile
         return empty_tile
     
@@ -298,10 +386,13 @@ class Tiles():
             self.game.board_cols[0] -= 1
         elif place == -2: # right
             new_col_idx = self.game.board_cols[1]+1
-            insert_idx = new_col_idx+1-self.game.board_cols[0]
+            insert_idx = new_col_idx+1+2-self.game.board_cols[0]
             self.game.board_cols[1] += 1
         
         # Add column to each row
-        for row_idx in range(self.game.board_rows[0]-1, self.game.board_rows[1]+2):
-            row = self.game.board[row_idx]
-            row.insertWidget(insert_idx, self._New_tile(row_idx, new_col_idx))
+        try:
+            for row_idx in range(self.game.board_cols[0]-1, self.game.board_cols[1]+2-1):
+                row = self.game.board[row_idx]
+                row.insertWidget(insert_idx, self._New_tile(row_idx, new_col_idx))
+        except Exception as e:
+            None
