@@ -72,7 +72,6 @@ class Tiles():
         # Show placement options
         self.Show_options()
     
-    # def Show_options(self, tile_idx, tile_letter):
     def Show_options(self):
         tile_idx, tile_letter = self.game.new_tile.index, self.game.new_tile.letter
         
@@ -116,7 +115,7 @@ class Tiles():
             
             # Place tile
             self.Place_tile(file, tile_idx, tile_letter, row, col, rotation)
-            # print(self.game.board_tiles[row][col], self.game.board_tiles[row][col].file)
+            self.game.options.remove((row, col))
             # self.game.board_tiles[row][col].rotate(rotation)
             
             # Reset new tile
@@ -125,7 +124,6 @@ class Tiles():
             else: # call from lobby
                 file = r'.\Images\tile_logo.png'
             new_tile.reset(file)
-            # self.New_tile(1)
             
             # Clear old options
             for option in self.game.options:
@@ -133,6 +131,9 @@ class Tiles():
                 tile = self.game.board_tiles[opt_row][opt_col]
                 tile.disable()
                 tile.set_tile(None, None, None, self.game)
+            
+            # Test purposes
+            self.New_tile(1)
         return clicked
         
     def Rotate_deprecated(self, angle, visual=True):
@@ -203,7 +204,6 @@ class Tiles():
     
     def Tile_options_deprecated(self, tile_idx, tile_letter):
         '''Find all options a tile to be placed. Includes rotation!'''
-        #FIXME: function is currently not finding all proper options.
         new_tile_material_data = self.game.new_tile.material_data
         
         # Find all empty neighbour tiles
@@ -281,11 +281,12 @@ class Tiles():
                 raise Exception("Unknown position of tile.")
             # convert to booleans to only consider yes/no material, not number of material patch
             return [bool(x) for x in edge]
-                
+        
         options = set()
+        options_deleted = set()
         # Find all tiles in the board
-        for row in self.game.board_tiles.keys():
-            for col in self.game.board_tiles[row].keys():
+        for row in range(self.game.board_rows[0], self.game.board_rows[1]+1):
+            for col in range(self.game.board_cols[0], self.game.board_cols[1]+1):
                 tile = self.game.board_tiles[row][col]
                 
                 # Find all empty neighbours
@@ -295,7 +296,7 @@ class Tiles():
                         neighbour_tile = self.game.board_tiles[coords[0]][coords[1]]
                         
                         # Check empty neighbour for feasibility
-                        if len(neighbour_tile.material_data) == 0: # if tile empty
+                        if len(neighbour_tile.material_data) == 0 and coords not in options_deleted: # if tile empty
                             data_n_all = self.game.new_tile.material_data
                             data_t_all = tile.material_data
                             
@@ -331,6 +332,7 @@ class Tiles():
                                     if edge_n != edge_t:
                                         # print(f'   {material} does not match {coords}: \n     {[int(x) for x in edge_n]}\n     {[int(x) for x in edge_t]}')
                                         options.remove(coords)
+                                        options_deleted.add(coords)
                                         break # stop trying materials
                                 
                                 # Material is only in new tile
@@ -355,6 +357,7 @@ class Tiles():
                                         # Remove option if unique material is on edge of importance
                                         # print(f'   {material} is unique in NEW and does not match {coords}')
                                         options.remove(coords)
+                                        options_deleted.add(coords)
                                         break # stop trying materials
                                 
                                 # Material is only in old tile
@@ -379,14 +382,29 @@ class Tiles():
                                         # Remove option if unique material is on edge of importance
                                         # print(f'   {material} is unique in TILE and does not match {coords}')
                                         options.remove(coords)
+                                        options_deleted.add(coords)
                                         break # stop trying materials
         return options
     
     def Place_tile(self, file, tile_idx, tile_letter, row, col, rotation=0):
+        # Add new row if necessary
+        if row < self.game.board_rows[0]:
+            self._Board_new_row_above()
+        elif row > self.game.board_rows[1]:
+            self._Board_new_row_below()
+        
+        # Add new col if necessary
+        if col < self.game.board_cols[0]:
+            self._Board_new_col_left()
+        elif col > self.game.board_cols[1]:
+            self._Board_new_col_right()
+            
         # Place tile
         board_tile = self.game.board_tiles[row][col]
         board_tile.set_tile(file, tile_idx, tile_letter, self.game)
+        self.game.new_tile.disable()
         
+        # Rotating
         board_tile.rotating = True
         import numpy
         rotations = int(numpy.floor(rotation/90))
@@ -397,38 +415,20 @@ class Tiles():
             for idx in range(rotations):
                 board_tile.rotate(90)
         board_tile.rotating = False
-        # self.game.board_tiles[row][col].rotate(rotation)
-        
-        self.game.board_widget.setLayout(self.game.board_base)
-        self.game.new_tile.disable()
             
+        # Push message to event log
         self.game.lobby.send_feed_message(event          = 'placed_tile',
                                           tile_idx       = tile_idx,
                                           tile_letter    = tile_letter,
                                           row = row, col = col)
-        
-        # Add new row if necessary
-        if row < self.game.board_rows[0]:
-            self._Board_new_row_above()
-            print('new row above')
-        elif row > self.game.board_rows[1]:
-            self._Board_new_row_below()
-            print('new row below')
-        
-        # Add new col if necessary
-        if col < self.game.board_cols[0]:
-            self._Board_new_col_left()
-            print('new column left')
-        elif col > self.game.board_cols[1]:
-            self._Board_new_col_right()
-            print('new column right')
     
     def _New_tile(self, row, col):
-        if self.lobby_key == 'test2':
-            file = '..\\Images\\Coin_icon.png'
-        else: # call from lobby
-            file = '.\\Images\\Coin_icon.png'
-            
+        # if self.lobby_key == 'test2':
+        #     file = '..\\Images\\Coin_icon.png'
+        # else: # call from lobby
+        #     file = '.\\Images\\Coin_icon.png'
+        file = None
+        
         empty_tile = QtE.Tile(file, prop_s.tile_size, self.game)
         self.game.board_tiles[row][col] = empty_tile
         return empty_tile
@@ -441,35 +441,38 @@ class Tiles():
         '''
         self.game.board = dict()
         self.game.board_tiles = dict()
-        self.game.board_rows = [1,0]
+        self.game.board_rows = [0,0]
         self.game.board_cols = [0,0]
         
         # Initial layout
         self.game.board_base.addStretch(1)
-        self._Board_new_row_above()
-        self._Board_new_row_above()
-        self._Board_new_row_below()
+        self.game.board_tiles[-1] = dict()
+        self.__Board_new_row(-1, -1)
+        self.game.board_tiles[ 0] = dict()
+        self.__Board_new_row( 0, -1)
+        self.game.board_tiles[ 1] = dict()
+        self.__Board_new_row( 1, -1)
         self.game.board_base.addStretch(1)
+        
+        # Set board to ScrollArea widget
+        self.game.board_widget.setLayout(self.game.board_base)
     
     def _Board_new_row_above(self):
-        self.__Board_new_row(1)
+        self.game.board_rows[0] -= 1
+        new_row_idx = self.game.board_rows[0]-1
+        insert_idx = 1
+        self.__Board_new_row(new_row_idx, insert_idx)
     
     def _Board_new_row_below(self):
-        self.__Board_new_row(-2)
-        
-    def __Board_new_row(self, place):
-        if place == 1: # above
-            new_row_idx = self.game.board_rows[0]-1
-            insert_idx = 1
-            self.game.board_rows[0] -= 1
-        elif place == -2: # below
-            new_row_idx = self.game.board_rows[1]+1
-            insert_idx = new_row_idx+1-self.game.board_rows[0]
-            self.game.board_rows[1] += 1
-        
+        self.game.board_rows[1] += 1
+        new_row_idx = self.game.board_rows[1]+1
+        insert_idx = len(self.game.board_base)-1
+        self.__Board_new_row(new_row_idx, insert_idx)
+    
+    def __Board_new_row(self, new_row_idx, insert_idx):
         # Make new row index available
         self.game.board_tiles[new_row_idx] = dict()
-            
+        
         # Empty row
         new_row = self.game.board[new_row_idx] = QtW.QHBoxLayout()
         new_row.setSpacing(prop_s.tile_spacing)
@@ -483,27 +486,25 @@ class Tiles():
         
         # Add row to vertical base
         self.game.board_base.insertLayout(insert_idx, new_row)
+        print(f'Added row {new_row_idx} at {insert_idx}')
     
     def _Board_new_col_left(self):
-        self.__Board_new_col(1)
+        # self.__Board_new_col(1)
+        self.game.board_cols[0] -= 1
+        new_col_idx = self.game.board_cols[0]-1
+        insert_idx = 1
+        self.__Board_new_col(new_col_idx, insert_idx)
     
     def _Board_new_col_right(self):
-        self.__Board_new_col(-2)
+        # self.__Board_new_col(-2)
+        self.game.board_cols[1] += 1
+        new_col_idx = self.game.board_cols[1]+1
+        insert_idx = len(self.game.board[0])-1
+        self.__Board_new_col(new_col_idx, insert_idx)
         
-    def __Board_new_col(self, place):
-        if place == 1: # left
-            new_col_idx = self.game.board_cols[0]-1
-            insert_idx = 1
-            self.game.board_cols[0] -= 1
-        elif place == -2: # right
-            new_col_idx = self.game.board_cols[1]+1
-            insert_idx = new_col_idx+1+2-self.game.board_cols[0]
-            self.game.board_cols[1] += 1
-        
-        # Add column to each row
-        try:
-            for row_idx in range(self.game.board_cols[0]-1, self.game.board_cols[1]+2-1):
-                row = self.game.board[row_idx]
-                row.insertWidget(insert_idx, self._New_tile(row_idx, new_col_idx))
-        except Exception as e:
-            None
+    def __Board_new_col(self, new_col_idx, insert_idx):
+        # In each row add a column
+        for row_idx in range(self.game.board_rows[0]-1, self.game.board_rows[1]+2):
+            row = self.game.board[row_idx]
+            row.insertWidget(insert_idx, self._New_tile(row_idx, new_col_idx))
+        print(f'Added col {new_col_idx} at {insert_idx}')

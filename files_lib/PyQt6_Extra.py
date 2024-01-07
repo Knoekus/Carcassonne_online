@@ -138,6 +138,7 @@ class Tile(ClickableImage):
                     self.rotate(-90)
                 elif QMouseEvent.button() == QtC.Qt.MouseButton.RightButton:
                     self.rotate(90)
+                self.game.Tiles.Show_options()
     
     def reset(self, image=None):
         self.disable()
@@ -157,9 +158,11 @@ class Tile(ClickableImage):
         for material in game.materials:
             try:
                 self.material_data[material] = tile_data.tiles[tile_idx][tile_letter][material]
-            except: None # ignore material if it's not in the game (shouldn't be able to happen)
+            except: None # ignore material if it's not in the game or the tile has no information about it
         
     def rotate(self, angle):
+        if angle not in [-90, 90]:
+            raise Exception('The rotation angle must be either -90 or 90.')
         self.rotation += angle
         
         # Pixmap
@@ -185,7 +188,6 @@ class Tile(ClickableImage):
             None
                 
         self.material_data = material_data_new
-        self.game.Tiles.Show_options()
 
 def GreenScreenPixmap(file):
     img1 = PIL.Image.open(file)
