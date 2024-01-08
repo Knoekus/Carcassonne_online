@@ -6,8 +6,6 @@ import string
 import prop_s
 import tile_data
 
-# from Classes.Animations import Animation
-
 import os
 import random as rnd
 import copy
@@ -56,7 +54,7 @@ class Tiles():
                 print(f'\n{tile_idx}{tile_letter} is infeasible\n')
         
         # Update tiles left
-        self.game.new_tile_anim.swap_image(file, tile_idx, tile_letter, 1000) # replaces set_tile, maybe relocate to QtE
+        self.game.new_tile_anim.swap_image(file, tile_idx, tile_letter, 500) # replaces set_tile, maybe relocate to QtE
         self.game.new_tile.enable()
         if self.game.tiles[tile_idx][tile_letter] > 1:
             self.game.tiles[tile_idx][tile_letter] -= 1 # decrease number of tiles by 1
@@ -135,44 +133,6 @@ class Tiles():
             # Test purposes
             self.New_tile(1)
         return clicked
-        
-    def Rotate_deprecated(self, angle, visual=True):
-        def rotate():
-            new_tile = self.game.new_tile
-            new_tile.rotation += angle
-            
-            pixmap = new_tile.pixmap
-            material_data = new_tile.material_data
-            
-            # Pixmap
-            if visual == True:
-                pixmap_new = pixmap.transformed(QtG.QTransform().rotate(new_tile.rotation), QtC.Qt.TransformationMode.FastTransformation)
-                new_tile.setPixmap(pixmap_new)
-            
-            # Material data
-            material_data_new = dict()
-            for material in material_data.keys():
-                material_data_new[material] = list()
-                for row in range(len(material_data[material])):
-                    new_row = []
-                    for col in range(len(material_data[material])):
-                        if angle == -90: # for left hand rotation
-                            new_row += [material_data[material][col][len(material_data[material])-1-row]]
-                        elif angle == 90: # for right hand rotation
-                            new_row += [material_data[material][len(material_data[material])-1-col][row]]
-                    material_data_new[material] += [new_row]
-                    
-            new_tile.material_data = material_data_new
-            self.Show_options(new_tile.index, new_tile.letter)
-        
-        # Only allow rotations if a tile is shown
-        if self.lobby_key == 'test2':
-            file = r'..\Images\tile_logo.png'
-        else: # call from lobby
-            file = r'.\Images\tile_logo.png'
-            
-        if self.game.new_tile.pixmap != QtG.QPixmap(file):
-            return rotate
 
     def Choose_tile(self, tile_idx=None, tile_letter=None):
         # Choose new tile
@@ -201,68 +161,6 @@ class Tiles():
         file = path+f'\\{number}.png'
         
         return tile_idx, tile_letter, file
-    
-    def Tile_options_deprecated(self, tile_idx, tile_letter):
-        '''Find all options a tile to be placed. Includes rotation!'''
-        new_tile_material_data = self.game.new_tile.material_data
-        
-        # Find all empty neighbour tiles
-        neighbour_tiles = set()
-        for row in self.game.board_tiles.keys():
-            for col in self.game.board_tiles[row].keys():
-                tile = self.game.board_tiles[row][col]
-                # Add all tiles that are not empty
-                if len(tile.material_data) != 0:
-                    
-                    # Check if neighbours are free: north, east, south, west
-                    for idx, (row_n, col_n) in enumerate([(-1, 0), (0, 1), (1, 0), (0, -1)]):
-                        try:
-                            neighbour = self.game.board_tiles[row_n][col_n]
-                            if len(neighbour.material_data) == 0:
-                                raise Exception() # square is empty: check edges!
-                        except:
-                            # If neighbour tile doesn't exist or has no material data, it is a possibility
-                            # Check if the materials along the edge corresponds
-                            neighbour_tiles.add((row_n, col_n))
-                            for material in new_tile_material_data.keys():
-                                new = new_tile_material_data[material]
-                                pixels = len(new)-1
-                                
-                                # only check for this material if it is present on the edges
-                                edge_sum = sum(new[0]) # first row
-                                edge_sum += sum(new[pixels]) # last row
-                                edge_sum += sum([new[x][0] for x in range(len(new))]) # first column
-                                edge_sum += sum([new[x][pixels] for x in range(len(new))]) # last column
-                                
-                                try:
-                                    if edge_sum == 0: # material is not on edges: ignore
-                                        raise Exception('Material is not on edges')
-                                    
-                                    old = tile.material_data[material]
-                                    for pixel in range(1, pixels-1): # skip corners
-                                        if idx == 0: # new tile is north
-                                            material_new = new[pixels][pixel] # south
-                                            material_old = old[0][pixel] # north
-                                        elif idx == 1: # new tile is east
-                                            material_new = new[pixel][0] # west
-                                            material_old = old[pixel][pixels] # east
-                                        elif idx == 2: # new tile is south
-                                            material_new = new[0][pixel] # north
-                                            material_old = old[pixels][pixel] # south
-                                        elif idx == 3: # new tile is west
-                                            material_new = new[pixel][pixels] # east
-                                            material_old = old[pixel][0] # west
-                                        if (bool(material_new > 0) != bool(material_old > 0)): # either both true or both false is okay
-                                            raise Exception(f'material {material} ~ {material_new}.{material_old}, {pixel}')
-                                        # else:
-                                        #     print(f'good: {material_new} {material_old}')
-                                except Exception as e:
-                                    # print(f'Error: {e}')
-                                    # Material is not the same, discard possibility
-                                    neighbour_tiles.remove((row_n, col_n))
-                                    break
-                                
-        return neighbour_tiles # type set
     
     def Tile_options(self, tile_idx, tile_letter):
         """Find all empty neighbour tiles where the new tile can be placed."""
@@ -486,7 +384,7 @@ class Tiles():
         
         # Add row to vertical base
         self.game.board_base.insertLayout(insert_idx, new_row)
-        print(f'Added row {new_row_idx} at {insert_idx}')
+        # print(f'Added row {new_row_idx} at {insert_idx}')
     
     def _Board_new_col_left(self):
         # self.__Board_new_col(1)
@@ -507,4 +405,4 @@ class Tiles():
         for row_idx in range(self.game.board_rows[0]-1, self.game.board_rows[1]+2):
             row = self.game.board[row_idx]
             row.insertWidget(insert_idx, self._New_tile(row_idx, new_col_idx))
-        print(f'Added col {new_col_idx} at {insert_idx}')
+        # print(f'Added col {new_col_idx} at {insert_idx}')
