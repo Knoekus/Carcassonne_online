@@ -16,10 +16,11 @@ if __name__ == '__main__': # direct test call
     import PyQt6_Extra     as QtE
     import prop_s
     
-    if r"..\Screens" not in sys.path:
-        sys.path.append(r"..\..\Screens")
-    from Screens.Expansions import Expansions
-    from Screens.Tiles import Tiles
+    if r"..\Classes" not in sys.path:
+        sys.path.append(r"..\..\Classes")
+    from Classes.Animations import Animation
+    from Classes.Expansions import Expansions
+    from Classes.Tiles import Tiles
     
     if r"..\Dialogs" not in sys.path:
         sys.path.append(r"..\..\Dialogs")
@@ -33,10 +34,10 @@ if __name__ == '__main__': # direct test call
                 'databaseURL': 'https://clientserver1-default-rtdb.europe-west1.firebasedatabase.app/'
             })
 else: # call from lobby
-    import PyQt5.QtGui     as QtG
-    import PyQt5.QtWidgets as QtW
-    import PyQt5.QtCore    as QtC
-    import PyQt5_Extra     as QtE
+    import PyQt6.QtGui     as QtG
+    import PyQt6.QtWidgets as QtW
+    import PyQt6.QtCore    as QtC
+    import PyQt6_Extra     as QtE
     from firebase_admin import db
 
     import prop_s
@@ -44,14 +45,15 @@ else: # call from lobby
     import string
     
     import sys
-    if r"..\Screens" not in sys.path:
-        sys.path.append(r"..\Screens")
-    from Screens.Expansions import Expansions
-    from Screens.Tiles import Tiles
+    # if r"Screens" not in sys.path:
+    #     sys.path.append(r"..\Screens")
+    from Classes.Animations import Animation
+    from Classes.Expansions import Expansions
+    from Classes.Tiles import Tiles
     
-    if r"..\Dialogs" not in sys.path:
-        sys.path.append(r"..\Dialogs")
-    from Dialogs.YesNo import YesNoDialog
+    # if r"..\Dialogs" not in sys.path:
+    #     sys.path.append(r"..\Dialogs")
+    # from Dialogs.YesNo import YesNoDialog
 
 #%% Game screen
 class GameScreen(QtW.QWidget):
@@ -69,18 +71,27 @@ class GameScreen(QtW.QWidget):
         # Expansions
         self.Expansions = Expansions(self)
         
+        # Starting player
+        starting_player = np.random.choice(self.player_list)
+        if 'test' in self.lobby.lobby_key:
+            self.Player_at_turn('user1', init=True)
+        else:
+            self.Player_at_turn(starting_player, init=True)
+        
         # Game phase 1
         self.Tiles.Board_init()
         if self.Expansions.expansions[r'The River'] == 0:
             # Default start with tile H
-            self.Tiles.Place_tile((1, 'H'), 0, 0)
+            file = self.Tiles.Choose_tile(1, 'H')[2]
+            self.Tiles.Place_tile(file, 1, 'H', 0, 0)
         else:
             # Start with a spring
-            self.Tiles.Place_tile((2, 'D'), 0, 0)
-            for i in range(1,6):
-                self.Tiles.Place_tile((2, 'A'), 0, i)
-            for i in [-1, 1, 2, -2]:
-                self.Tiles.Place_tile((2, 'B'), i, 4)
+            file = self.Tiles.Choose_tile(2, 'D')[2]
+            self.Tiles.Place_tile(file, 2, 'D', 0, 0)
+        
+        # Game phase 2
+        # Make next tile available
+        self.Tiles.New_tile(1)
     
     def _Game_init(self):
         # References from lobby
@@ -92,6 +103,10 @@ class GameScreen(QtW.QWidget):
         self.Tiles = Tiles(self)
         numbers = [8, 9, 4, 1, 3, 3, 3, 4, 5, 4, 2, 1, 2, 3, 2, 3, 2, 3, 2, 3, 1, 1, 2, 1]
         self.Tiles.Add_tiles(1, numbers)
+        self.options = set()
+        
+        # Materials
+        self.materials = ['grass', 'road', 'city', 'monastery']
     
     def _Game_layout(self):
         # Title
@@ -102,16 +117,15 @@ class GameScreen(QtW.QWidget):
         
         # Players
         def _Game_players(self):
-            if __name__ == '__main__':
-                # player_list = [f'Player {idx}' for idx in range(1, len(prop_s.colours))]
-                player_list = [f'Player {idx}' for idx in range(1, 5)]
-            else:
-                # Get a new player list
-                players = self.lobby.Refs('connections').get()
-                player_list = [player for player in players if player is not None]
+            players = self.Refs('connections').get()
+            self.player_list = [player for player in players if player is not None]
             
+            # Put each player in the row with points indicator
             self.players = QtW.QGridLayout()
-            for idx, player in enumerate(player_list):
+            self.players_name_anims = dict()
+            for idx, player in enumerate(self.player_list):
+                self.Refs(f'players/{player}/points').set(0)
+                
                 name = QtW.QLabel(f'{player}', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
                 font = QtG.QFont(prop_s.font, prop_s.font_sizes[1+self.lobby.font_size])
                 font.setBold(True)
@@ -122,6 +136,12 @@ class GameScreen(QtW.QWidget):
                 
                 self.players.addWidget(name,   1, idx)
                 self.players.addWidget(points, 2, idx)
+                
+                # Blinking animation
+                animation = Animation(name)
+                animation.add_blinking(1, 0.1, 2500, 200)
+                
+                self.players_name_anims[player] = animation
             
             # Fill in the blank spots, so float all players to left
             # for padding in range(idx, len(prop_s.colours)-1):
@@ -143,13 +163,17 @@ class GameScreen(QtW.QWidget):
         # New tile
         new_tile_size = 200
         if __name__ == '__main__': # independent call
-            self.new_tile = QtE.QImage(r'..\Images\tile_logo.png', new_tile_size, new_tile_size)
+            self.new_tile = QtE.Tile(r'..\Images\tile_logo.png', new_tile_size, game=self, rotating=True)
         else: # call from lobby
-            self.new_tile = QtE.QImage(r'.\Images\tile_logo.png', new_tile_size, new_tile_size)
+            self.new_tile = QtE.Tile(r'.\Images\tile_logo.png', new_tile_size, game=self, rotating=True)
+        # self.new_tile.clicked.connect(self.Tiles.Show_options)
+        # self.new_tile.clicked_l.connect(self.Tiles.Rotate(-90))
+        # self.new_tile.clicked_r.connect(self.Tiles.Rotate(90))
+        self.new_tile_anim = Animation(self.new_tile)
         
         # Tiles left
-        self.tiles_left = sum(self.tiles.values())
-        self.tiles_left_label = QtW.QLabel(f'{self.tiles_left} tiles left.', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
+        self.tiles_left = 0
+        self.tiles_left_label = QtW.QLabel('... tiles left.', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
         self.tiles_left_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.lobby.font_size]))
         
         # Inventory
@@ -162,6 +186,8 @@ class GameScreen(QtW.QWidget):
         # End turn
         self.button_end_turn = QtW.QPushButton('End turn')
         self.button_end_turn.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size]))
+        self.button_end_turn.setEnabled(0)
+        self.button_end_turn.clicked.connect(self.End_turn)
         
         # Left column
         self.leftColumn = QtW.QVBoxLayout()
@@ -228,6 +254,38 @@ class GameScreen(QtW.QWidget):
                 event.ignore()
             else:
                 self.lobby.remove_connection(self.username)
+        else:
+            self.Refs(f'lobbies/{self.lobby.lobby_key}', prefix='').delete()
+    
+    def End_turn(self):
+        # Calculate points and stuff
+        # ...
+        
+        # Give turn to the next player
+        current_player_idx = self.player_list.index(self.username)
+        next_player_idx = (current_player_idx + 1) % len(self.player_list)
+        next_player = self.player_list[next_player_idx]
+        self.Player_at_turn(next_player)
+        
+    def Player_at_turn(self, player_at_turn, init=False):
+        # Stop current player
+        if init == False:
+            connections = self.Refs('connections').get()
+            player_idx = list(connections.values()).index(1)
+            player = list(connections.keys())[player_idx]
+            self.Refs(f'connections/{player}').set(0)
+            self.players_name_anims[player].stop_animation()
+        
+        # New player at turn
+        self.Refs(f'connections/{player_at_turn}').set(1)
+        self.players_name_anims[player_at_turn].start()
+        self.button_end_turn.setEnabled(1)
+        
+        # Enable/disable 'end turn' button
+        if self.username == player_at_turn:
+            self.button_end_turn.setEnabled(1)
+        else:
+            self.button_end_turn.setEnabled(0)
 
 #%% Main
 if __name__ == '__main__':
@@ -239,19 +297,20 @@ if __name__ == '__main__':
     
     class LobbyTest():
         def __init__(self):
-            self.username = 'Knoekus'
+            self.username = 'user1'
             self.font_size = 5
             self.menu_screen = None
-            self.lobby_key = 'test'
-            self._Create_test_lobby()
-        
-        def _Create_test_lobby(self):
+            self.lobby_key = 'test2'
+
+            # References
             self.Refs('admin').set('user1')
             for exp in prop_s.expansions:
-                self.Refs(f'expansions/{exp}').set(1) # add all expansions
+                self.Refs(f'expansions/{exp}').set(0) # add all expansions
+            
             self.Refs('open').set(False)
             self.Refs('connections').set({'user1':0, 'user2':0})
             self.Refs('players').set({'user1':{'colour':"ffffff00"}, 'user2':{'colour':"ffff00ff"}})
+            self.Refs('feed').set([])
         
         def Refs(self, key, item=None, load='get_set', prefix='lobby'):
             '''load : reference type
@@ -278,6 +337,27 @@ if __name__ == '__main__':
                 else: # item should be added
                     entries.append(item)
                 db.reference(f'{prefix}/{key}').set(entries)
+        
+        def send_feed_message(self, **kwargs):
+            print('\n', kwargs)
+            if len(kwargs.keys()) > 0: # call from internal game
+                chat_message = {'username': self.username}
+                for arg in kwargs.keys():
+                    chat_message[arg] = kwargs[arg]
+                    
+                # if self.Refs('feed').push(chat_message):
+                #     print('sent')
+                
+            else: # call from the chat input box
+                message = self.chat_input.text().strip()
+    
+                if len(message)>0:
+                    chat_message = {
+                        'username': self.username,
+                        'message': message
+                    }
+                    # if self.Refs('feed').push(chat_message):
+                    #     print('sent')
     
     game_screen = GameScreen(LobbyTest())
     game_screen.showMaximized()

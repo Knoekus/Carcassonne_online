@@ -3,6 +3,12 @@
 import PyQt6.QtGui as QtG
 import PyQt6.QtWidgets as QtW
 import PyQt6.QtCore as QtC
+import tile_data
+
+# import sys
+# if r"Classes" not in sys.path:
+#     sys.path.append(r"..\Classes")
+# from Classes.Tiles import Tiles
 
 import PIL
 from PIL.ImageQt import ImageQt
@@ -11,7 +17,7 @@ class ClickableLabel(QtW.QLabel):
     clicked = QtC.pyqtSignal()
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setCursor(QtG.QCursor(QtC.Qt.PointingHandCursor))
+        self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
     
     def mousePressEvent(self, event):
         self.new_admin = self.text()
@@ -60,6 +66,8 @@ class QImage(QtW.QLabel):
     '''
     def __init__(self, file, width=None, height=None):
         super().__init__()
+        self.file = None
+        
         self.setScaledContents(True)
         if width is not None:
             self.setFixedWidth(width)
@@ -75,29 +83,111 @@ class QImage(QtW.QLabel):
     
     def draw_image(self, file):
         if type(file) == str:
+            self.file = file
             self.pixmap = QtG.QPixmap(file)
             self.setPixmap(self.pixmap)
         elif type(file) == type(QtG.QPixmap()):
+            # self.file = None
             self.setPixmap(file)
+        elif file == None:
+            # self.file = None
+            self.setPixmap(QtG.QPixmap())
   
 class ClickableImage(QImage):
     clicked = QtC.pyqtSignal()
-    enabled = None
-    def __init__(self, file, width=None, height=None, parent=None):
+    clicked_l = QtC.pyqtSignal()
+    clicked_r = QtC.pyqtSignal()
+    def __init__(self, file, width=None, height=None):
         super().__init__(file, width, height)
-        self.enable()
+        self.clickable = False
     
     def disable(self):
         self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.ArrowCursor))
-        self.enabled = False
+        self.clickable = False
     
     def enable(self):
         self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
-        self.enabled = True
+        self.clickable = True
     
-    def mousePressEvent(self, event):
-        if self.enabled == True:
+    def mousePressEvent(self, QMouseEvent):
+        if self.clickable == True:
             self.clicked.emit()
+            if QMouseEvent.button() == QtC.Qt.MouseButton.LeftButton:
+                self.clicked_l.emit()
+            elif QMouseEvent.button() == QtC.Qt.MouseButton.RightButton:
+                self.clicked_r.emit()
+
+class Tile(ClickableImage):
+    def __init__(self, file, size=None, game=None, rotating=False):
+        super().__init__(file, size, size)
+        self.reset()
+        self.game = game
+        self.rotating = rotating
+        
+        # self.disable()
+        # self.index = None
+        # self.letter = None
+        # self.rotation = 0
+        # self.material_data = dict()
+    
+    def mousePressEvent(self, QMouseEvent):
+        if self.clickable == True:
+            self.clicked.emit()
+            if self.rotating == True:
+                if QMouseEvent.button() == QtC.Qt.MouseButton.LeftButton:
+                    self.rotate(-90)
+                elif QMouseEvent.button() == QtC.Qt.MouseButton.RightButton:
+                    self.rotate(90)
+                self.game.Tiles.Show_options()
+    
+    def reset(self, image=None):
+        self.disable()
+        self.index = None
+        self.letter = None
+        self.rotation = 0
+        self.material_data = dict()
+        
+        if image != None:
+            self.draw_image(image)
+    
+    def set_tile(self, file, tile_idx, tile_letter, game):
+        self.index = tile_idx
+        self.letter = tile_letter
+        
+        self.draw_image(file)
+        for material in game.materials:
+            try:
+                self.material_data[material] = tile_data.tiles[tile_idx][tile_letter][material]
+            except: None # ignore material if it's not in the game or the tile has no information about it
+        
+    def rotate(self, angle):
+        if angle not in [-90, 90]:
+            raise Exception('The rotation angle must be either -90 or 90.')
+        self.rotation += angle
+        
+        # Pixmap
+        pixmap_new = self.pixmap.transformed(QtG.QTransform().rotate(self.rotation), QtC.Qt.TransformationMode.FastTransformation)
+        # self.draw_image(pixmap_new)
+        try: self.setPixmap(pixmap_new)
+        except Exception as e: print(e)
+        
+        # Material data
+        material_data_new = dict()
+        try:
+            for material in self.material_data.keys():
+                material_data_new[material] = list()
+                for row in range(len(self.material_data[material])):
+                    new_row = []
+                    for col in range(len(self.material_data[material])):
+                        if angle == -90: # for left hand rotation
+                            new_row += [self.material_data[material][col][len(self.material_data[material])-1-row]]
+                        elif angle == 90: # for right hand rotation
+                            new_row += [self.material_data[material][len(self.material_data[material])-1-col][row]]
+                    material_data_new[material] += [new_row]
+        except:
+            None
+                
+        self.material_data = material_data_new
 
 def GreenScreenPixmap(file):
     img1 = PIL.Image.open(file)

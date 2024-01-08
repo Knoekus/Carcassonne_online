@@ -1,7 +1,7 @@
-import PyQt5.QtGui     as QtG
-import PyQt5.QtWidgets as QtW
-import PyQt5.QtCore    as QtC
-import PyQt5_Extra     as QtE
+import PyQt6.QtGui     as QtG
+import PyQt6.QtWidgets as QtW
+import PyQt6.QtCore    as QtC
+import PyQt6_Extra     as QtE
 from firebase_admin import db
 
 import time
@@ -12,9 +12,9 @@ if r"..\Dialogs" not in sys.path:
     sys.path.append(r"..\Dialogs")
 from Dialogs.YesNo import YesNoDialog
 
-if r"Screens" not in sys.path:
-    sys.path.append(r"..\Screens")
-from Screens.Game import GameScreen
+if r"..\Classes" not in sys.path:
+    sys.path.append(r"..\Classes")
+from Classes.Game import GameScreen
 
 #%% Colour picker
 class ColourPicker(QtW.QWidget):
@@ -30,7 +30,10 @@ class ColourPicker(QtW.QWidget):
         
     def _ColourPicker_header(self):
         self.header = QtW.QLabel('Pick your colour')
-        self.header.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size], QtG.QFont.Bold))
+        # self.header.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size], QtG.QFont.Bold))
+        font = QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size])
+        font.setBold(True)
+        self.header.setFont(font)
     
     def _ColourPicker_list(self):
         self.list = QtW.QHBoxLayout()
@@ -52,7 +55,7 @@ class ColourPicker(QtW.QWidget):
     
     def colour_stylesheet(self, colour):
         return f'''QPushButton {{
-                                    background-color: rgb{tuple(int(colour[i:i+2], 16) for i in (0, 2, 4, 6))};
+                                    background-color: rgba{tuple(int(colour[i:i+2], 16) for i in (0, 2, 4, 6))};
                                     min-width:  80px;
                                     max-width:  80px;
                                     min-height: 80px;
@@ -103,7 +106,7 @@ class ColourPicker(QtW.QWidget):
             else:
                 # allowed to be clicked
                 button.setEnabled(True)
-                button.setCursor(QtG.QCursor(QtC.Qt.PointingHandCursor))
+                button.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
     
     def Select_colour(self, button_colour):
         """Function for all colour buttons. When a button is clicked, its colour is assigned to the player that selected it."""
@@ -177,7 +180,10 @@ class PlayerList(QtW.QWidget):
     
     def _PlayerList_header(self):
         self.header = QtW.QLabel('Player list')
-        self.header.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size], QtG.QFont.Bold))
+        # self.header.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size], QtG.QFont.Bold))
+        font = QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size])
+        font.setBold(True)
+        self.header.setFont(font)
     
     def _PlayerList_list(self):
         self.list = QtW.QGridLayout()
@@ -214,7 +220,7 @@ class PlayerList(QtW.QWidget):
     
     def indicator_stylesheet(self, colour):
         return f'''QPushButton:disabled {{
-                                    background-color: rgb{tuple(int(colour[i:i+2], 16) for i in (0, 2, 4, 6))};
+                                    background-color: rgba{tuple(int(colour[i:i+2], 16) for i in (0, 2, 4, 6))};
                                     min-width:  20px;
                                     max-width:  20px;
                                     min-height: 20px;
@@ -242,7 +248,8 @@ class PlayerList(QtW.QWidget):
             if player == admin:
                 admin_label = QtW.QLabel('(leader)')
                 admin_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.lobby.font_size]))
-                self.list.addWidget(admin_label, idx, 0, alignment = QtC.Qt.AlignCenter)
+                # self.list.addWidget(admin_label, idx, 0, alignment = QtC.Qt.AlignCenter)
+                self.list.addWidget(admin_label, idx, 0, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
             
             # colour indicator
             colour = self.lobby.Refs(f'players/{player}/colour').get()
@@ -261,8 +268,10 @@ class PlayerList(QtW.QWidget):
             username.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+self.lobby.font_size]))
             
             # Put indicator and username in layout
-            self.list.addWidget(indicator, idx, 1, alignment = QtC.Qt.AlignCenter)
-            self.list.addWidget(username,  idx, 2, alignment = QtC.Qt.AlignLeft)
+            # self.list.addWidget(indicator, idx, 1, alignment = QtC.Qt.AlignCenter)
+            self.list.addWidget(indicator, idx, 1, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
+            # self.list.addWidget(username,  idx, 2, alignment = QtC.Qt.AlignLeft)
+            self.list.addWidget(username,  idx, 2, alignment=QtC.Qt.AlignmentFlag.AlignLeft)
             
         self.list.setColumnMinimumWidth(0, 60) # leader yes/no
         self.list.setColumnMinimumWidth(1, 40) # colour indicator
@@ -395,7 +404,10 @@ class ExpansionsList(QtW.QWidget):
     
     def _ExpansionsList_header(self):
         self.header = QtW.QLabel('Expansions')
-        self.header.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size], QtG.QFont.Bold))
+        # self.header.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size], QtG.QFont.Bold))
+        font = QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.lobby.font_size])
+        font.setBold(True)
+        self.header.setFont(font)
     
     def _ExpansionsList_list(self):
         self.list = QtW.QGridLayout()
@@ -507,7 +519,10 @@ class LobbyScreen(QtW.QWidget):
     
     def _Lobby_title(self):
         self.title_label = QtW.QLabel(f'Lobby: {self.lobby_key}')
-        self.title_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[5+self.font_size], QtG.QFont.Bold))
+        # self.title_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[5+self.font_size], QtG.QFont.Bold))
+        font = QtG.QFont(prop_s.font, prop_s.font_sizes[5+self.font_size])
+        font.setBold(True)
+        self.title_label.setFont(font)
         
         self.joined_as_label = QtW.QLabel(f'Joined as: {self.username}')
         self.joined_as_label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[2+self.font_size]))
@@ -568,8 +583,8 @@ class LobbyScreen(QtW.QWidget):
 
         # Create a layout and add the components
         self.main_layout = QtW.QGridLayout()
-        self.main_layout.addWidget(self.title_label,            1, 0, alignment=QtC.Qt.AlignCenter)
-        self.main_layout.addWidget(self.joined_as_label,        2, 0, alignment=QtC.Qt.AlignCenter)
+        self.main_layout.addWidget(self.title_label,            1, 0, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(self.joined_as_label,        2, 0, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
         
         self.main_layout.addWidget(QtE.QHSeparationLine(),      3, 0)
         
@@ -631,15 +646,15 @@ class LobbyScreen(QtW.QWidget):
         title = 'Start game?'
         text = 'Are you sure you want to start the game?'
         yesNoDialog = YesNoDialog(self, title, text)
-        result = yesNoDialog.exec_()
-        if result == QtW.QDialog.Accepted:
+        result = yesNoDialog.exec()
+        # QtW.QDialog.Accepted
+        if result == QtW.QDialog.DialogCode.Accepted:
             # Close lobby
             self.Refs('open').set(False)
     
     def start_game(self):
         self.start_game_updater.disconnect() # don't listen to updates anymore
         game_screen = GameScreen(self)
-
         self.stacked.addWidget(game_screen)
         self.stacked.setCurrentWidget(game_screen)
         self.menu_screen.setWindowTitle(f'Carcassonne Online - {self.username}')
@@ -670,6 +685,7 @@ class LobbyScreen(QtW.QWidget):
                     data[item[0]] = item[1]
                 chat_text = f"{data['username']}: {data['message']}"
                 self.chat_display.append(chat_text)
+                
                 if data['message'] == 'conns':
                     conns = self.Refs('connections').get()
                     self.chat_display.append(f'--> {conns}')
@@ -683,6 +699,27 @@ class LobbyScreen(QtW.QWidget):
             }
             if self.Refs('chat').push(chat_message):
                 self.chat_input.clear()
+    
+    def send_feed_message(self, **kwargs):
+        print('\n', kwargs)
+        if len(kwargs.keys()) > 0: # call from internal game
+            chat_message = {'username': self.username}
+            for arg in kwargs.keys():
+                chat_message[arg] = kwargs[arg]
+                
+            if self.Refs('feed').push(chat_message):
+                print('sent')
+            
+        else: # call from the chat input box
+            message = self.chat_input.text().strip()
+
+            if len(message)>0:
+                chat_message = {
+                    'username': self.username,
+                    'message': message
+                }
+                if self.Refs('feed').push(chat_message):
+                    print('sent')
 
 #%% Updaters
 class StartGameUpdater(QtC.QThread):
