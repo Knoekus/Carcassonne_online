@@ -2,10 +2,12 @@ import PyQt6.QtGui     as QtG
 import PyQt6.QtWidgets as QtW
 import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
-import string
+
+import Classes.Meeples as Meeples
 import prop_s
 import tile_data
 
+import string
 import os
 import random as rnd
 import copy
@@ -27,6 +29,11 @@ class Tiles():
         self.game.tiles_left_label.setText(f'{self.game.tiles_left} tiles left.')
     
     def New_tile(self, tile_idx_in=None, tile_letter_in=None):
+        # Disable end turn button: the tile must be placed first
+        self.game.button_end_turn.setEnabled(0)
+        Meeples.En_dis_able_meeples(self.game, enable=False)
+        
+        # Get a new tile
         while True:
             tile_idx, tile_letter, file = self.Choose_tile(tile_idx_in, tile_letter_in)
             # Give new tile the material data            
@@ -114,14 +121,16 @@ class Tiles():
             # Place tile
             self.Place_tile(file, tile_idx, tile_letter, row, col, rotation)
             self.game.options.remove((row, col))
-            # self.game.board_tiles[row][col].rotate(rotation)
             
             # Reset new tile
             if self.lobby_key == 'test2':
                 file = r'..\Images\tile_logo.png'
             else: # call from lobby
                 file = r'.\Images\tile_logo.png'
-            new_tile.reset(file)
+            # new_tile.reset(file)
+            new_tile.draw_image(file)
+            new_tile.disable()
+            new_tile.rotation = 0
             
             # Clear old options
             for option in self.game.options:
@@ -131,7 +140,7 @@ class Tiles():
                 tile.set_tile(None, None, None, self.game)
             
             # Test purposes
-            self.New_tile(1)
+            # self.New_tile(1)
         return clicked
 
     def Choose_tile(self, tile_idx=None, tile_letter=None):
@@ -300,7 +309,6 @@ class Tiles():
         # Place tile
         board_tile = self.game.board_tiles[row][col]
         board_tile.set_tile(file, tile_idx, tile_letter, self.game)
-        self.game.new_tile.disable()
         
         # Rotating
         board_tile.rotating = True
@@ -319,6 +327,13 @@ class Tiles():
                                           tile_idx       = tile_idx,
                                           tile_letter    = tile_letter,
                                           row = row, col = col)
+        
+        # Enable/disable 'end turn' button and meeples
+        if self.game.username == self.game.current_player:
+            self.game.button_end_turn.setEnabled(1)
+        else:
+            self.game.button_end_turn.setEnabled(0)
+        Meeples.En_dis_able_meeples(self.game, enable=True)
     
     def _New_tile(self, row, col):
         # if self.lobby_key == 'test2':

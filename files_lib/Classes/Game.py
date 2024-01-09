@@ -21,6 +21,7 @@ if __name__ == '__main__': # direct test call
     from Classes.Animations import Animation
     from Classes.Expansions import Expansions
     from Classes.Tiles import Tiles
+    import Classes.Meeples as Meeples
     
     if r"..\Dialogs" not in sys.path:
         sys.path.append(r"..\..\Dialogs")
@@ -50,6 +51,7 @@ else: # call from lobby
     from Classes.Animations import Animation
     from Classes.Expansions import Expansions
     from Classes.Tiles import Tiles
+    import Classes.Meeples as Meeples
     
     # if r"..\Dialogs" not in sys.path:
     #     sys.path.append(r"..\Dialogs")
@@ -75,10 +77,12 @@ class GameScreen(QtW.QWidget):
         starting_player = np.random.choice(self.player_list)
         if 'test' in self.lobby.lobby_key:
             self.Player_at_turn('user1', init=True)
+            self.current_player = 'user1'
         else:
             self.Player_at_turn(starting_player, init=True)
+            self.current_player = starting_player
         
-        # Game phase 1
+        # Game phase 1: initial tile
         self.Tiles.Board_init()
         if self.Expansions.expansions[r'The River'] == 0:
             # Default start with tile H
@@ -89,9 +93,10 @@ class GameScreen(QtW.QWidget):
             file = self.Tiles.Choose_tile(2, 'D')[2]
             self.Tiles.Place_tile(file, 2, 'D', 0, 0)
         
-        # Game phase 2
-        # Make next tile available
+        # Game phase 2: make next tile available
         self.Tiles.New_tile(1)
+        
+        # Game phase 3: ...
     
     def _Game_init(self):
         # References from lobby
@@ -205,22 +210,30 @@ class GameScreen(QtW.QWidget):
     
     def _Game_inventory(self):
         #===== Initial inventory =====#
-        def _Meeple_standard():
-            tile_size = 50
-            if __name__ == '__main__': # independent call
-                file = r'..\Images\Meeples\Blue\SF.png'
-            else: # call from lobby
-                file = r'.\Images\Meeples\Blue\SF.png'
-            pixmap = QtE.GreenScreenPixmap(file)
-            meeple = QtE.ClickableImage(pixmap, tile_size, tile_size)
-            return meeple
+        # def _Meeple_standard():
+        #     tile_size = 50
+        #     if __name__ == '__main__': # independent call
+        #         file = r'..\Images\Meeples\Blue\SF.png'
+        #     else: # call from lobby
+        #         file = r'.\Images\Meeples\Blue\SF.png'
+        #     pixmap = QtE.GreenScreenPixmap(file)
+        #     meeple = QtE.ClickableImage(pixmap, tile_size, tile_size)
+            
+        #     # FIXME: check connect function
+        #     meeple.clicked.connect(self.Meeple_clicked('standard')) # connect function
+        #     return meeple
         
         self.meeples_standard = dict()
         self.meeples_standard_layout = QtW.QGridLayout()
         self.meeples_standard_layout.setHorizontalSpacing(0)
         self.meeples_standard_layout.setVerticalSpacing(0)
-        for idx in range(7): # start with 7 standard meeples
-            self.meeples_standard[idx] = _Meeple_standard()
+        
+        # Start with 7 standard meeples
+        for idx in range(7):
+            # self.meeples_standard[idx] = _Meeple_standard()
+            meeple = Meeples.Meeple_standard(self)
+            meeple.clicked.connect(self.Meeple_clicked('standard')) # connect function
+            self.meeples_standard[idx] = meeple
             self.meeples_standard_layout.addWidget(self.meeples_standard[idx], np.floor((idx)/4).astype(int), idx%4, 1, 1)
         
         self.inventory = QtW.QGridLayout()
@@ -266,6 +279,7 @@ class GameScreen(QtW.QWidget):
         next_player_idx = (current_player_idx + 1) % len(self.player_list)
         next_player = self.player_list[next_player_idx]
         self.Player_at_turn(next_player)
+        self.current_player = next_player
         
     def Player_at_turn(self, player_at_turn, init=False):
         # Stop current player
@@ -279,13 +293,24 @@ class GameScreen(QtW.QWidget):
         # New player at turn
         self.Refs(f'connections/{player_at_turn}').set(1)
         self.players_name_anims[player_at_turn].start()
-        self.button_end_turn.setEnabled(1)
+        # self.button_end_turn.setEnabled(1)
         
-        # Enable/disable 'end turn' button
-        if self.username == player_at_turn:
-            self.button_end_turn.setEnabled(1)
-        else:
-            self.button_end_turn.setEnabled(0)
+        # # Enable/disable 'end turn' button
+        # if self.username == player_at_turn:
+        #     self.button_end_turn.setEnabled(1)
+        # else:
+        #     self.button_end_turn.setEnabled(0)
+    
+    def Meeple_clicked(self, meeple_type):
+        def clicked():
+            if meeple_type == 'standard':
+                # In no instance can this meeple be placed on another tile but the
+                # placed tile, so no need to highlight options before opening dialog.
+                window = Meeples.MeeplePlaceWindow(self.new_tile, meeple_type, parent=self)
+                None
+            else:
+                raise Exception(f'Unknown meeple type: {meeple_type}')
+        return clicked
 
 #%% Main
 if __name__ == '__main__':
@@ -309,7 +334,7 @@ if __name__ == '__main__':
             
             self.Refs('open').set(False)
             self.Refs('connections').set({'user1':0, 'user2':0})
-            self.Refs('players').set({'user1':{'colour':"ffffff00"}, 'user2':{'colour':"ffff00ff"}})
+            self.Refs('players').set({'user1':{'colour':prop_s.colours[1]}, 'user2':{'colour':prop_s.colours[5]}})
             self.Refs('feed').set([])
         
         def Refs(self, key, item=None, load='get_set', prefix='lobby'):
