@@ -83,7 +83,10 @@ class QImage(QtW.QLabel):
     
     def draw_image(self, file):
         if type(file) == str:
-            self.file = file
+            # Only change file string if it's actually a tile, not the logo
+            if 'logo' not in file:
+                self.file = file
+            
             self.pixmap = QtG.QPixmap(file)
             self.setPixmap(self.pixmap)
         elif type(file) == type(QtG.QPixmap()):
@@ -147,8 +150,8 @@ class Tile(ClickableImage):
         self.rotation = 0
         self.material_data = dict()
         
-        if image != None:
-            self.draw_image(image)
+        # if image != None:
+        #     self.draw_image(image)
     
     def set_tile(self, file, tile_idx, tile_letter, game):
         self.index = tile_idx
