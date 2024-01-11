@@ -210,19 +210,6 @@ class GameScreen(QtW.QWidget):
     
     def _Game_inventory(self):
         #===== Initial inventory =====#
-        # def _Meeple_standard():
-        #     tile_size = 50
-        #     if __name__ == '__main__': # independent call
-        #         file = r'..\Images\Meeples\Blue\SF.png'
-        #     else: # call from lobby
-        #         file = r'.\Images\Meeples\Blue\SF.png'
-        #     pixmap = QtE.GreenScreenPixmap(file)
-        #     meeple = QtE.ClickableImage(pixmap, tile_size, tile_size)
-            
-        #     # FIXME: check connect function
-        #     meeple.clicked.connect(self.Meeple_clicked('standard')) # connect function
-        #     return meeple
-        
         self.meeples_standard = dict()
         self.meeples_standard_layout = QtW.QGridLayout()
         self.meeples_standard_layout.setHorizontalSpacing(0)
@@ -230,7 +217,6 @@ class GameScreen(QtW.QWidget):
         
         # Start with 7 standard meeples
         for idx in range(7):
-            # self.meeples_standard[idx] = _Meeple_standard()
             meeple = Meeples.Meeple_standard(self)
             meeple.clicked.connect(self.Meeple_clicked('standard')) # connect function
             self.meeples_standard[idx] = meeple
@@ -306,7 +292,7 @@ class GameScreen(QtW.QWidget):
             if meeple_type == 'standard':
                 # In no instance can this meeple be placed on another tile but the
                 # placed tile, so no need to highlight options before opening dialog.
-                window = Meeples.MeeplePlaceWindow(self.new_tile, meeple_type, parent=self)
+                window = Meeples.MeeplePlaceWindow(self.new_tile, meeple_type, self.materials, parent=self)
                 None
             else:
                 raise Exception(f'Unknown meeple type: {meeple_type}')

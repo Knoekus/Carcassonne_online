@@ -1,3 +1,4 @@
+# Tiles currently modelled as 32x32 pixels, upscaled x10
 tiles = dict()
 
 #%% 1 base game

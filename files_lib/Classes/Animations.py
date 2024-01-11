@@ -47,7 +47,7 @@ class Animation(QtC.QSequentialAnimationGroup):
         # Swap image
         def Redraw_image():
             # parent.draw_image(new_image)
-            parent.set_tile(new_image, tile_idx, tile_letter, parent.parent())
+            parent.set_tile(new_image, tile_idx, tile_letter, parent.parent().materials)
             self.removeAnimation(animation1)
             self.addAnimation(animation2)
             self.finished.disconnect()

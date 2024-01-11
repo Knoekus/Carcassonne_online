@@ -6,6 +6,8 @@ import PyQt6_Extra     as QtE
 import prop_s
 import tile_data
 
+import numpy
+
 class Meeple(QtE.ClickableImage):
     def __init__(self, game, meeple_type):
         self.init_vars(game, meeple_type)
@@ -51,15 +53,17 @@ class Meeple_standard(Meeple):
         self.power = 1
 
 class MeeplePlaceWindow(QtW.QDialog):
-    def __init__(self, tile, meeple_type, parent=None):
+    def __init__(self, tile, meeple_type, all_materials, parent=None):
         super().__init__(parent)
-    
         self.setWindowTitle('Place your meeple')
-        # self.setFixedSize(300, 100)
         
         # Tile layout
-        tile_layout = QtW.QGridLayout()
-        # ...
+        new_tile = self.Recreate_tile(tile, all_materials)
+        if False:
+            tile_layout = QtW.QGridLayout()
+            tile_layout.addWidget(new_tile, 0, 0)
+        else:
+            tile_layout = self.Split_layout(new_tile)
         
         # Buttons
         self.y_button = QtW.QPushButton('Confirm')
@@ -77,18 +81,73 @@ class MeeplePlaceWindow(QtW.QDialog):
         layout.addWidget(self.n_button, 1, 0)
         layout.addWidget(self.y_button, 1, 1)
         self.setLayout(layout)
-        self.show()
-    
-    def Position_select(self, pos):
-        # Enable and default the confirm button
-        self.y_button.setEnabled(True)
-        self.y_button.setDefault(True)
         
-        # Visualise
-        # ...
-
-    def setMinWidth(self, width):
-        self.setStyleSheet(f"QLabel{{min-width: {width}px;}}");
+        # Wrap it up
+        self.show()
+        self.setFixedSize(self.width(), self.height())
+    
+    def Split_layout(self, new_tile):
+        main_layout = QtW.QHBoxLayout()
+        main_layout.addStretch()
+        
+        # Tile layout
+        tile_layout = QtW.QGridLayout()
+        tile_layout.setSpacing(prop_s.tile_spacing)
+        
+        # pixmap = new_tile.pixmap.copy()
+        pixmap_size = self.pixmap.width()
+        pixels = len(tile_data.tiles[1]['A']['grass'])
+        sub_length = round(pixmap_size/pixels)
+        for row in range(pixels):
+            row_b = row*sub_length
+            for col in range(pixels):
+                col_b = col*sub_length
+                
+                sub_pixmap = self.pixmap.copy(col_b, row_b, sub_length, sub_length)
+                sub_tile = QtE.ClickableImage(sub_pixmap, sub_length, sub_length)
+                tile_layout.addWidget(sub_tile, row, col)
+        
+        # Final stretch column
+        main_layout.addLayout(tile_layout)
+        main_layout.addStretch()
+        
+        return main_layout
+    
+    def Recreate_tile(self, tile, all_materials):
+        # Properties
+        file = tile.file
+        letter = tile.letter
+        index = tile.index
+        rotation = tile.rotation
+        
+        # Making tile
+        new_tile = QtE.Tile(None, 160)
+        new_tile.set_tile(file, index, letter, all_materials)
+        
+        # Rotating
+        rotations = int(numpy.floor(rotation/90))
+        if rotations < 0:
+            for idx in range(-rotations):
+                new_tile.rotate(-90)
+        elif rotations > 0:
+            for idx in range(rotations):
+                new_tile.rotate(90)
+        
+        self.pixmap = new_tile.pixmap.transformed(QtG.QTransform().rotate(rotation), QtC.Qt.TransformationMode.FastTransformation)
+        self.material_data = new_tile.material_data
+            
+        return new_tile
+    
+    def Position_selected(self, pos):
+        # sub_tile callback function
+        def clicked():
+            # Enable and default the confirm button
+            self.y_button.setEnabled(True)
+            self.y_button.setDefault(True)
+            
+            # Visualise
+            # ...
+        return clicked
 
 def En_dis_able_meeples(game, enable):
     '''
