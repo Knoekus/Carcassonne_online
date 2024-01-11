@@ -11,6 +11,7 @@ import string
 import os
 import random as rnd
 import copy
+import numpy
 
 class Tiles():
     def __init__(self, game):
@@ -29,9 +30,10 @@ class Tiles():
         self.game.tiles_left_label.setText(f'{self.game.tiles_left} tiles left.')
     
     def New_tile(self, tile_idx_in=None, tile_letter_in=None):
-        # Disable end turn button: the tile must be placed first
+        # Disable end turn button and meeples: the tile must be placed first
         self.game.button_end_turn.setEnabled(0)
         Meeples.En_dis_able_meeples(self.game, enable=False)
+        self.game.new_tile.rotation = 0 # start a new tile with 0 rotation
         
         # Get a new tile
         while True:
@@ -60,6 +62,11 @@ class Tiles():
             elif True:
                 print(f'\n{tile_idx}{tile_letter} is infeasible\n')
         
+        # Push to event log
+        self.game.lobby.send_feed_message(event          = 'new_tile',
+                                          tile_idx       = tile_idx,
+                                          tile_letter    = tile_letter)
+        
         # Update tiles left
         self.game.new_tile_anim.swap_image(file, tile_idx, tile_letter, 500) # replaces set_tile, maybe relocate to QtE
         self.game.new_tile.enable()
@@ -85,7 +92,7 @@ class Tiles():
             row, col = option
             tile = self.game.board_tiles[row][col]
             tile.disable()
-            tile.set_tile(None, None, None, self.game)
+            tile.set_tile(None, None, None, self.game.materials)
             # self.game.board_tiles[row][col].swap_image(None, None, None, 1000) # replaces set_tile, maybe relocate to QtE
         
         # Get new options
@@ -102,7 +109,7 @@ class Tiles():
             row, col = option
             tile = self.game.board_tiles[row][col]
             tile.enable()
-            tile.set_tile(file, None, None, self.game)
+            tile.set_tile(file, None, None, self.game.materials)
             try: tile.clicked.disconnect()
             except: None
             tile.clicked.connect(self.Option_clicked(row, col))
@@ -130,14 +137,14 @@ class Tiles():
             # new_tile.reset(file)
             new_tile.draw_image(file)
             new_tile.disable()
-            new_tile.rotation = 0
+            # new_tile.rotation = 0
             
             # Clear old options
             for option in self.game.options:
                 opt_row, opt_col = option
                 tile = self.game.board_tiles[opt_row][opt_col]
                 tile.disable()
-                tile.set_tile(None, None, None, self.game)
+                tile.set_tile(None, None, None, self.game.materials)
             
             # Test purposes
             # self.New_tile(1)
@@ -308,12 +315,11 @@ class Tiles():
             
         # Place tile
         board_tile = self.game.board_tiles[row][col]
-        board_tile.set_tile(file, tile_idx, tile_letter, self.game)
+        board_tile.set_tile(file, tile_idx, tile_letter, self.game.materials)
         
         # Rotating
-        board_tile.rotating = True
-        import numpy
-        rotations = int(numpy.floor(rotation/90))
+        # board_tile.rotating = True
+        rotations = int(numpy.floor(rotation%360/90))
         if rotations < 0:
             for idx in range(-rotations):
                 board_tile.rotate(-90)
@@ -326,6 +332,7 @@ class Tiles():
         self.game.lobby.send_feed_message(event          = 'placed_tile',
                                           tile_idx       = tile_idx,
                                           tile_letter    = tile_letter,
+                                          rotation       = rotation,
                                           row = row, col = col)
         
         # Enable/disable 'end turn' button and meeples

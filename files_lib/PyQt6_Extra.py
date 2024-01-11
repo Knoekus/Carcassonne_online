@@ -84,7 +84,7 @@ class QImage(QtW.QLabel):
     def draw_image(self, file):
         if type(file) == str:
             # Only change file string if it's actually a tile, not the logo
-            if 'logo' not in file:
+            if 'tile_' not in file:
                 self.file = file
             
             self.pixmap = QtG.QPixmap(file)
@@ -141,7 +141,8 @@ class Tile(ClickableImage):
                     self.rotate(-90)
                 elif QMouseEvent.button() == QtC.Qt.MouseButton.RightButton:
                     self.rotate(90)
-                self.game.Tiles.Show_options()
+                if self.game != None:
+                    self.game.Tiles.Show_options()
     
     def reset(self, image=None):
         self.disable()
@@ -153,12 +154,12 @@ class Tile(ClickableImage):
         # if image != None:
         #     self.draw_image(image)
     
-    def set_tile(self, file, tile_idx, tile_letter, game):
+    def set_tile(self, file, tile_idx, tile_letter, all_materials):
         self.index = tile_idx
         self.letter = tile_letter
         
         self.draw_image(file)
-        for material in game.materials:
+        for material in all_materials:
             try:
                 self.material_data[material] = tile_data.tiles[tile_idx][tile_letter][material]
             except: None # ignore material if it's not in the game or the tile has no information about it
@@ -166,13 +167,12 @@ class Tile(ClickableImage):
     def rotate(self, angle):
         if angle not in [-90, 90]:
             raise Exception('The rotation angle must be either -90 or 90.')
-        self.rotation += angle
+        self.rotation = (self.rotation + angle) % 360
         
         # Pixmap
-        pixmap_new = self.pixmap.transformed(QtG.QTransform().rotate(self.rotation), QtC.Qt.TransformationMode.FastTransformation)
-        # self.draw_image(pixmap_new)
-        try: self.setPixmap(pixmap_new)
-        except Exception as e: print(e)
+        pixmap_old = QtG.QPixmap(self.file)
+        pixmap_new = pixmap_old.transformed(QtG.QTransform().rotate(self.rotation), QtC.Qt.TransformationMode.FastTransformation)
+        self.setPixmap(pixmap_new)
         
         # Material data
         material_data_new = dict()
