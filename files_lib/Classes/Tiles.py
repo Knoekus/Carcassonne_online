@@ -84,72 +84,6 @@ class Tiles():
         # Show placement options
         self.Show_options()
     
-    def Show_options(self):
-        tile_idx, tile_letter = self.game.new_tile.index, self.game.new_tile.letter
-        
-        # Clear old options
-        for option in self.game.options:
-            row, col = option
-            tile = self.game.board_tiles[row][col]
-            tile.disable()
-            tile.set_tile(None, None, None, self.game.materials)
-            # self.game.board_tiles[row][col].swap_image(None, None, None, 1000) # replaces set_tile, maybe relocate to QtE
-        
-        # Get new options
-        self.game.options = self.Tile_options(tile_idx, tile_letter)
-        
-        # Get image
-        if self.lobby_key == 'test2':
-            file = '..\\Images\\tile_available'
-        else: # call from lobby
-            file = '.\\Images\\tile_available'
-        
-        # Set options' images
-        for option in self.game.options:
-            row, col = option
-            tile = self.game.board_tiles[row][col]
-            tile.enable()
-            tile.set_tile(file, None, None, self.game.materials)
-            try: tile.clicked.disconnect()
-            except: None
-            tile.clicked.connect(self.Option_clicked(row, col))
-            # tile.swap_image(file, None, None, 1000) # replaces set_tile, maybe relocate to QtE
-            
-    def Option_clicked(self, row, col):
-        def clicked():
-            new_tile = self.game.new_tile
-            
-            # Get image and information
-            file        = copy.deepcopy(new_tile.file)
-            tile_idx    = copy.deepcopy(new_tile.index)
-            tile_letter = copy.deepcopy(new_tile.letter)
-            rotation    = copy.deepcopy(new_tile.rotation)
-            
-            # Place tile
-            self.Place_tile(file, tile_idx, tile_letter, row, col, rotation)
-            self.game.options.remove((row, col))
-            
-            # Reset new tile
-            if self.lobby_key == 'test2':
-                file = r'..\Images\tile_logo.png'
-            else: # call from lobby
-                file = r'.\Images\tile_logo.png'
-            # new_tile.reset(file)
-            new_tile.draw_image(file)
-            new_tile.disable()
-            # new_tile.rotation = 0
-            
-            # Clear old options
-            for option in self.game.options:
-                opt_row, opt_col = option
-                tile = self.game.board_tiles[opt_row][opt_col]
-                tile.disable()
-                tile.set_tile(None, None, None, self.game.materials)
-            
-            # Test purposes
-            # self.New_tile(1)
-        return clicked
-
     def Choose_tile(self, tile_idx=None, tile_letter=None):
         # Choose new tile
         if tile_idx == None and tile_letter == None:
@@ -178,6 +112,219 @@ class Tiles():
         
         return tile_idx, tile_letter, file
     
+    def Option_clicked(self, row, col):
+        def clicked():
+            new_tile = self.game.new_tile
+            
+            # Get image and information
+            file        = copy.deepcopy(new_tile.file)
+            tile_idx    = copy.deepcopy(new_tile.index)
+            tile_letter = copy.deepcopy(new_tile.letter)
+            rotation    = copy.deepcopy(new_tile.rotation)
+            
+            # Place tile
+            self.Place_tile(file, tile_idx, tile_letter, row, col, rotation)
+            self.game.options.remove((row, col))
+            
+            # Update possessions
+            self.Update_possessions(new_tile.material_data, row, col)
+            
+            # Reset new tile
+            if self.lobby_key == 'test2':
+                file = r'..\Images\tile_logo.png'
+            else: # call from lobby
+                file = r'.\Images\tile_logo.png'
+            # new_tile.reset(file)
+            new_tile.draw_image(file)
+            new_tile.disable()
+            # new_tile.rotation = 0
+            
+            # Clear old options
+            for option in self.game.options:
+                opt_row, opt_col = option
+                tile = self.game.board_tiles[opt_row][opt_col]
+                tile.disable()
+                tile.set_tile(None, None, None, self.game.materials)
+            
+            # Test purposes
+            # self.New_tile(1)
+        return clicked
+    
+    def Place_tile(self, file, tile_idx, tile_letter, row, col, rotation=0):
+        # Add new row if necessary
+        if row < self.game.board_rows[0]:
+            self._Board_new_row_above()
+        elif row > self.game.board_rows[1]:
+            self._Board_new_row_below()
+        
+        # Add new col if necessary
+        if col < self.game.board_cols[0]:
+            self._Board_new_col_left()
+        elif col > self.game.board_cols[1]:
+            self._Board_new_col_right()
+            
+        # Place tile
+        board_tile = self.game.board_tiles[row][col]
+        board_tile.set_tile(file, tile_idx, tile_letter, self.game.materials)
+        
+        # Rotating
+        # board_tile.rotating = True
+        rotations = int(numpy.floor(rotation%360/90))
+        if rotations < 0:
+            for idx in range(-rotations):
+                board_tile.rotate(-90)
+        elif rotations > 0:
+            for idx in range(rotations):
+                board_tile.rotate(90)
+        board_tile.rotating = False
+            
+        # Push message to event log
+        self.game.lobby.send_feed_message(event          = 'placed_tile',
+                                          tile_idx       = tile_idx,
+                                          tile_letter    = tile_letter,
+                                          rotation       = rotation,
+                                          row = row, col = col)
+        
+        # Enable/disable 'end turn' button and meeples
+        if self.game.username == self.game.current_player:
+            self.game.button_end_turn.setEnabled(1)
+        else:
+            self.game.button_end_turn.setEnabled(0)
+        Meeples.En_dis_able_meeples(self.game, enable=True)
+    
+    #%% Possessions
+    def Update_possessions(self, tile_data, row, col):
+        def get_neighbours(data, idx):
+            # Get neighbouring tiles and number of edges the material patch covers
+            edges = 0
+            neighbours = []
+            if idx in data[0]: # north
+                edges += 1
+                tile = self.game.board_tiles[row-1][col]
+                if len(tile.material_data) > 0: # tile is not empty
+                    neighbours += [tile]
+            if idx in [data[x][-1] for x in range(len(data))]: # east
+                edges += 1
+                tile = self.game.board_tiles[row][col+1]
+                if len(tile.material_data) > 0: # tile is not empty
+                    neighbours += [tile]
+            if idx in data[-1]: # south
+                edges += 1
+                tile = self.game.board_tiles[row+1][col]
+                if len(tile.material_data) > 0: # tile is not empty
+                    neighbours += [tile]
+            if idx in [data[x][0] for x in range(len(data))]: # west
+                edges += 1
+                tile = self.game.board_tiles[row][col-1]
+                if len(tile.material_data) > 0: # tile is not empty
+                    neighbours += [tile]
+            return neighbours, edges
+            
+        for material in tile_data.keys():
+        # For all material of the placed tile
+            mat_data = tile_data[material]
+            for mat_idx in range(1, max(mat_data)+1):
+            # Check each patch of material in the tile
+                neighbours, edges = get_neighbours(mat_data, mat_idx)
+                if len(neighbours) == 0:
+                # The material patch does not touch any neighbours
+                    self._New_possession(edges, material, mat_idx, row, col)
+                    
+                elif len(neighbours) == 1:
+                # There is a neighbouring tile, don't create new possession but append to existing one
+                    self._Append_possession(neighbours[0], material, mat_idx, row, col)
+                    
+                elif len(neighbours) > 1:
+                # There are multiple neighbouring tiles, join them together
+                    self._Join_possessions(neighbours, material, mat_idx, row, col)
+                
+    def _New_possession(self, edges, material, mat_idx, row, col):
+        possessions = self.game.possessions
+        pos_idx = len(possessions[material])
+        if material == 'grass':
+            possessions[material][pos_idx] = {'tiles': # all tiles and their material index that belong to this possession
+                                                  [(self.game.board_tiles[row][col], mat_idx)],
+                                              'player_strength': # meeple strength per player
+                                                  {player:0 for player in self.game.connections},
+                                              'finished_cities': # number of finished cities in field
+                                                  0
+                                              }
+        elif material == 'road':
+            possessions[material][pos_idx] = {'tiles': # all tiles and their material index that belong to this possession
+                                                  [(self.game.board_tiles[row][col], mat_idx)],
+                                              'player_strength': # meeple strength per player
+                                                  {player:0 for player in self.game.connections},
+                                              'open_edges': # number of open edges of this possession
+                                                  len(edges)
+                                              }
+            # Add inn support if that expansion is active
+            if r'Inns && Cathedrals' in self.expansions:
+                possessions[material][pos_idx]['inn'] = False
+        elif material == 'city':
+            possessions[material][pos_idx] = {'tiles': # all tiles and their material index that belong to this possession
+                                                  [(self.game.board_tiles[row][col], mat_idx)],
+                                              'player_strength': # meeple strength per player
+                                                  {player:0 for player in self.game.connections},
+                                              'open_edges': # number of open edges of this possession
+                                                  len(edges),
+                                              'shield_tiles': # number of shields in city
+                                                  0
+                                              }
+            # Add cathedral support if that expansion is active
+            if r'Inns && Cathedrals' in self.expansions:
+                possessions[material][pos_idx]['cathedral'] = False
+        elif material == 'monastery':
+            # Calculate surrounding tiles
+            surrounding_tiles = 1
+            for row_n, col_n in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
+                neighbour_tile = self.game.board_tiles[row + row_n][col + col_n]
+                if len(neighbour_tile.material_data) > 0:
+                    surrounding_tiles += 1
+                    
+            possessions[material][pos_idx] = {'tile': # tile and material index of monastery
+                                                  [(self.game.board_tiles[row][col], mat_idx)],
+                                              'surrounding_tiles': # number of surrounding tiles
+                                                  surrounding_tiles
+                                              }
+    
+    def _Append_possession(self, neighbour, material, mat_idx, row, col):
+        # Append tile to an existing possession
+        pass
+    
+    def _Join_possessions(self):
+        # Join two possessions together into one big possession
+        pass
+    
+    #%% Options
+    def Show_options(self):
+        tile_idx, tile_letter = self.game.new_tile.index, self.game.new_tile.letter
+        
+        # Clear old options
+        for option in self.game.options:
+            row, col = option
+            tile = self.game.board_tiles[row][col]
+            tile.disable()
+            tile.set_tile(None, None, None, self.game.materials)
+        
+        # Get new options
+        self.game.options = self.Tile_options(tile_idx, tile_letter)
+        
+        # Get image
+        if self.lobby_key == 'test2':
+            file = '..\\Images\\tile_available'
+        else: # call from lobby
+            file = '.\\Images\\tile_available'
+        
+        # Set options' images
+        for option in self.game.options:
+            row, col = option
+            tile = self.game.board_tiles[row][col]
+            tile.enable()
+            tile.set_tile(file, None, None, self.game.materials)
+            try: tile.clicked.disconnect()
+            except: None
+            tile.clicked.connect(self.Option_clicked(row, col))
+
     def Tile_options(self, tile_idx, tile_letter):
         """Find all empty neighbour tiles where the new tile can be placed."""
         def get_edge(data, pos:str):
@@ -300,59 +447,7 @@ class Tiles():
                                         break # stop trying materials
         return options
     
-    def Place_tile(self, file, tile_idx, tile_letter, row, col, rotation=0):
-        # Add new row if necessary
-        if row < self.game.board_rows[0]:
-            self._Board_new_row_above()
-        elif row > self.game.board_rows[1]:
-            self._Board_new_row_below()
-        
-        # Add new col if necessary
-        if col < self.game.board_cols[0]:
-            self._Board_new_col_left()
-        elif col > self.game.board_cols[1]:
-            self._Board_new_col_right()
-            
-        # Place tile
-        board_tile = self.game.board_tiles[row][col]
-        board_tile.set_tile(file, tile_idx, tile_letter, self.game.materials)
-        
-        # Rotating
-        # board_tile.rotating = True
-        rotations = int(numpy.floor(rotation%360/90))
-        if rotations < 0:
-            for idx in range(-rotations):
-                board_tile.rotate(-90)
-        elif rotations > 0:
-            for idx in range(rotations):
-                board_tile.rotate(90)
-        board_tile.rotating = False
-            
-        # Push message to event log
-        self.game.lobby.send_feed_message(event          = 'placed_tile',
-                                          tile_idx       = tile_idx,
-                                          tile_letter    = tile_letter,
-                                          rotation       = rotation,
-                                          row = row, col = col)
-        
-        # Enable/disable 'end turn' button and meeples
-        if self.game.username == self.game.current_player:
-            self.game.button_end_turn.setEnabled(1)
-        else:
-            self.game.button_end_turn.setEnabled(0)
-        Meeples.En_dis_able_meeples(self.game, enable=True)
-    
-    def _New_tile(self, row, col):
-        # if self.lobby_key == 'test2':
-        #     file = '..\\Images\\Coin_icon.png'
-        # else: # call from lobby
-        #     file = '.\\Images\\Coin_icon.png'
-        file = None
-        
-        empty_tile = QtE.Tile(file, prop_s.tile_size, self.game)
-        self.game.board_tiles[row][col] = empty_tile
-        return empty_tile
-    
+    #%% Board
     def Board_init(self):
         '''
         board_base  : the core QVBoxLayout
@@ -428,3 +523,14 @@ class Tiles():
             row = self.game.board[row_idx]
             row.insertWidget(insert_idx, self._New_tile(row_idx, new_col_idx))
         # print(f'Added col {new_col_idx} at {insert_idx}')
+    
+    def _New_tile(self, row, col):
+        # if self.lobby_key == 'test2':
+        #     file = '..\\Images\\Coin_icon.png'
+        # else: # call from lobby
+        #     file = '.\\Images\\Coin_icon.png'
+        file = None
+        
+        empty_tile = QtE.Tile(file, prop_s.tile_size, self.game)
+        self.game.board_tiles[row][col] = empty_tile
+        return empty_tile

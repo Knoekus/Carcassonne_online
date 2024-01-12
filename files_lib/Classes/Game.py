@@ -73,6 +73,9 @@ class GameScreen(QtW.QWidget):
         # Expansions
         self.Expansions = Expansions(self)
         
+        # Possessions
+        self.possessions = {material:dict() for material in self.materials}
+        
         # Starting player
         starting_player = np.random.choice(self.player_list)
         if 'test' in self.lobby.lobby_key:
@@ -104,6 +107,9 @@ class GameScreen(QtW.QWidget):
         self.Refs = self.lobby.Refs
         self.font_size = self.lobby.font_size
         
+        # Connections
+        self.connections = self.Refs('connections').get()
+        
         # Tiles
         self.Tiles = Tiles(self)
         numbers = [8, 9, 4, 1, 3, 3, 3, 4, 5, 4, 2, 1, 2, 3, 2, 3, 2, 3, 2, 3, 1, 1, 2, 1]
@@ -122,7 +128,8 @@ class GameScreen(QtW.QWidget):
         
         # Players
         def _Game_players(self):
-            players = self.Refs('connections').get()
+            # players = self.Refs('connections').get()
+            players = self.connections
             self.player_list = [player for player in players if player is not None]
             
             # Put each player in the row with points indicator
@@ -270,7 +277,8 @@ class GameScreen(QtW.QWidget):
     def Player_at_turn(self, player_at_turn, init=False):
         # Stop current player
         if init == False:
-            connections = self.Refs('connections').get()
+            # connections = self.Refs('connections').get()
+            connections = self.connections
             player_idx = list(connections.values()).index(1)
             player = list(connections.keys())[player_idx]
             self.Refs(f'connections/{player}').set(0)
