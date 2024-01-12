@@ -1,4 +1,14 @@
 # Tiles currently modelled as 32x32 pixels, upscaled x10
+
+# grass     = list
+# road      = list
+# city      = list
+# monastery = list
+# water     = list # The River
+# cathedral = list # Inns & Cathedrals
+# inns      = list # Inns & Cathedrals
+# garden    = list # The Abbot
+
 tiles = dict()
 
 #%% 1 base game
@@ -360,12 +370,3 @@ tiles[1]['X'] = {'city':  [[1, 1, 1, 1, 1, 1, 1],
                         [1, 1, 1, 1, 1, 1, 1],
                         [1, 1, 1, 1, 1, 1, 1]],
              }
-
-# grass     = list
-# road      = list
-# city      = list
-# monastery = list
-# water     = list # The River
-# cathedral = list # Inns & Cathedrals
-# inns      = list # Inns & Cathedrals
-# garden    = list # The Abbot
