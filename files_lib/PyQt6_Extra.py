@@ -95,6 +95,12 @@ class QImage(QtW.QLabel):
         elif file == None:
             # self.file = None
             self.setPixmap(QtG.QPixmap())
+            
+        elif type(file) == type(QtG.QImage()):
+            self.pixmap = QtG.QPixmap.fromImage(file)
+            self.setPixmap(self.pixmap)
+        else:
+            raise Exception(f'Unknown file type for QtE.QImage object: {type(file)}, {type(QtG.QImage())}')
   
 class ClickableImage(QImage):
     clicked = QtC.pyqtSignal()
@@ -126,12 +132,15 @@ class Tile(ClickableImage):
         self.reset()
         self.game = game
         self.rotating = rotating
+        self.possessions = dict()
+    
+    def update_possessions(self, material, mat_idx, pos_idx):
+        if material not in self.possessions.keys():
+        # Make material entry in possessions list if it doesn't exist yet
+            self.possessions[material] = dict()
         
-        # self.disable()
-        # self.index = None
-        # self.letter = None
-        # self.rotation = 0
-        # self.material_data = dict()
+        # Give possession index for material index
+        self.possessions[material][mat_idx] = pos_idx
     
     def mousePressEvent(self, QMouseEvent):
         if self.clickable == True:

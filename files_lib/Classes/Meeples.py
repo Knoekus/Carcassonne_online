@@ -3,6 +3,7 @@ import PyQt6.QtWidgets as QtW
 import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
+from Classes.Animations import Animation
 import prop_s
 import tile_data
 
@@ -53,17 +54,16 @@ class Meeple_standard(Meeple):
         self.power = 1
 
 class MeeplePlaceWindow(QtW.QDialog):
-    def __init__(self, tile, meeple_type, all_materials, parent=None):
+    def __init__(self, tile, meeple_type, game, parent=None):
         super().__init__(parent)
         self.setWindowTitle('Place your meeple')
+        self.game = game
+        self.original_tile = tile
+        self.sub_tile_selected = None
         
         # Tile layout
-        new_tile = self.Recreate_tile(tile, all_materials)
-        if False:
-            tile_layout = QtW.QGridLayout()
-            tile_layout.addWidget(new_tile, 0, 0)
-        else:
-            tile_layout = self.Split_layout(new_tile)
+        self.main_tile = self.Recreate_tile(tile, self.game.materials)
+        tile_layout = self.Split_layout()
         
         # Buttons
         self.y_button = QtW.QPushButton('Confirm')
@@ -86,15 +86,15 @@ class MeeplePlaceWindow(QtW.QDialog):
         self.show()
         self.setFixedSize(self.width(), self.height())
     
-    def Split_layout(self, new_tile):
+    def Split_layout(self):
         main_layout = QtW.QHBoxLayout()
         main_layout.addStretch()
         
         # Tile layout
-        tile_layout = QtW.QGridLayout()
-        tile_layout.setSpacing(prop_s.tile_spacing)
+        self.tile_layout = QtW.QGridLayout()
+        self.tile_layout.setSpacing(prop_s.tile_spacing)
+        self.sub_tiles = dict()
         
-        # pixmap = new_tile.pixmap.copy()
         pixmap_size = self.pixmap.width()
         pixels = len(tile_data.tiles[1]['A']['grass'])
         sub_length = round(pixmap_size/pixels)
@@ -104,11 +104,10 @@ class MeeplePlaceWindow(QtW.QDialog):
                 col_b = col*sub_length
                 
                 sub_pixmap = self.pixmap.copy(col_b, row_b, sub_length, sub_length)
-                sub_tile = QtE.ClickableImage(sub_pixmap, sub_length, sub_length)
-                tile_layout.addWidget(sub_tile, row, col)
+                self.Make_sub_tile(sub_pixmap, sub_length, row, col)
         
         # Final stretch column
-        main_layout.addLayout(tile_layout)
+        main_layout.addLayout(self.tile_layout)
         main_layout.addStretch()
         
         return main_layout
@@ -138,15 +137,49 @@ class MeeplePlaceWindow(QtW.QDialog):
             
         return new_tile
     
-    def Position_selected(self, pos):
+    def Make_sub_tile(self, pixmap, length, row, col):
+        # Find out if material patch is occupied
+        for material in self.main_tile.material_data.keys():
+            mat_idx = self.main_tile.material_data[material][row][col]
+            if mat_idx > 0:
+            # Material patch found
+                pos_idx = self.original_tile.possessions[material][mat_idx]
+                pos = self.game.possessions[material][pos_idx]
+                player_strength = pos['player_strength']
+                total_strengths = [sum(player_strength[meeple].values()) for meeple in player_strength.keys()]
+                if sum(total_strengths) == 0:
+                # Possession has not yet been claimed
+                    sub_tile = QtE.ClickableImage(pixmap, length, length)
+                    sub_tile.clicked.connect(self.Position_selected(sub_tile, material, mat_idx, pos_idx))
+                    sub_tile.enable()
+                    self.tile_layout.addWidget(sub_tile, row, col)
+                else:
+                # Possession has been claimed, so blur out
+                    sub_tile = QtE.QImage(pixmap, length, length)
+                    self.tile_layout.addWidget(sub_tile, row, col)
+                    
+                    # Blur layer
+                    overlay_layer = QtG.QImage(length, length, QtG.QImage.Format.Format_RGBA64)
+                    colour = QtG.QColor(255, 255, 255, 100)
+                    overlay_layer.fill(colour)
+                    overlay_widget = QtE.QImage(overlay_layer, length, length)
+                    self.tile_layout.addWidget(overlay_widget, row, col)
+                    
+                self.sub_tiles[(row, col)] = sub_tile
+        
+    def Position_selected(self, sub_tile, material, mat_idx, pos_idx):
         # sub_tile callback function
         def clicked():
-            # Enable and default the confirm button
-            self.y_button.setEnabled(True)
-            self.y_button.setDefault(True)
+            # Material patch selected update
+            self.sub_tile_selected = (material, mat_idx, pos_idx)
             
             # Visualise
             # ...
+            # Paint meeple on corresponding material patch
+            
+            # Enable and default the confirm button
+            self.y_button.setEnabled(True)
+            self.y_button.setDefault(True)
         return clicked
 
 def En_dis_able_meeples(game, enable):
