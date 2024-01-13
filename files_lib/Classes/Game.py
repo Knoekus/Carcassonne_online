@@ -71,6 +71,7 @@ class GameScreen(QtW.QWidget):
         self.setLayout(self.mainLayout)
         
         # Expansions
+        self.expansions = self.Refs('expansions').get()
         self.Expansions = Expansions(self)
         
         # Possessions
@@ -97,7 +98,8 @@ class GameScreen(QtW.QWidget):
             self.Tiles.Place_tile(file, 2, 'D', 0, 0)
         
         # Game phase 2: make next tile available
-        self.Tiles.New_tile(1)
+        # self.Tiles.New_tile(1)
+        self.Tiles.New_tile(1, 'N')
         
         # Game phase 3: ...
     
@@ -223,6 +225,7 @@ class GameScreen(QtW.QWidget):
         self.meeples_standard_layout.setVerticalSpacing(0)
         
         # Start with 7 standard meeples
+        self.meeple_types = ['standard']
         for idx in range(7):
             meeple = Meeples.Meeple_standard(self)
             meeple.clicked.connect(self.Meeple_clicked('standard')) # connect function
@@ -268,11 +271,14 @@ class GameScreen(QtW.QWidget):
         # ...
         
         # Give turn to the next player
-        current_player_idx = self.player_list.index(self.username)
-        next_player_idx = (current_player_idx + 1) % len(self.player_list)
-        next_player = self.player_list[next_player_idx]
-        self.Player_at_turn(next_player)
-        self.current_player = next_player
+        if False:
+            current_player_idx = self.player_list.index(self.username)
+            next_player_idx = (current_player_idx + 1) % len(self.player_list)
+            next_player = self.player_list[next_player_idx]
+            self.Player_at_turn(next_player)
+            self.current_player = next_player
+        else:
+            self.Tiles.New_tile(1, 'P')
         
     def Player_at_turn(self, player_at_turn, init=False):
         # Stop current player
@@ -287,24 +293,30 @@ class GameScreen(QtW.QWidget):
         # New player at turn
         self.Refs(f'connections/{player_at_turn}').set(1)
         self.players_name_anims[player_at_turn].start()
-        # self.button_end_turn.setEnabled(1)
-        
-        # # Enable/disable 'end turn' button
-        # if self.username == player_at_turn:
-        #     self.button_end_turn.setEnabled(1)
-        # else:
-        #     self.button_end_turn.setEnabled(0)
     
     def Meeple_clicked(self, meeple_type):
         def clicked():
             if meeple_type == 'standard':
                 # In no instance can this meeple be placed on another tile but the
                 # placed tile, so no need to highlight options before opening dialog.
-                window = Meeples.MeeplePlaceWindow(self.new_tile, meeple_type, self.materials, parent=self)
-                None
+                meepleWindow = Meeples.MeeplePlaceWindow(self.last_placed_tile, meeple_type, self, parent=self)
+                result = meepleWindow.exec()
+                if result == QtW.QDialog.DialogCode.Accepted:
+                    self.Meeple_placed(meepleWindow.sub_tile_selected, meeple_type)
             else:
                 raise Exception(f'Unknown meeple type: {meeple_type}')
         return clicked
+    
+    def Meeple_placed(self, sub_tile, meeple_type):
+        # Add strength to possession
+        material, mat_idx, pos_idx = sub_tile
+        self.possessions[material][pos_idx]['player_strength'][self.username][meeple_type] += 1
+        
+        # Remove meeple from inventory (visual and functional)
+        # ...
+        
+        # Place meeple on board (visual)
+        # ...
 
 #%% Main
 if __name__ == '__main__':

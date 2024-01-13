@@ -11,7 +11,7 @@ class Expansions():
         self.game = game
         self.lobby_key = game.lobby.lobby_key
         
-        self.expansions = self.game.Refs('expansions').get()
+        self.expansions = self.game.expansions
         if self.expansions[r'The Abbot'] == 1:
             self._Exp_The_Abbot()
         if self.expansions[r'The River'] == 1:
@@ -38,8 +38,9 @@ class Expansions():
         numbers = [1 for x in range(8)]
         self.game.Tiles.Add_tiles(4, numbers)
         
-        #%% Materials
+        #%% Game properties
         self.game.materials += ['garden']
+        self.game.meeple_types += ['abbot']
         #%%
     
     def _Exp_The_River(self):
@@ -47,7 +48,7 @@ class Expansions():
         numbers = [1 for x in range(12)]
         self.game.Tiles.Add_tiles(2, numbers)
         
-        #%% Materials
+        #%% Game properties
         self.game.materials += ['water']
         #%%
     
@@ -68,8 +69,9 @@ class Expansions():
         numbers = [1 for x in range(10)] + [2] + [1 for x in range(6)]
         self.game.Tiles.Add_tiles(3, numbers)
         
-        #%% Materials
+        #%% Game properties
         self.game.materials += ['cathedral', 'inn']
+        self.game.meeple_types += ['big']
         #%%
     
     def _Find_empty_cell(self, grid, rows=int(1e6), cols=int(1e6)):
