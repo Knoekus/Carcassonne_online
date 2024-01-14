@@ -8,6 +8,8 @@ import prop_s
 import tile_data
 
 import numpy
+import PIL
+from PIL.ImageQt import ImageQt
 
 class Meeple(QtE.ClickableImage):
     def __init__(self, game, meeple_type):
@@ -16,37 +18,69 @@ class Meeple(QtE.ClickableImage):
     
     def init_vars(self, game, meeple_type):
         self.available = True
-        self.enabled = False
         self.game = game
         
         self.size = 50
         colour = self.game.lobby.Refs(f'players/{self.game.lobby.username}/colour').get()
-        colour_string = self.Colour_string(colour)
         if meeple_type == 'standard':
-            file = f'./Images/Meeples/{colour_string}/SF.png'
+            file = './Images/Meeples/_Default/SF.png'
         
         # When launching game screen directly, go up an extra folder
         if 'test' in self.game.lobby.lobby_key:
             file = '.'+file
         
-        self.pixmap = QtE.GreenScreenPixmap(file)
+        # Main image
+        self.pixmap_original = self.Colour_fill_meeple(file, colour)
+        self.pixmap = self.pixmap_original
+        
+        # Black and white image
+        img1 = PIL.Image.fromqpixmap(self.pixmap_original)
+        pixels1 = img1.load()
+        for i in range(img1.size[0]): # for every pixel:
+            for j in range(img1.size[1]):
+                col = pixels1[i,j]
+                grey = int(0.299*col[0] + 0.587*col[1] + 0.114*col[2])
+                pixels1[i,j] = (grey, grey, grey, col[3])
+        img2 = ImageQt(img1).copy()
+        self.pixmap_grey = QtG.QPixmap.fromImage(img2)
     
-    def Colour_string(self, colour):
-        '''Convert a HEX colour code to a string.'''
-        if colour == prop_s.colours[1]:
-            return 'Red'
-        elif colour == prop_s.colours[2]:
-            return 'Orange'
-        elif colour == prop_s.colours[3]:
-            return 'Yellow'
-        elif colour == prop_s.colours[4]:
-            return 'Green'
-        elif colour == prop_s.colours[5]:
-            return 'Blue'
-        elif colour == prop_s.colours[6]:
-            return 'Magenta'
+    def make_available(self):
+        self.available = True
+        self.setPixmap(self.pixmap_original)
+    
+    def make_unavailable(self):
+        self.available = False
+        self.setPixmap(self.pixmap_grey)
+    
+    def Colour_fill_meeple(self, file, colour):
+        '''Recolours the default meeple images to the proper colours.'''
+        pixmap = QtE.GreenScreenPixmap(file)
+        if colour == prop_s.colours[1]: # red
+            pixmap = QtE.GreenScreenPixmap(pixmap, (0, 0, 255), (181, 0, 0))
+            
+        elif colour == prop_s.colours[2]: # orange
+            pixmap = QtE.GreenScreenPixmap(pixmap, (255, 0, 0), (255, 127, 40))
+            pixmap = QtE.GreenScreenPixmap(pixmap, (0, 0, 255), (200, 100, 30))
+                
+        elif colour == prop_s.colours[3]: # yellow
+            pixmap = QtE.GreenScreenPixmap(pixmap, (255, 0, 0), (240, 240, 20))
+            pixmap = QtE.GreenScreenPixmap(pixmap, (0, 0, 255), (204, 204, 17))
+            
+        elif colour == prop_s.colours[4]: # green
+            pixmap = QtE.GreenScreenPixmap(pixmap, (255, 0, 0), (0, 220, 0))
+            pixmap = QtE.GreenScreenPixmap(pixmap, (0, 0, 255), (0, 175, 0))
+            
+        elif colour == prop_s.colours[5]: # blue
+            pixmap = QtE.GreenScreenPixmap(pixmap, (255, 0, 0), (50, 50, 255))
+            pixmap = QtE.GreenScreenPixmap(pixmap, (0, 0, 255), (38, 38, 191))
+            
+        elif colour == prop_s.colours[6]: # magenta
+            pixmap = QtE.GreenScreenPixmap(pixmap, (255, 0, 0), (234, 63, 247))
+            pixmap = QtE.GreenScreenPixmap(pixmap, (0, 0, 255), (181, 49, 191))
+                
         else:
             raise Exception(f'The colour {colour} is not available.')
+        return pixmap
             
 class Meeple_standard(Meeple):
     def __init__(self, game):
@@ -54,11 +88,13 @@ class Meeple_standard(Meeple):
         self.power = 1
 
 class MeeplePlaceWindow(QtW.QDialog):
-    def __init__(self, tile, meeple_type, game, parent=None):
-        super().__init__(parent)
+    def __init__(self, tile, meeple_type, game, meeple):
+        super().__init__(game)
+        self.meeple = meeple
         self.setWindowTitle('Place your meeple')
         self.game = game
         self.original_tile = tile
+        self.meeple_type = meeple_type
         self.sub_tile_selected = None
         
         # Tile layout
@@ -67,12 +103,12 @@ class MeeplePlaceWindow(QtW.QDialog):
         
         # Buttons
         self.y_button = QtW.QPushButton('Confirm')
-        self.y_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[-2+parent.font_size]))
+        self.y_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[-2+game.font_size]))
         self.y_button.clicked.connect(self.accept)
         self.y_button.setEnabled(False)
         
         self.n_button = QtW.QPushButton('Cancel')
-        self.n_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[-2+parent.font_size]))
+        self.n_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[-2+game.font_size]))
         self.n_button.clicked.connect(self.close)
         
         # Final layout
@@ -160,7 +196,7 @@ class MeeplePlaceWindow(QtW.QDialog):
                     
                     # Blur layer
                     overlay_layer = QtG.QImage(length, length, QtG.QImage.Format.Format_RGBA64)
-                    colour = QtG.QColor(255, 255, 255, 100)
+                    colour = QtG.QColor(255, 255, 255, 150)
                     overlay_layer.fill(colour)
                     overlay_widget = QtE.QImage(overlay_layer, length, length)
                     self.tile_layout.addWidget(overlay_widget, row, col)
@@ -181,6 +217,17 @@ class MeeplePlaceWindow(QtW.QDialog):
             self.y_button.setEnabled(True)
             self.y_button.setDefault(True)
         return clicked
+
+    def Meeple_placed(self):
+        # Add strength to possession
+        material, mat_idx, pos_idx = self.sub_tile_selected
+        self.game.possessions[material][pos_idx]['player_strength'][self.game.username][self.meeple_type] += 1
+        
+        # Remove meeple from inventory
+        self.meeple.make_unavailable()
+        
+        # Place meeple on board (visual)
+        # ...
 
 def En_dis_able_meeples(game, enable):
     '''

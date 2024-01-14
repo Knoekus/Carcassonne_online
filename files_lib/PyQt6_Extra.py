@@ -201,13 +201,23 @@ class Tile(ClickableImage):
                 
         self.material_data = material_data_new
 
-def GreenScreenPixmap(file):
-    img1 = PIL.Image.open(file)
+def GreenScreenPixmap(file, before=(0, 255, 0, 255), after=(0, 0, 0, 0)):
+    if len(before) == 3:
+        before = tuple([x for x in before] + [255]) # full opacity
+    if len(after) == 3:
+        after = tuple([x for x in after] + [255]) # full opacity
+    
+    if type(file) == str:
+        img1 = PIL.Image.open(file)
+    elif type(file) == type(QtG.QPixmap()):
+        # img1 = file.toImage()
+        img1 = PIL.Image.fromqpixmap(file)
+        
     pixels1 = img1.load()
     for i in range(img1.size[0]): # for every pixel:
         for j in range(img1.size[1]):
-            if pixels1[i,j] == (0, 255, 0, 255): # if full green
-                pixels1[i,j] = (0, 0, 0, 0)      # make transparent
+            if pixels1[i,j] == before: # if full green
+                pixels1[i,j] = after      # make transparent
     
     img2 = ImageQt(img1).copy()
     pixmap = QtG.QPixmap.fromImage(img2)

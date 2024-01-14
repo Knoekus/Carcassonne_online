@@ -71,7 +71,7 @@ class Tiles():
         
         # Update tiles left
         self.game.new_tile_anim.swap_image(file, tile_idx, tile_letter, 500) # replaces set_tile, maybe relocate to QtE
-        self.game.new_tile.enable()
+        # self.game.new_tile.enable()
         if self.game.tiles[tile_idx][tile_letter] > 1:
             self.game.tiles[tile_idx][tile_letter] -= 1 # decrease number of tiles by 1
         else:
@@ -172,6 +172,7 @@ class Tiles():
         # Place tile
         board_tile = self.game.board_tiles[row][col]
         board_tile.set_tile(file, tile_idx, tile_letter, self.game.materials)
+        board_tile.disable()
         self.game.last_placed_tile = board_tile
         
         # Rotating
@@ -260,7 +261,6 @@ class Tiles():
                                               'tiles': # all tiles and their material index that belong to this possession
                                                   [(tile, mat_idx)],
                                               'player_strength': # meeple strength per player
-                                                  # {player:0 for player in self.game.connections},
                                                   {player: 
                                                    {meeple_type:0 for meeple_type in self.game.meeple_types}
                                                    for player in self.game.connections},
@@ -273,7 +273,6 @@ class Tiles():
                                               'tiles': # all tiles and their material index that belong to this possession
                                                   [(tile, mat_idx)],
                                               'player_strength': # meeple strength per player
-                                                  # {player:0 for player in self.game.connections},
                                                   {player: 
                                                    {meeple_type:0 for meeple_type in self.game.meeple_types}
                                                    for player in self.game.connections},
@@ -289,7 +288,6 @@ class Tiles():
                                               'tiles': # all tiles and their material index that belong to this possession
                                                   [(tile, mat_idx)],
                                               'player_strength': # meeple strength per player
-                                                  # {player:0 for player in self.game.connections},
                                                   {player: 
                                                    {meeple_type:0 for meeple_type in self.game.meeple_types}
                                                    for player in self.game.connections},
@@ -311,7 +309,6 @@ class Tiles():
                                               'tiles': # tile and material index of monastery
                                                   [(tile, mat_idx)],
                                               'player_strength': # meeple strength per player
-                                                  # {player:0 for player in self.game.connections},
                                                   {player: 
                                                    {meeple_type:0 for meeple_type in self.game.meeple_types}
                                                    for player in self.game.connections},
@@ -347,27 +344,27 @@ class Tiles():
                 pass # ignore open attribute
             elif attribute == 'player_strength':
             # player strength
-                # pos_merged[attribute] = {player:0 for player in pos_neighs[0][attribute].keys()}
-                pos_merged[attribute] = {player: 
+                pos_merged['player_strength'] = {player: 
                                          {meeple_type:0 for meeple_type in self.game.meeple_types}
                                          for player in self.game.connections}
-                for pos_n in pos_neighs:
-                    for player in pos_n[attribute].keys():
-                        pos_merged[attribute][player] += [pos_n[attribute][player]]
+                for pos_n in pos_neighs.values():
+                    for player in self.game.connections:
+                        for meeple_type in self.game.meeple_types:
+                            pos_merged['player_strength'][player][meeple_type] += pos_n['player_strength'][player][meeple_type]
             elif attribute in ['tiles']:
             # list
                 pos_merged[attribute] = list()
-                for pos_n in pos_neighs:
+                for pos_n in pos_neighs.values():
                     pos_merged[attribute] += [pos_n[attribute]]
             elif attribute in ['finished_cities', 'shield_tiles']:
             # integer
                 pos_merged[attribute] = 0
-                for pos_n in pos_neighs:
+                for pos_n in pos_neighs.values():
                     pos_merged[attribute] += pos_n[attribute]
             elif attribute in ['inn', 'cathedral']:
             # boolean
                 pos_merged[attribute] = False
-                for pos_n in pos_neighs:
+                for pos_n in pos_neighs.values():
                     pos_merged[attribute] = pos_merged[attribute] or pos_n[attribute]
         
         # Append placed tile to merged possession
