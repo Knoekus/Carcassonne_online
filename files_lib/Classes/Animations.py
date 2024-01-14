@@ -75,6 +75,11 @@ class Animation(QtC.QSequentialAnimationGroup):
         self.finished.connect(Redraw_image)
         self.start()
         
+        # Disable button
+        try: self.parent().disable()
+        except Exception as e:
+            print(f'Error: {e}')
+        
     #%% Stopping
     def stop_animation(self):
         self.repeat = False
@@ -82,3 +87,8 @@ class Animation(QtC.QSequentialAnimationGroup):
     def _reset(self):
         if self.repeat == True:
             self.start()
+        else:
+            # Enable button
+            try: self.parent().enable()
+            except Exception as e:
+                print(f'Error: {e}')

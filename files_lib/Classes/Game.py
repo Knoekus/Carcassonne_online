@@ -228,7 +228,7 @@ class GameScreen(QtW.QWidget):
         self.meeple_types = ['standard']
         for idx in range(7):
             meeple = Meeples.Meeple_standard(self)
-            meeple.clicked.connect(self.Meeple_clicked('standard')) # connect function
+            meeple.clicked.connect(self.Meeple_clicked(meeple, 'standard')) # connect function
             self.meeples_standard[idx] = meeple
             self.meeples_standard_layout.addWidget(self.meeples_standard[idx], np.floor((idx)/4).astype(int), idx%4, 1, 1)
         
@@ -294,26 +294,28 @@ class GameScreen(QtW.QWidget):
         self.Refs(f'connections/{player_at_turn}').set(1)
         self.players_name_anims[player_at_turn].start()
     
-    def Meeple_clicked(self, meeple_type):
+    def Meeple_clicked(self, meeple, meeple_type):
         def clicked():
             if meeple_type == 'standard':
                 # In no instance can this meeple be placed on another tile but the
                 # placed tile, so no need to highlight options before opening dialog.
-                meepleWindow = Meeples.MeeplePlaceWindow(self.last_placed_tile, meeple_type, self, parent=self)
+                meepleWindow = Meeples.MeeplePlaceWindow(self.last_placed_tile, meeple_type, self, meeple)
                 result = meepleWindow.exec()
                 if result == QtW.QDialog.DialogCode.Accepted:
-                    self.Meeple_placed(meepleWindow.sub_tile_selected, meeple_type)
+                    # self.Meeple_placed(parent, meepleWindow.sub_tile_selected, meeple_type)
+                    meepleWindow.Meeple_placed()
+                    Meeples.En_dis_able_meeples(self, enable=False) # disable all meeples
             else:
                 raise Exception(f'Unknown meeple type: {meeple_type}')
         return clicked
     
-    def Meeple_placed(self, sub_tile, meeple_type):
+    def Meeple_placed2(self, parent, sub_tile, meeple_type):
         # Add strength to possession
         material, mat_idx, pos_idx = sub_tile
         self.possessions[material][pos_idx]['player_strength'][self.username][meeple_type] += 1
         
-        # Remove meeple from inventory (visual and functional)
-        # ...
+        # Remove meeple from inventory
+        parent.make_unavailable()
         
         # Place meeple on board (visual)
         # ...
@@ -340,7 +342,7 @@ if __name__ == '__main__':
             
             self.Refs('open').set(False)
             self.Refs('connections').set({'user1':0, 'user2':0})
-            self.Refs('players').set({'user1':{'colour':prop_s.colours[1]}, 'user2':{'colour':prop_s.colours[5]}})
+            self.Refs('players').set({'user1':{'colour':prop_s.colours[2]}, 'user2':{'colour':prop_s.colours[5]}})
             self.Refs('feed').set([])
         
         def Refs(self, key, item=None, load='get_set', prefix='lobby'):
