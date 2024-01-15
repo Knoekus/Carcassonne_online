@@ -302,23 +302,11 @@ class GameScreen(QtW.QWidget):
                 meepleWindow = Meeples.MeeplePlaceWindow(self.last_placed_tile, meeple_type, self, meeple)
                 result = meepleWindow.exec()
                 if result == QtW.QDialog.DialogCode.Accepted:
-                    # self.Meeple_placed(parent, meepleWindow.sub_tile_selected, meeple_type)
                     meepleWindow.Meeple_placed()
                     Meeples.En_dis_able_meeples(self, enable=False) # disable all meeples
             else:
                 raise Exception(f'Unknown meeple type: {meeple_type}')
         return clicked
-    
-    def Meeple_placed2(self, parent, sub_tile, meeple_type):
-        # Add strength to possession
-        material, mat_idx, pos_idx = sub_tile
-        self.possessions[material][pos_idx]['player_strength'][self.username][meeple_type] += 1
-        
-        # Remove meeple from inventory
-        parent.make_unavailable()
-        
-        # Place meeple on board (visual)
-        # ...
 
 #%% Main
 if __name__ == '__main__':

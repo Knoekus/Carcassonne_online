@@ -3,6 +3,32 @@ import PyQt6.QtWidgets as QtW
 import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
+class AnimationGroup_parallel(QtC.QParallelAnimationGroup):
+    def __init__(self, loop_count=-1):
+        super().__init__()
+        self.repeat = False
+        self.finished.connect(self._reset)
+        
+        if loop_count == -1:
+            self.setLoopCount(1)
+            # self.repeat = True
+        else:
+            self.setLoopCount(loop_count) # -1: run until stopped
+    
+    def add(self, animation):
+        self.addAnimation(animation)
+    
+    def start_animation(self):
+        self.repeat = True
+        self.start()
+    
+    def stop_animation(self):
+        self.repeat = False
+    
+    def _reset(self):
+        if self.repeat == True:
+            self.start()
+
 class Animation(QtC.QSequentialAnimationGroup):
     def __init__(self, parent):
         super().__init__(parent)
@@ -74,11 +100,6 @@ class Animation(QtC.QSequentialAnimationGroup):
         self.finished.disconnect()
         self.finished.connect(Redraw_image)
         self.start()
-        
-        # Disable button
-        try: self.parent().disable()
-        except Exception as e:
-            print(f'Error: {e}')
         
     #%% Stopping
     def stop_animation(self):
