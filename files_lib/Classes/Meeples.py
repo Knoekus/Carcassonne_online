@@ -3,7 +3,7 @@ import PyQt6.QtWidgets as QtW
 import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
-from Classes.Animations import Animation
+import Classes.Animations as Animations
 import prop_s
 import tile_data
 
@@ -96,6 +96,8 @@ class MeeplePlaceWindow(QtW.QDialog):
         self.original_tile = tile
         self.meeple_type = meeple_type
         self.sub_tile_selected = None
+        self.patches = {material:dict() for material in self.game.materials}
+        self.animation_groups = [Animations.AnimationGroup_parallel(), Animations.AnimationGroup_parallel()]
         
         # Tile layout
         self.main_tile = self.Recreate_tile(tile, self.game.materials)
@@ -179,6 +181,13 @@ class MeeplePlaceWindow(QtW.QDialog):
             mat_idx = self.main_tile.material_data[material][row][col]
             if mat_idx > 0:
             # Material patch found
+                # Add subtile to patch
+                try:
+                    self.patches[material][mat_idx] += [(row, col)]
+                except:
+                    self.patches[material][mat_idx] = [(row, col)]
+                
+                # Get strength information
                 pos_idx = self.original_tile.possessions[material][mat_idx]
                 pos = self.game.possessions[material][pos_idx]
                 player_strength = pos['player_strength']
@@ -196,7 +205,7 @@ class MeeplePlaceWindow(QtW.QDialog):
                     
                     # Blur layer
                     overlay_layer = QtG.QImage(length, length, QtG.QImage.Format.Format_RGBA64)
-                    colour = QtG.QColor(255, 255, 255, 150)
+                    colour = QtG.QColor(100, 100, 100, 150)
                     overlay_layer.fill(colour)
                     overlay_widget = QtE.QImage(overlay_layer, length, length)
                     self.tile_layout.addWidget(overlay_widget, row, col)
@@ -211,7 +220,25 @@ class MeeplePlaceWindow(QtW.QDialog):
             
             # Visualise
             # ...
-            # Paint meeple on corresponding material patch
+            # OR Paint meeple on corresponding material patch
+            # OR Make material patch blink
+            if self.animation_groups[0].repeat == True:
+            # Animation 1 is running, so let it finish while using 2
+                self.animation_groups[0].stop_animation()
+                animation_group = self.animation_groups[1]
+            else:
+            # Animation 1 can be used
+                self.animation_groups[1].stop_animation()
+                animation_group = self.animation_groups[0]
+            animation_group.clear()
+            
+            patch_tiles = self.patches[material][mat_idx]
+            for coords in patch_tiles:
+                sub_tile = self.sub_tiles[coords]
+                animation = Animations.Animation(sub_tile)
+                animation.add_blinking(1, 0.7, 2500, 200)
+                animation_group.add(animation)
+            animation_group.start_animation()
             
             # Enable and default the confirm button
             self.y_button.setEnabled(True)
