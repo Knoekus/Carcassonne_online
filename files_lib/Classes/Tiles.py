@@ -31,7 +31,7 @@ class Tiles():
         self.game.tiles_left = sum([sum(expansion.values()) for expansion in self.game.tiles.values()])
         self.game.tiles_left_label.setText(f'{self.game.tiles_left} tiles left.')
     
-    def New_tile(self, tile_idx_in=None, tile_letter_in=None):
+    def New_tile(self, tile_idx_in=None, tile_letter_in=None, event_push=True):
         # Disable end turn button and meeples: the tile must be placed first
         self.game.button_end_turn.setEnabled(0)
         Meeples.En_dis_able_meeples(self.game, enable=False)
@@ -40,11 +40,8 @@ class Tiles():
         # Get a new tile
         while True:
             tile_idx, tile_letter, file = self.Choose_tile(tile_idx_in, tile_letter_in)
-            # Give new tile the material data            
-            for material in self.game.materials:
-                try:
-                    self.game.new_tile.material_data[material] = tile_data.tiles[tile_idx][tile_letter][material]
-                except: None # ignore material if it's not in the game (shouldn't be able to happen)
+            # Give new tile the material data
+            self.game.new_tile.material_data = tile_data.tiles[tile_idx][tile_letter]
             
             # Allow tile if there are options to place it
             options = set()
@@ -65,9 +62,10 @@ class Tiles():
                 print(f'\n{tile_idx}{tile_letter} is infeasible\n')
         
         # Push to event log
-        self.game.lobby.send_feed_message(event          = 'new_tile',
-                                          tile_idx       = tile_idx,
-                                          tile_letter    = tile_letter)
+        if event_push == True:
+            self.game.lobby.send_feed_message(event          = 'new_tile',
+                                              tile_idx       = tile_idx,
+                                              tile_letter    = tile_letter)
         
         # Update tiles left
         self.game.new_tile_anim.swap_image(file, tile_idx, tile_letter, 500) # replaces set_tile, maybe relocate to QtE
@@ -97,7 +95,7 @@ class Tiles():
             tile_letter = rnd.choice(list(self.game.tiles[tile_idx].keys()))
             
         # Get expansion title
-        tile_title  = prop_s.tile_titles[tile_idx-1]
+        tile_title = prop_s.tile_titles[tile_idx-1]
         
         # Get tile folder
         if self.lobby_key == 'test2':
@@ -156,7 +154,7 @@ class Tiles():
             # self.New_tile(1)
         return clicked
     
-    def Place_tile(self, file, tile_idx, tile_letter, row, col, rotation=0):
+    def Place_tile(self, file, tile_idx, tile_letter, row, col, rotation=0, event_push=True):
         # Add new row if necessary
         if row < self.game.board_rows[0]:
             self._Board_new_row_above()
@@ -171,6 +169,7 @@ class Tiles():
             
         # Place tile
         board_tile = self.game.board_tiles[row][col]
+        board_tile.coords = (row, col)
         board_tile.set_tile(file, tile_idx, tile_letter, self.game.materials)
         board_tile.disable()
         self.game.last_placed_tile = board_tile
@@ -190,15 +189,16 @@ class Tiles():
         self.Update_possessions(board_tile.material_data, row, col)
             
         # Push message to event log
-        self.game.lobby.send_feed_message(event          = 'placed_tile',
-                                          tile_idx       = tile_idx,
-                                          tile_letter    = tile_letter,
-                                          rotation       = rotation,
-                                          row = row, col = col)
+        if event_push == True:
+            self.game.lobby.send_feed_message(event          = 'placed_tile',
+                                              tile_idx       = tile_idx,
+                                              tile_letter    = tile_letter,
+                                              rotation       = rotation,
+                                              row = row, col = col)
     
     #%% Possessions
     def Update_possessions(self, tile_data, row, col):
-        def get_neighbours(data, idx):
+        def get_neighbours(material, data, idx):
             # Get neighbouring tiles and number of edges the material patch covers
             edges = 0
             neighbours = []
@@ -206,22 +206,30 @@ class Tiles():
                 edges += 1
                 tile = self.game.board_tiles[row-1][col]
                 if len(tile.material_data) > 0: # tile is not empty
-                    neighbours += [tile]
+                    col_idx = data[0][1:-1].index(idx)+1
+                    mat_idx_n = tile.material_data[material][-1][col_idx]
+                    neighbours += [(tile, mat_idx_n)]
             if idx in [data[x][-1] for x in range(len(data))][1:-1]: # east
                 edges += 1
                 tile = self.game.board_tiles[row][col+1]
                 if len(tile.material_data) > 0: # tile is not empty
-                    neighbours += [tile]
+                    row_idx = [data[x][-1] for x in range(len(data))][1:-1].index(idx)+1
+                    mat_idx_n = tile.material_data[material][row_idx][0]
+                    neighbours += [(tile, mat_idx_n)]
             if idx in data[-1][1:-1]: # south
                 edges += 1
                 tile = self.game.board_tiles[row+1][col]
                 if len(tile.material_data) > 0: # tile is not empty
-                    neighbours += [tile]
+                    col_idx = data[-1][1:-1].index(idx)+1
+                    mat_idx_n = tile.material_data[material][0][col_idx]
+                    neighbours += [(tile, mat_idx_n)]
             if idx in [data[x][0] for x in range(len(data))][1:-1]: # west
                 edges += 1
                 tile = self.game.board_tiles[row][col-1]
                 if len(tile.material_data) > 0: # tile is not empty
-                    neighbours += [tile]
+                    row_idx = [data[x][0] for x in range(len(data))][1:-1].index(idx)+1
+                    mat_idx_n = tile.material_data[material][row_idx][-1]
+                    neighbours += [(tile, mat_idx_n)]
             return neighbours, edges
         
         for material in tile_data.keys():
@@ -229,21 +237,23 @@ class Tiles():
             mat_data = tile_data[material]
             for mat_idx in range(1, max(max(mat_data))+1):
             # Check each patch of material in the tile
-                neighbours, edges = get_neighbours(mat_data, mat_idx)
+                neighbours, edges = get_neighbours(material, mat_data, mat_idx)
                 if len(neighbours) == 0:
                 # The material patch does not touch any neighbours
                     self._New_possession(edges, material, mat_idx, row, col)
                     
                 elif len(neighbours) == 1:
                 # There is a neighbouring tile, don't create new possession but append to existing one
+                    tile_n, mat_idx_n = neighbours[0]
                     possessions = self.game.possessions
-                    pos_idx = neighbours[0].possessions[material][mat_idx]
+                    pos_idx = tile_n.possessions[material][mat_idx_n]
                     self.game.board_tiles[row][col].update_possessions(material, mat_idx, pos_idx) # update tile reference
                     pos_n = possessions[material][pos_idx]
                     self._Append_possession(pos_n, edges, material, mat_idx, row, col)
                     
                 elif len(neighbours) > 1:
                 # There are multiple neighbouring tiles, join them together
+                    print(f'Multiple neighbours found ({material},{mat_idx}):', neighbours)
                     self._Join_possessions(neighbours, edges, material, mat_idx, row, col)
                 
     def _New_possession(self, edges, material, mat_idx, row, col):
@@ -319,26 +329,33 @@ class Tiles():
             for row_n, col_n in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
                 neighbour_tile = self.game.board_tiles[row + row_n][col + col_n]
                 if len(neighbour_tile.material_data) > 0:
-                    possessions[material][pos_idx] += 1
+                    possessions[material][pos_idx]['surrounding_tiles'] += 1
     
     def _Join_possessions(self, neighbours, edges, material, mat_idx, row, col):
         # Join two possessions together into one big possession
         possessions = self.game.possessions
         tile = self.game.board_tiles[row][col]
         
+        # New reference
+        pos_merged_idx = len(possessions[material])
+        tile.update_possessions(material, mat_idx, pos_merged_idx) # update tile reference
+        pos_merged = possessions[material][pos_merged_idx] = {'open': True}
+        
+        # Get info from neighbours
         pos_neighs = dict()
         for idx, neighbour in enumerate(neighbours):
             # Get neighbour possession
-            pos_idx = neighbour.possessions[material][mat_idx]
+            tile_n, mat_idx_n = neighbour
+            pos_idx = tile_n.possessions[material][mat_idx_n]
             pos_neighs[idx] = possessions[material][pos_idx]
             
             # Close neighbour possession
             pos_neighs[idx]['open'] = False
+            
+            # Update neighbour reference
+            tile_n.update_possessions(material, mat_idx_n, pos_merged_idx)
         
         # Make merged possession
-        pos_idx = len(possessions[material])
-        tile.update_possessions(material, mat_idx, pos_idx) # update tile reference
-        pos_merged = possessions[material][pos_idx] = {'open': True}
         for attribute in pos_neighs[0].keys():
             if attribute == 'open':
                 pass # ignore open attribute
@@ -507,7 +524,7 @@ class Tiles():
                         neighbour_tile = self.game.board_tiles[coords[0]][coords[1]]
                         
                         # Check empty neighbour for feasibility
-                        if len(neighbour_tile.material_data) == 0 and coords not in options_deleted: # if tile empty
+                        if (len(neighbour_tile.material_data) == 0) and (coords not in options_deleted): # if tile empty
                             data_n_all = self.game.new_tile.material_data
                             data_t_all = tile.material_data
                             
@@ -515,11 +532,11 @@ class Tiles():
                             # Check all materials
                             for material in self.game.materials:
                                 # Ignore material if it's not in either tile
-                                if material not in data_n_all.keys() and material not in data_t_all.keys():
+                                if (material not in data_n_all.keys()) and (material not in data_t_all.keys()):
                                     continue
                                 
                                 # Material is in both tiles
-                                elif material in data_n_all.keys() and material in data_t_all.keys():
+                                elif (material in data_n_all.keys()) and (material in data_t_all.keys()):
                                     data_n = data_n_all[material]
                                     data_t = data_t_all[material]
                                     if pos == 0: # north
@@ -547,7 +564,7 @@ class Tiles():
                                         break # stop trying materials
                                 
                                 # Material is only in new tile
-                                elif material in data_n_all.keys():
+                                elif (material in data_n_all.keys()) and (material not in data_t_all.keys()):
                                     data_n = data_n_all[material]
                                     if pos == 0: # north
                                         # south of neighbour should match north of tile
@@ -572,7 +589,7 @@ class Tiles():
                                         break # stop trying materials
                                 
                                 # Material is only in old tile
-                                elif material in data_t_all.keys():
+                                elif (material not in data_n_all.keys()) and (material in data_t_all.keys()):
                                     data_t = data_t_all[material]
                                     if pos == 0: # north
                                         # south of neighbour should match north of tile
@@ -680,7 +697,16 @@ class Tiles():
         # else: # call from lobby
         #     file = '.\\Images\\Coin_icon.png'
         file = None
-        
-        empty_tile = QtE.Tile(file, prop_s.tile_size, self.game)
+        size = prop_s.tile_size * 320 # 320 is the current px size for tiles
+        empty_tile = QtE.Tile(file, size, self.game)
         self.game.board_tiles[row][col] = empty_tile
         return empty_tile
+    
+def Board_tile_coords(tile, board):
+    """Find coordinates of tile in board."""
+    for row in board.keys():
+        row_layout = board[row]
+        tile_count = row_layout.count()
+        for col in range(tile_count-1):
+            if row_layout.itemAt(col).widget() == tile:
+                return row, col
