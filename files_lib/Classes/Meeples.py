@@ -228,8 +228,13 @@ class MeeplePlaceWindow(QtW.QDialog):
     def Meeple_placed(self, event_push=True):
         # Add strength to possession
         material, mat_idx, pos_idx = self.sub_tile_selected
-        meeple_power = self.meeple.power
+        # meeple_power = self.meeple.power
+        meeple_power = 1
         self.game.possessions[material][pos_idx]['player_strength'][self.game.username][self.meeple.meeple_type] += meeple_power
+        
+        # Set tile information
+        row, col = self.original_tile.coords
+        self.game.board_tiles[row][col].meeples[material][mat_idx] = self.meeple.meeple_type
         
         # Remove meeple from inventory
         self.meeple.make_unavailable()

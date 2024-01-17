@@ -138,7 +138,6 @@ class Tile(ClickableImage):
         self.rotating = rotating
         self.possessions = dict()
         self.coords = ()
-        # self.meeples = {material:}
     
     def update_possessions(self, material, mat_idx, pos_idx):
         if material not in self.possessions.keys():
@@ -174,10 +173,15 @@ class Tile(ClickableImage):
         self.letter = tile_letter
         
         self.draw_image(file)
-        for material in all_materials:
-            try:
-                self.material_data[material] = tile_data.tiles[tile_idx][tile_letter][material]
-            except: None # ignore material if it's not in the game or the tile has no information about it
+        if tile_idx != None: # only do this if an actual tile is set
+            # for material in all_materials:
+            #     try:
+            #         self.material_data[material] = tile_data.tiles[tile_idx][tile_letter][material]
+            #     except: None # ignore material if it's not in the game or the tile has no information about it
+            self.material_data = tile_data.tiles[tile_idx][tile_letter]
+            self.meeples = {material:
+                                {mat_idx:0 for mat_idx in range(1, max(max(self.material_data[material]))+1)}
+                            for material in self.material_data.keys()}
         
     def rotate(self, angle):
         if angle not in [-90, 90]:

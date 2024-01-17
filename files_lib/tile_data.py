@@ -13,6 +13,214 @@
 # garden    = list # The Abbot
 
 tiles = dict()
+data_steps = 7
+
+#%% Basic shapes
+def make_row(pairs, num_rows:int=1):
+    '''
+    pairs : tuple (mat_idx, reps)
+        Contains the mat_idx and number of repetitions to make a material data row.
+    
+    num_rows : int (default = 1)
+        How many times should this row be repeated?'''
+        
+    # Check
+    if type(pairs) == tuple:
+        pairs = [pairs]
+    elif type(pairs) != list:
+        raise Exception('pairs must be of type list or tuple.')
+    
+    # Make row
+    row = list()
+    for mat_idx, reps in pairs:
+        row += [mat_idx for x in range(reps)]
+    
+    # Return
+    if num_rows == 1:
+        return row
+    else:
+        return [row for x in range(num_rows)]
+    
+def add_moon(pos, mat_idx, data=None):
+    data_new = [[0 for col in range(data_steps)] for row in range(data_steps)]
+    moon = [mat_idx for x in range(data_steps)]
+    if pos == 'N':
+        data_new[0] = moon
+    elif pos == 'E':
+        for row in range(data_steps):
+            data_new[row][-1] = mat_idx
+    elif pos == 'S':
+        data_new[-1] = moon
+    elif pos == 'W':
+        for row in range(data_steps):
+            data_new[row][0] = mat_idx
+    
+    if data == None:
+        return data_new
+    else:
+        # Combine data
+        for row_idx in range(len(data)):
+            data[row_idx] = [data[row_idx][x]+data_new[row_idx][x] for x in range(len(data))]
+        return data
+
+def add_triangle(pos, mat_idx, data=None):
+    data_new = [[0 for col in range(data_steps)] for row in range(data_steps)]
+    if pos == 'NE':
+        data_new[0] = make_row([(mat_idx, 7)])
+        data_new[1] = make_row([(0, 3), (mat_idx, 4)])
+        data_new[2:4] = make_row([(0, 5), (mat_idx, 2)], 2)
+        data_new[4:] = make_row([(0, 6), (mat_idx, 1)], 3)
+    elif pos == 'SE':
+        data_new[:3] = make_row([(0, 6), (mat_idx, 1)], 3)
+        data_new[3:5] = make_row([(0, 5), (mat_idx, 2)], 2)
+        data_new[5] = make_row([(0, 3), (mat_idx, 4)])
+        data_new[6] = make_row([(mat_idx, 7)])
+    elif pos == 'SW':
+        data_new[:3] = make_row([(mat_idx, 1), (0, 6)], 3)
+        data_new[3:5] = make_row([(mat_idx, 2), (0, 5)], 2)
+        data_new[5] = make_row([(mat_idx, 4), (0, 3)])
+        data_new[6] = make_row([(mat_idx, 7)])
+    elif pos == 'NW':
+        data_new[0] = make_row([(mat_idx, 7)])
+        data_new[1] = make_row([(mat_idx, 4), (0, 3)])
+        data_new[2:4] = make_row([(mat_idx, 2), (0, 5)], 2)
+        data_new[4:] = make_row([(mat_idx, 1), (0, 6)], 3)
+    
+    if data == None:
+        return data_new
+    else:
+        # Combine data
+        for row_idx in range(len(data)):
+            data[row_idx] = [data[row_idx][x]+data_new[row_idx][x] for x in range(len(data))]
+        return data
+
+def add_straight(pos, mat_idx, data=None):
+    data_new = [[0 for col in range(data_steps)] for row in range(data_steps)]
+    # Single positions
+    if pos == 'N':
+        data_new[:4] = make_row([(0, 3), (mat_idx, 1), (0, 3)], 3)
+    elif pos == 'E':
+        data_new[4] = make_row([(0, 4), (mat_idx, 3)])
+    elif pos == 'S':
+        data_new[5:] = make_row([(0, 3), (mat_idx, 1), (0, 3)], 3)
+    elif pos == 'W':
+        data_new[4] = make_row([(mat_idx, 3), (0, 4)])
+    
+    # Straights
+    elif pos == 'WE' or pos == 'EW':
+        data_new[4] = make_row([(mat_idx, 7)])
+    elif pos == 'NS' or pos == 'SN':
+        data_new = make_row([(0, 3), (mat_idx, 1), (0, 3)], 7)
+    
+    if data == None:
+        return data_new
+    else:
+        # Combine data
+        for row_idx in range(len(data)):
+            data[row_idx] = [data[row_idx][x]+data_new[row_idx][x] for x in range(len(data))]
+        return data
+
+def add_corner(pos, mat_idx, data=None):
+    data_new = [[0 for col in range(data_steps)] for row in range(data_steps)]
+    if pos == 'NE':
+        data_new[:2] = make_row([(0, 3), (mat_idx, 1), (0, 3)], 2)
+        data_new[2] = make_row([(0, 3), (mat_idx, 2), (0, 2)])
+        data_new[3] = make_row([(0, 3), (mat_idx, 4)])
+    elif pos == 'SE':
+        data_new[3] = make_row([(0, 3), (mat_idx, 4)])
+        data_new[4] = make_row([(0, 3), (mat_idx, 2), (0, 2)])
+        data_new[5:] = make_row([(0, 3), (mat_idx, 1), (0, 3)], 2)
+    elif pos == 'SW':
+        data_new[3] = make_row([(mat_idx, 4), (0, 3)])
+        data_new[4] = make_row([(0, 2), (mat_idx, 2), (0, 3)])
+        data_new[5:] = make_row([(0, 3), (mat_idx, 1), (0, 3)], 2)
+    elif pos == 'NW':
+        data_new[:2] = make_row([(0, 3), (mat_idx, 1), (0, 3)], 2)
+        data_new[2] = make_row([(0, 2), (mat_idx, 2), (0, 3)])
+        data_new[3] = make_row([(mat_idx, 4), (0, 3)])
+    
+    if data == None:
+        return data_new
+    else:
+        # Combine data
+        for row_idx in range(len(data)):
+            data[row_idx] = [data[row_idx][x]+data_new[row_idx][x] for x in range(len(data))]
+        return data
+
+def add_grass_corner(pos, mat_idx, data=None):
+    data_new = [[0 for col in range(data_steps)] for row in range(data_steps)]
+    if pos == 'NE':
+        data_new[:2] = make_row([(0, 4), (mat_idx, 3)], 2)
+        data_new[2] = make_row([(0, 5), (mat_idx, 2)])
+    elif pos == 'SE':
+        data_new[4] = make_row([(0, 5), (mat_idx, 2)])
+        data_new[5:] = make_row([(0, 4), (mat_idx, 3)], 2)
+    elif pos == 'SW':
+        data_new[4] = make_row([(mat_idx, 2), (0, 5)])
+        data_new[5:] = make_row([(mat_idx, 3), (0, 4)], 2)
+    elif pos == 'NW':
+        data_new[:2] = make_row([(mat_idx, 3), (0, 4)], 2)
+        data_new[2] = make_row([(mat_idx, 2), (0, 5)])
+    
+    if data == None:
+        return data_new
+    else:
+        # Combine data
+        for row_idx in range(len(data)):
+            data[row_idx] = [data[row_idx][x]+data_new[row_idx][x] for x in range(len(data))]
+        return data
+
+def add_grass_straight(pos, mat_idx, data=None):
+    data_new = [[0 for col in range(data_steps)] for row in range(data_steps)]
+    if pos == 'N':
+        data_new[:3] = make_row([(mat_idx, 7)], 3)
+    elif pos == 'E':
+        data_new = make_row([(0, 4), (mat_idx, 3)], 7)
+    elif pos == 'S':
+        data_new[4:] = make_row([(mat_idx, 7)], 3)
+    elif pos == 'W':
+        data_new = make_row([(mat_idx, 3), (0, 4)], 7)
+    
+    if data == None:
+        return data_new
+    else:
+        # Combine data
+        for row_idx in range(len(data)):
+            data[row_idx] = [data[row_idx][x]+data_new[row_idx][x] for x in range(len(data))]
+        return data
+    
+def give_fill(mat_idx):
+    data_new = [[mat_idx for col in range(data_steps)] for row in range(data_steps)]
+    return data_new
+
+def fill_remainder(mat_idx, datas, data):
+    data_new = [[mat_idx for col in range(data_steps)] for row in range(data_steps)]
+    for sub_data in datas:
+        for y, row in enumerate(sub_data):
+            for x, cell in enumerate(row):
+                if cell != 0:
+                    data_new[y][x] = 0
+    
+    if data == None:
+        return data_new
+    else:
+        # Combine data
+        for row_idx in range(len(data)):
+            data[row_idx] = [data[row_idx][x]+data_new[row_idx][x] for x in range(len(data))]
+        return data
+
+def replace_idx(data, before, after):
+    for y, row in enumerate(data):
+        for x, cell in enumerate(row):
+            if cell == before:
+                data[y][x] = after
+    return data
+
+example_1P = dict()
+example_1P['road'] = add_corner('SW', 1)
+example_1P['city'] = add_triangle('NE', 1)
+example_1P['grass'] = add_grass_corner('SW', 2)
+example_1P['grass'] = fill_remainder(1, [example_1P['road'], example_1P['city'], example_1P['grass']], example_1P['grass'])
 
 #%% 1 base game
 tiles[1] = dict()

@@ -32,14 +32,15 @@ class AnimationGroup_parallel(QtC.QParallelAnimationGroup):
 class Animation(QtC.QSequentialAnimationGroup):
     def __init__(self, parent):
         super().__init__(parent)
+        self.parent_obj = parent
         self.repeat = False
         self.finished.connect(self._reset)
     
     #%% Effects
     def add_blinking(self, op_start, op_end, time, pause, loop_count=-1):
         # Define effect type
-        effect = QtW.QGraphicsOpacityEffect(self.parent())
-        self.parent().setGraphicsEffect(effect)
+        effect = QtW.QGraphicsOpacityEffect(self.parent_obj)
+        self.parent_obj.setGraphicsEffect(effect)
         
         # Fade out
         animation1 = QtC.QPropertyAnimation(effect, b"opacity")
@@ -66,14 +67,13 @@ class Animation(QtC.QSequentialAnimationGroup):
             self.setLoopCount(loop_count) # -1: run until stopped
     
     def swap_image(self, new_image, tile_idx, tile_letter, time):
-        parent = self.parent()
-        if type(parent) != type(QtE.Tile(None)):
+        if type(self.parent_obj) != type(QtE.Tile(None)):
             raise Exception("Swap image of a QtE.Tile object.")
         
         # Swap image
         def Redraw_image():
             # parent.draw_image(new_image)
-            parent.set_tile(new_image, tile_idx, tile_letter, parent.parent().materials)
+            self.parent_obj.set_tile(new_image, tile_idx, tile_letter, self.parent_obj.parent().materials)
             self.removeAnimation(animation1)
             self.addAnimation(animation2)
             self.finished.disconnect()
@@ -81,8 +81,8 @@ class Animation(QtC.QSequentialAnimationGroup):
             self.start()
         
         # Blink in and out
-        effect = QtW.QGraphicsOpacityEffect(self.parent())
-        self.parent().setGraphicsEffect(effect)
+        effect = QtW.QGraphicsOpacityEffect(self.parent_obj)
+        self.parent_obj.setGraphicsEffect(effect)
         
         animation1 = QtC.QPropertyAnimation(effect, b"opacity")
         animation1.setEasingCurve(QtC.QEasingCurve.Type.InQuad)
@@ -110,6 +110,6 @@ class Animation(QtC.QSequentialAnimationGroup):
             self.start()
         else:
             # Enable button
-            try: self.parent().enable()
+            try: self.parent_obj.enable()
             except Exception as e:
                 print(f'Error: {e}')
