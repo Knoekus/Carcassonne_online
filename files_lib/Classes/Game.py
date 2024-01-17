@@ -180,9 +180,6 @@ class GameScreen(QtW.QWidget):
             self.new_tile = QtE.Tile(r'..\Images\tile_logo.png', new_tile_size, game=self, rotating=True)
         else: # call from lobby
             self.new_tile = QtE.Tile(r'.\Images\tile_logo.png', new_tile_size, game=self, rotating=True)
-        # self.new_tile.clicked.connect(self.Tiles.Show_options)
-        # self.new_tile.clicked_l.connect(self.Tiles.Rotate(-90))
-        # self.new_tile.clicked_r.connect(self.Tiles.Rotate(90))
         self.new_tile_anim = Animation(self.new_tile)
         
         # Tiles left
@@ -228,7 +225,7 @@ class GameScreen(QtW.QWidget):
         self.meeple_types = ['standard']
         for idx in range(7):
             meeple = Meeples.Meeple_standard(self)
-            meeple.clicked.connect(self.Meeple_clicked(meeple, 'standard')) # connect function
+            meeple.clicked.connect(self.Meeple_clicked(meeple)) # connect function
             self.meeples_standard[idx] = meeple
             self.meeples_standard_layout.addWidget(self.meeples_standard[idx], np.floor((idx)/4).astype(int), idx%4, 1, 1)
         
@@ -278,7 +275,11 @@ class GameScreen(QtW.QWidget):
             self.Player_at_turn(next_player)
             self.current_player = next_player
         else:
-            self.Tiles.New_tile(1, 'P')
+            try:
+                self.tiles[1]['P'] # if there are 1P tiles left, this exists
+                self.Tiles.New_tile(1, 'P')
+            except:
+                self.Tiles.New_tile(1)
         
     def Player_at_turn(self, player_at_turn, init=False):
         # Stop current player
@@ -294,18 +295,19 @@ class GameScreen(QtW.QWidget):
         self.Refs(f'connections/{player_at_turn}').set(1)
         self.players_name_anims[player_at_turn].start()
     
-    def Meeple_clicked(self, meeple, meeple_type):
+    def Meeple_clicked(self, meeple):
         def clicked():
-            if meeple_type == 'standard':
+            if meeple.meeple_type == 'standard':
                 # In no instance can this meeple be placed on another tile but the
                 # placed tile, so no need to highlight options before opening dialog.
-                meepleWindow = Meeples.MeeplePlaceWindow(self.last_placed_tile, meeple_type, self, meeple)
+                meepleWindow = Meeples.MeeplePlaceWindow(self.last_placed_tile, self, meeple)
                 result = meepleWindow.exec()
                 if result == QtW.QDialog.DialogCode.Accepted:
                     meepleWindow.Meeple_placed()
+                    # meepleWindow.Meeple_placed_event()
                     Meeples.En_dis_able_meeples(self, enable=False) # disable all meeples
             else:
-                raise Exception(f'Unknown meeple type: {meeple_type}')
+                raise Exception(f'Unknown meeple type: {meeple.meeple_type}')
         return clicked
 
 #%% Main

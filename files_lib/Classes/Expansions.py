@@ -39,8 +39,8 @@ class Expansions():
         self.game.Tiles.Add_tiles(4, numbers)
         
         #%% Game properties
-        self.game.materials += ['garden']
         self.game.meeple_types += ['abbot']
+        self.game.materials += ['garden']
         #%%
     
     def _Exp_The_River(self):
@@ -70,8 +70,8 @@ class Expansions():
         self.game.Tiles.Add_tiles(3, numbers)
         
         #%% Game properties
-        self.game.materials += ['cathedral', 'inn']
         self.game.meeple_types += ['big']
+        self.game.materials += ['cathedral', 'inn']
         #%%
     
     def _Find_empty_cell(self, grid, rows=int(1e6), cols=int(1e6)):

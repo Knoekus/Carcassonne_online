@@ -81,6 +81,10 @@ class QImage(QtW.QLabel):
         # self.setStyleSheet("background-color:rgba(255,0,0,100)")
         return
     
+    def rescale(self, scale):
+        self.setFixedWidth(self.width() * scale)
+        self.setFixedHeight(self.height() * scale)
+    
     def draw_image(self, file):
         if type(file) == str:
             # Only change file string if it's actually a tile, not the logo
@@ -133,6 +137,8 @@ class Tile(ClickableImage):
         self.game = game
         self.rotating = rotating
         self.possessions = dict()
+        self.coords = ()
+        # self.meeples = {material:}
     
     def update_possessions(self, material, mat_idx, pos_idx):
         if material not in self.possessions.keys():
