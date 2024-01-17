@@ -99,7 +99,7 @@ class GameScreen(QtW.QWidget):
         
         # Game phase 2: make next tile available
         # self.Tiles.New_tile(1)
-        self.Tiles.New_tile(1, 'N')
+        self.Tiles.New_tile(1, 'P')
         
         # Game phase 3: ...
     
@@ -137,6 +137,7 @@ class GameScreen(QtW.QWidget):
             # Put each player in the row with points indicator
             self.players = QtW.QGridLayout()
             self.players_name_anims = dict()
+            self.players_points = dict()
             for idx, player in enumerate(self.player_list):
                 self.Refs(f'players/{player}/points').set(0)
                 
@@ -147,6 +148,7 @@ class GameScreen(QtW.QWidget):
                 
                 points = QtW.QLabel('0', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
                 points.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[1+self.font_size]))
+                self.players_points[player] = points
                 
                 self.players.addWidget(name,   1, idx)
                 self.players.addWidget(points, 2, idx)
@@ -279,7 +281,7 @@ class GameScreen(QtW.QWidget):
                 self.tiles[1]['P'] # if there are 1P tiles left, this exists
                 self.Tiles.New_tile(1, 'P')
             except:
-                self.Tiles.New_tile(1)
+                self.Tiles.New_tile(1, 'H')
         
     def Player_at_turn(self, player_at_turn, init=False):
         # Stop current player
