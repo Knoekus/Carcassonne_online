@@ -168,6 +168,12 @@ class Tile(ClickableImage):
         # if image != None:
         #     self.draw_image(image)
     
+    def reset_image(self):
+        # Pixmap
+        pixmap_old = QtG.QPixmap(self.file)
+        pixmap_new = pixmap_old.transformed(QtG.QTransform().rotate(self.rotation), QtC.Qt.TransformationMode.FastTransformation)
+        self.setPixmap(pixmap_new)
+    
     def set_tile(self, file, tile_idx, tile_letter, all_materials):
         self.index = tile_idx
         self.letter = tile_letter
@@ -179,9 +185,10 @@ class Tile(ClickableImage):
             #         self.material_data[material] = tile_data.tiles[tile_idx][tile_letter][material]
             #     except: None # ignore material if it's not in the game or the tile has no information about it
             self.material_data = tile_data.tiles[tile_idx][tile_letter]
-            self.meeples = {material:
-                                {mat_idx:0 for mat_idx in range(1, max(max(self.material_data[material]))+1)}
-                            for material in self.material_data.keys()}
+            # self.meeples = {material:
+            #                     {mat_idx:0 for mat_idx in range(1, max(max(self.material_data[material]))+1)}
+            #                 for material in self.material_data.keys()}
+            self.meeples = {player:list() for player in self.game.connections}
         
     def rotate(self, angle):
         if angle not in [-90, 90]:

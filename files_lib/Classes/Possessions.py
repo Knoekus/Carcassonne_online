@@ -8,6 +8,7 @@ import Classes.Animations as Animations
 class Possessions():
     def __init__(self, game):
         self.game = game
+        self.finished_anim = Animations.AnimationGroup_parallel(3)
         
     def Update_possessions(self, tile_data, row, col):
         def get_neighbours(material, data, idx):
@@ -312,55 +313,72 @@ class Possessions():
             if strength > winner[1]:
                 winner = (player, strength)
         
-        # Calculate points
-        if material == 'grass':
-            # Can only happen at the end of the game
-            pass
-        elif material == 'road':
-            points = len(pos_n['tiles'])
-            if 'inn' in pos_n.keys() and r'Inns && Cathedrals' in self.game.expansions:
-                if pos_n['open_edges'] == 0:
-                    points *= 2
-                else:
-                    points = 0
-                    
-        elif material == 'city':
-            points = 2*len(pos_n['tiles'])
-            points += 2*pos_n['shield_tiles']
-            if 'cathedral' in pos_n.keys() and r'Inns && Cathedrals' in self.game.expansions:
-                if pos_n['open_edges'] == 0:
-                    points *= 1.5
-                else:
-                    points = 0
-                    
-        elif material == 'monastery':
-            points = pos_n['surrounding_tiles']
-            
-        else:
-            raise Exception(f'Unknown possession with material {material}.')
-            
+        if winner[0] != None: # the possession was claimed by someone
+            # Calculate points
+            if material == 'grass':
+                # Can only happen at the end of the game
+                pass
+            elif material == 'road':
+                points = len(pos_n['tiles'])
+                if 'inn' in pos_n.keys() and r'Inns && Cathedrals' in self.game.expansions:
+                    if pos_n['inn'] == True:
+                        if pos_n['open_edges'] == 0:
+                            points *= 2
+                        else:
+                            points = 0
+                        
+            elif material == 'city':
+                points = 2*len(pos_n['tiles'])
+                points += 2*pos_n['shield_tiles']
+                if 'cathedral' in pos_n.keys() and r'Inns && Cathedrals' in self.game.expansions:
+                    if pos_n['cathedral'] == True:
+                        if pos_n['open_edges'] == 0:
+                            points *= 1.5
+                        else:
+                            points = 0
+                        
+            elif material == 'monastery':
+                points = pos_n['surrounding_tiles']
+                
+            else:
+                raise Exception(f'Unknown possession with material {material}.')
+                
+            # Play animation
+            self.Possession_finished_anim(pos_n, winner[0], points, material)
+        
+    def Possession_finished_anim(self, pos_n, winner, points, material):
         # Intermediate state of points
-        points_label = self.game.players_points[winner[0]]
+        points_label = self.game.players_points[winner]
         points_before = int(points_label.text())
         points_label.setText(f'{points_before} + {int(points)}')
         
         # Animate finishing possession and giving points
         def anim_finished():
             points_after = int(points_before + points)
-            points_label.setText(points_after)
-            self.Refs(f'players/{winner[0]}/points').set(points_after)
+            points_label.setText(f'{points_after}')
+            self.game.Refs(f'players/{winner}/points').set(points_after)
+            self.Give_back_meeples(pos_n, material)
         
-        # FIXME: ====================
-        # FIXME: animation won't play
-        # FIXME: ====================
-        animation_group = Animations.AnimationGroup_parallel()
+        self.finished_anim.clear()
         for tile in pos_n['tiles']:
             animation = Animations.Animation(tile[0])
             animation.add_blinking(1, 0.6, 1000, 0)
-            animation_group.add(animation)
-        animation_group.finished.connect(anim_finished)
-        animation_group.start()
-        print('ANIMATION STARTED')
-        
-        # Giving back meeples
-        # ...
+            self.finished_anim.add(animation)
+        self.finished_anim.finished.disconnect()
+        self.finished_anim.finished.connect(anim_finished)
+        self.finished_anim.start()
+    
+    def Give_back_meeples(self, pos_n, material):
+        # Find meeples that are on the possession
+        for tile, mat_idx in pos_n['tiles']:
+        # Search each tile
+            for meeple in tile.meeples[self.game.username]:
+            # Give back all meeples that belong to you
+                if meeple[:2] == (material, mat_idx):
+                # Only give back meeples of finished possession
+                    if meeple[2] == 'standard':
+                        for meeple_button in self.game.meeples_standard.values():
+                            if meeple_button.available == False:
+                                meeple_button.make_available()
+                                tile.reset_image()
+                                break

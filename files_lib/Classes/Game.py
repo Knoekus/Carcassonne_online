@@ -22,6 +22,7 @@ if __name__ == '__main__': # direct test call
     from Classes.Expansions import Expansions
     from Classes.Tiles import Tiles
     import Classes.Meeples as Meeples
+    import Classes.Possessions as Possessions
     
     if r"..\Dialogs" not in sys.path:
         sys.path.append(r"..\..\Dialogs")
@@ -52,6 +53,7 @@ else: # call from lobby
     from Classes.Expansions import Expansions
     from Classes.Tiles import Tiles
     import Classes.Meeples as Meeples
+    import Classes.Possessions as Possessions
     
     # if r"..\Dialogs" not in sys.path:
     #     sys.path.append(r"..\Dialogs")
@@ -73,9 +75,6 @@ class GameScreen(QtW.QWidget):
         # Expansions
         self.expansions = self.Refs('expansions').get()
         self.Expansions = Expansions(self)
-        
-        # Possessions
-        self.possessions = {material:dict() for material in self.materials}
         
         # Starting player
         starting_player = np.random.choice(self.player_list)
@@ -109,6 +108,9 @@ class GameScreen(QtW.QWidget):
         self.Refs = self.lobby.Refs
         self.font_size = self.lobby.font_size
         
+        # Classes
+        self.pos_class = Possessions.Possessions(self)
+        
         # Connections
         self.connections = self.Refs('connections').get()
         
@@ -120,6 +122,7 @@ class GameScreen(QtW.QWidget):
         
         # Materials
         self.materials = ['grass', 'road', 'city', 'monastery']
+        self.possessions = {material:dict() for material in self.materials}
     
     def _Game_layout(self):
         # Title
@@ -277,11 +280,12 @@ class GameScreen(QtW.QWidget):
             self.Player_at_turn(next_player)
             self.current_player = next_player
         else:
-            try:
-                self.tiles[1]['P'] # if there are 1P tiles left, this exists
-                self.Tiles.New_tile(1, 'P')
-            except:
-                self.Tiles.New_tile(1, 'H')
+            # try:
+            #     self.tiles[1]['P'] # if there are 1P tiles left, this exists
+            #     self.Tiles.New_tile(1, 'P')
+            # except:
+            #     self.Tiles.New_tile(1, 'H')
+            self.Tiles.New_tile(1, 'H')
         
     def Player_at_turn(self, player_at_turn, init=False):
         # Stop current player
