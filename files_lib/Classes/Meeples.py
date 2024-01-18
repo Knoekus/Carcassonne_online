@@ -137,7 +137,7 @@ class MeeplePlaceWindow(QtW.QDialog):
         rotation = tile.rotation
         
         # Making tile
-        new_tile = QtE.Tile(None, 160)
+        new_tile = QtE.Tile(None, 160, self.game)
         new_tile.set_tile(file, index, letter, all_materials)
         
         # Rotating
@@ -228,13 +228,8 @@ class MeeplePlaceWindow(QtW.QDialog):
     def Meeple_placed(self, event_push=True):
         # Add strength to possession
         material, mat_idx, pos_idx = self.sub_tile_selected
-        # meeple_power = self.meeple.power
-        meeple_power = 1
-        self.game.possessions[material][pos_idx]['player_strength'][self.game.username][self.meeple.meeple_type] += meeple_power
-        
-        # Set tile information
-        row, col = self.original_tile.coords
-        self.game.board_tiles[row][col].meeples[material][mat_idx] = self.meeple.meeple_type
+        pos_n = self.game.possessions[material][pos_idx]
+        pos_n['player_strength'][self.game.username][self.meeple.meeple_type] += 1 # self.meeple.power
         
         # Remove meeple from inventory
         self.meeple.make_unavailable()
@@ -290,7 +285,7 @@ class MeeplePlaceWindow(QtW.QDialog):
                     pixels2[x+x_start, y+y_start] = pixels1[x, y]
             img3 = ImageQt(img2).copy()
             pixmap = QtG.QPixmap.fromImage(img3)
-            meeple_overlay = QtE.Tile(pixmap, 320*prop_s.tile_size)
+            meeple_overlay = QtE.Tile(pixmap, 320*prop_s.tile_size, self.game)
             
             # Find tile coords on board
             row, col = Tiles.Board_tile_coords(self.original_tile, self.game.board)
@@ -313,6 +308,15 @@ class MeeplePlaceWindow(QtW.QDialog):
             # meeple_tile = QtE.Tile(pixmap, 320*prop_s.tile_size)
             row, col = self.original_tile.coords
             self.game.board_tiles[row][col].setPixmap(pixmap)
+        
+        # Set tile information
+        row, col = self.original_tile.coords
+        # self.game.board_tiles[row][col].meeples[material][mat_idx] = self.meeple.meeple_type
+        self.game.board_tiles[row][col].meeples[self.game.username] += [(material, mat_idx, self.meeple.meeple_type)] # FIXME: add stacked layer later
+        
+        # Finish possession if you claimed a finished possession
+        if pos_n['open'] == False: # finished!
+            self.game.pos_class.Possession_finished(pos_n, material)
     
     def Meeple_bounding_box(self, pixmap, meeple_pos):
         width, height = pixmap.width(), pixmap.height()

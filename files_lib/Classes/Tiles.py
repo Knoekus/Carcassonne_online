@@ -4,7 +4,6 @@ import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
 import Classes.Meeples as Meeples
-import Classes.Possessions as Possessions
 import prop_s
 import tile_data
 
@@ -20,7 +19,7 @@ class Tiles():
         self.lobby_key = game.lobby.lobby_key
         self.game.tiles = dict()
         self.game.last_placed_tile = None
-        self.pos_class = Possessions.Possessions(self.game)
+        self.pos_class = self.game.pos_class
     
     def Add_tiles(self, prefix, numbers):
         self.game.tiles[prefix] = dict()
