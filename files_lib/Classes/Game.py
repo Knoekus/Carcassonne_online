@@ -18,7 +18,7 @@ if __name__ == '__main__': # direct test call
     
     if r"..\Classes" not in sys.path:
         sys.path.append(r"..\..\Classes")
-    from Classes.Animations import Animation
+    import Classes.Animations as Animations
     from Classes.Expansions import Expansions
     from Classes.Tiles import Tiles
     import Classes.Meeples as Meeples
@@ -70,12 +70,30 @@ class GameScreen(QtW.QWidget):
         # Initial setup
         self._Game_init()
         self._Game_layout()
+        self._Game_start()
         self.setLayout(self.mainLayout)
         
-        # Expansions
-        self.expansions = self.Refs('expansions').get()
-        self.Expansions = Expansions(self)
+        # Game phase 1: initial tile
+        self.Tiles.Board_init()
+        if self.username == self.lobby.Refs('admin').get():
+            if r'The River' not in self.expansions:
+            # if self.Expansions.expansions[r'The River'] == 0:
+                # Default start with tile H
+                file = self.Tiles.Choose_tile(1, 'H')[2]
+                self.Tiles.Place_tile(file, 1, 'H', 0, 0)
+            else:
+                # Start with a spring
+                file = self.Tiles.Choose_tile(2, 'D')[2]
+                self.Tiles.Place_tile(file, 2, 'D', 0, 0)
+                self.Tiles.New_tile(2) # First finish all The River tiles
+            
+            # Game phase 2: make next tile available
+            # self.Tiles.New_tile(1)
+            self.Tiles.New_tile(1, 'P')
         
+        # Game phase 3: ...
+    
+    def _Game_start(self):
         # Starting player
         starting_player = np.random.choice(self.player_list)
         if 'test' in self.lobby.lobby_key:
@@ -85,22 +103,14 @@ class GameScreen(QtW.QWidget):
             self.Player_at_turn(starting_player, init=True)
             self.current_player = starting_player
         
-        # Game phase 1: initial tile
-        self.Tiles.Board_init()
-        if self.Expansions.expansions[r'The River'] == 0:
-            # Default start with tile H
-            file = self.Tiles.Choose_tile(1, 'H')[2]
-            self.Tiles.Place_tile(file, 1, 'H', 0, 0)
-        else:
-            # Start with a spring
-            file = self.Tiles.Choose_tile(2, 'D')[2]
-            self.Tiles.Place_tile(file, 2, 'D', 0, 0)
+        # Expansions
+        expansions = self.Refs('expansions').get()
+        self.expansions = [exp for exp in expansions.keys() if expansions[exp] == 1]
+        self.Expansions = Expansions(self)
         
-        # Game phase 2: make next tile available
-        # self.Tiles.New_tile(1)
-        self.Tiles.New_tile(1, 'P')
-        
-        # Game phase 3: ...
+        # Listen to feed
+        self.Refs('feed').listen(self.feed_event)
+        self.feed_messages = []
     
     def _Game_init(self):
         # References from lobby
@@ -113,6 +123,7 @@ class GameScreen(QtW.QWidget):
         
         # Connections
         self.connections = self.Refs('connections').get()
+        self.player_list = [player for player in self.connections if player is not None]
         
         # Tiles
         self.Tiles = Tiles(self)
@@ -133,10 +144,6 @@ class GameScreen(QtW.QWidget):
         
         # Players
         def _Game_players(self):
-            # players = self.Refs('connections').get()
-            players = self.connections
-            self.player_list = [player for player in players if player is not None]
-            
             # Put each player in the row with points indicator
             self.players = QtW.QGridLayout()
             self.players_name_anims = dict()
@@ -157,7 +164,7 @@ class GameScreen(QtW.QWidget):
                 self.players.addWidget(points, 2, idx)
                 
                 # Blinking animation
-                animation = Animation(name)
+                animation = Animations.Animation(name)
                 animation.add_blinking(1, 0.1, 2500, 200)
                 
                 self.players_name_anims[player] = animation
@@ -185,7 +192,8 @@ class GameScreen(QtW.QWidget):
             self.new_tile = QtE.Tile(r'..\Images\tile_logo.png', new_tile_size, game=self, rotating=True)
         else: # call from lobby
             self.new_tile = QtE.Tile(r'.\Images\tile_logo.png', new_tile_size, game=self, rotating=True)
-        self.new_tile_anim = Animation(self.new_tile)
+        # self.new_tile_anim = Animations.Animation(self.new_tile)
+        # self.new_tile_anim = Animations.New_tile_swap(self, self.new_tile)
         
         # Tiles left
         self.tiles_left = 0
@@ -268,6 +276,37 @@ class GameScreen(QtW.QWidget):
         else:
             self.Refs(f'lobbies/{self.lobby.lobby_key}', prefix='').delete()
     
+    def feed_event(self, event):
+        if (event.data is not None) and (event.path not in self.feed_messages):
+            if event.path == '/':
+            # Initial startup (extract all previous messages)
+                print('\nRETRIEVING ALL PRIOR MESSAGES')
+                paths = list(self.Refs('feed').get().keys())
+                for idx, path in enumerate(paths):
+                    feed_event = self.Refs(f'feed/{path}').get()
+                    # ...
+                    pass
+                
+            else:
+            # New message
+                self.feed_messages += [event.path]
+                feed_event = event.data
+                print(f'\nNew event: {feed_event["event"]}')
+                if feed_event['event'] == 'new_tile':
+                # event, file, tile_idx, tile_letter, username
+                    self.Tiles.New_tile_event(feed_event)
+                elif feed_event['event'] == 'placed_tile':
+                # col, event, file, rotation, row, tile_idx, tile_letter, username
+                    self.Tiles.Place_tile_event(feed_event)
+                elif feed_event['event'] == 'new_tile_rotated':
+                # Do this for everybody who is NOT at turn
+                    if feed_event['username'] != self.username:
+                        rotation = feed_event['rotation']
+                        self.new_tile.rotate(rotation)
+                        # if feed_event['username'] == self.username:
+                            # self.Tiles.Show_options()
+                            # self.new_tile.game.Tiles.Show_options()
+                
     def End_turn(self):
         # Calculate points and stuff
         # ...
@@ -279,13 +318,12 @@ class GameScreen(QtW.QWidget):
             next_player = self.player_list[next_player_idx]
             self.Player_at_turn(next_player)
             self.current_player = next_player
-        else:
-            # try:
-            #     self.tiles[1]['P'] # if there are 1P tiles left, this exists
-            #     self.Tiles.New_tile(1, 'P')
-            # except:
-            #     self.Tiles.New_tile(1, 'H')
-            self.Tiles.New_tile(1, 'H')
+        
+            if r'The River' in self.expansions:
+                try: self.Tiles.New_tile(2)
+                except:
+                    self.Tiles.New_tile()
+        self.Tiles.New_tile(1, 'H')
         
     def Player_at_turn(self, player_at_turn, init=False):
         # Stop current player
@@ -368,7 +406,7 @@ if __name__ == '__main__':
                 db.reference(f'{prefix}/{key}').set(entries)
         
         def send_feed_message(self, **kwargs):
-            print('\n', kwargs)
+            # print('\n', kwargs)
             if len(kwargs.keys()) > 0: # call from internal game
                 chat_message = {'username': self.username}
                 for arg in kwargs.keys():
@@ -376,6 +414,7 @@ if __name__ == '__main__':
                     
                 # if self.Refs('feed').push(chat_message):
                 #     print('sent')
+                self.Refs('feed').push(chat_message)
                 
             else: # call from the chat input box
                 message = self.chat_input.text().strip()

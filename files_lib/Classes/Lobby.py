@@ -707,8 +707,9 @@ class LobbyScreen(QtW.QWidget):
             for arg in kwargs.keys():
                 chat_message[arg] = kwargs[arg]
                 
-            if self.Refs('feed').push(chat_message):
-                print('sent')
+            # if self.Refs('feed').push(chat_message):
+            #     print('sent')
+            self.Refs('feed').push(chat_message)
             
         else: # call from the chat input box
             message = self.chat_input.text().strip()

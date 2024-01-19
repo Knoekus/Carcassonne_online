@@ -152,11 +152,16 @@ class Tile(ClickableImage):
             self.clicked.emit()
             if self.rotating == True:
                 if QMouseEvent.button() == QtC.Qt.MouseButton.LeftButton:
-                    self.rotate(-90)
+                    rotation = -90
                 elif QMouseEvent.button() == QtC.Qt.MouseButton.RightButton:
-                    self.rotate(90)
-                if self.game != None:
-                    self.game.Tiles.Show_options()
+                    rotation = 90
+                    
+                # Event push for the rest
+                self.game.lobby.send_feed_message(event    = 'new_tile_rotated',
+                                                  rotation = rotation)
+                # For the player at turn
+                self.rotate(rotation)
+                self.game.Tiles.Show_options()
     
     def reset(self, image=None):
         self.disable()
@@ -174,7 +179,7 @@ class Tile(ClickableImage):
         pixmap_new = pixmap_old.transformed(QtG.QTransform().rotate(self.rotation), QtC.Qt.TransformationMode.FastTransformation)
         self.setPixmap(pixmap_new)
     
-    def set_tile(self, file, tile_idx, tile_letter, all_materials):
+    def set_tile(self, file, tile_idx, tile_letter, all_materials=None):
         self.index = tile_idx
         self.letter = tile_letter
         
