@@ -81,9 +81,16 @@ class QImage(QtW.QLabel):
         # self.setStyleSheet("background-color:rgba(255,0,0,100)")
         return
     
+    def rescale(self, scale):
+        self.setFixedWidth(self.width() * scale)
+        self.setFixedHeight(self.height() * scale)
+    
     def draw_image(self, file):
         if type(file) == str:
-            self.file = file
+            # Only change file string if it's actually a tile, not the logo
+            if 'tile_' not in file:
+                self.file = file
+            
             self.pixmap = QtG.QPixmap(file)
             self.setPixmap(self.pixmap)
         elif type(file) == type(QtG.QPixmap()):
@@ -92,6 +99,12 @@ class QImage(QtW.QLabel):
         elif file == None:
             # self.file = None
             self.setPixmap(QtG.QPixmap())
+            
+        elif type(file) == type(QtG.QImage()):
+            self.pixmap = QtG.QPixmap.fromImage(file)
+            self.setPixmap(self.pixmap)
+        else:
+            raise Exception(f'Unknown file type for QtE.QImage object: {type(file)}, {type(QtG.QImage())}')
   
 class ClickableImage(QImage):
     clicked = QtC.pyqtSignal()
@@ -123,21 +136,31 @@ class Tile(ClickableImage):
         self.reset()
         self.game = game
         self.rotating = rotating
+        self.possessions = dict()
+        self.coords = ()
+    
+    def update_possessions(self, material, mat_idx, pos_idx):
+        if material not in self.possessions.keys():
+        # Make material entry in possessions list if it doesn't exist yet
+            self.possessions[material] = dict()
         
-        # self.disable()
-        # self.index = None
-        # self.letter = None
-        # self.rotation = 0
-        # self.material_data = dict()
+        # Give possession index for material index
+        self.possessions[material][mat_idx] = pos_idx
     
     def mousePressEvent(self, QMouseEvent):
         if self.clickable == True:
             self.clicked.emit()
             if self.rotating == True:
                 if QMouseEvent.button() == QtC.Qt.MouseButton.LeftButton:
-                    self.rotate(-90)
+                    rotation = -90
                 elif QMouseEvent.button() == QtC.Qt.MouseButton.RightButton:
-                    self.rotate(90)
+                    rotation = 90
+                    
+                # Event push for the rest
+                self.game.lobby.send_feed_message(event    = 'new_tile_rotated',
+                                                  rotation = rotation)
+                # For the player at turn
+                self.rotate(rotation)
                 self.game.Tiles.Show_options()
     
     def reset(self, image=None):
@@ -147,29 +170,40 @@ class Tile(ClickableImage):
         self.rotation = 0
         self.material_data = dict()
         
-        if image != None:
-            self.draw_image(image)
+        # if image != None:
+        #     self.draw_image(image)
     
-    def set_tile(self, file, tile_idx, tile_letter, game):
+    def reset_image(self):
+        # Pixmap
+        pixmap_old = QtG.QPixmap(self.file)
+        pixmap_new = pixmap_old.transformed(QtG.QTransform().rotate(self.rotation), QtC.Qt.TransformationMode.FastTransformation)
+        self.setPixmap(pixmap_new)
+    
+    def set_tile(self, file, tile_idx, tile_letter, all_materials=None):
         self.index = tile_idx
         self.letter = tile_letter
         
         self.draw_image(file)
-        for material in game.materials:
-            try:
-                self.material_data[material] = tile_data.tiles[tile_idx][tile_letter][material]
-            except: None # ignore material if it's not in the game or the tile has no information about it
+        if tile_idx != None: # only do this if an actual tile is set
+            # for material in all_materials:
+            #     try:
+            #         self.material_data[material] = tile_data.tiles[tile_idx][tile_letter][material]
+            #     except: None # ignore material if it's not in the game or the tile has no information about it
+            self.material_data = tile_data.tiles[tile_idx][tile_letter]
+            # self.meeples = {material:
+            #                     {mat_idx:0 for mat_idx in range(1, max(max(self.material_data[material]))+1)}
+            #                 for material in self.material_data.keys()}
+            self.meeples = {player:list() for player in self.game.connections}
         
     def rotate(self, angle):
         if angle not in [-90, 90]:
             raise Exception('The rotation angle must be either -90 or 90.')
-        self.rotation += angle
+        self.rotation = (self.rotation + angle) % 360
         
         # Pixmap
-        pixmap_new = self.pixmap.transformed(QtG.QTransform().rotate(self.rotation), QtC.Qt.TransformationMode.FastTransformation)
-        # self.draw_image(pixmap_new)
-        try: self.setPixmap(pixmap_new)
-        except Exception as e: print(e)
+        pixmap_old = QtG.QPixmap(self.file)
+        pixmap_new = pixmap_old.transformed(QtG.QTransform().rotate(self.rotation), QtC.Qt.TransformationMode.FastTransformation)
+        self.setPixmap(pixmap_new)
         
         # Material data
         material_data_new = dict()
@@ -189,13 +223,23 @@ class Tile(ClickableImage):
                 
         self.material_data = material_data_new
 
-def GreenScreenPixmap(file):
-    img1 = PIL.Image.open(file)
+def GreenScreenPixmap(file, before=(0, 255, 0, 255), after=(0, 0, 0, 0)):
+    if len(before) == 3:
+        before = tuple([x for x in before] + [255]) # full opacity
+    if len(after) == 3:
+        after = tuple([x for x in after] + [255]) # full opacity
+    
+    if type(file) == str:
+        img1 = PIL.Image.open(file)
+    elif type(file) == type(QtG.QPixmap()):
+        # img1 = file.toImage()
+        img1 = PIL.Image.fromqpixmap(file)
+        
     pixels1 = img1.load()
     for i in range(img1.size[0]): # for every pixel:
         for j in range(img1.size[1]):
-            if pixels1[i,j] == (0, 255, 0, 255): # if full green
-                pixels1[i,j] = (0, 0, 0, 0)      # make transparent
+            if pixels1[i,j] == before: # if full green
+                pixels1[i,j] = after      # make transparent
     
     img2 = ImageQt(img1).copy()
     pixmap = QtG.QPixmap.fromImage(img2)

@@ -325,8 +325,8 @@ class PlayerList(QtW.QWidget):
             text = f"Make '{player}' the lobby leader?"
             admin_dialog = YesNoDialog(self.lobby, title, text)
             admin_dialog.setMinWidth(300)
-            result = admin_dialog.exec_()
-            if result == QtW.QDialog.Accepted:
+            result = admin_dialog.exec()
+            if result == QtW.QDialog.DialogCode.Accepted:
                 self.lobby.Refs('admin').set(player)
         return make_new_admin
 
@@ -624,7 +624,7 @@ class LobbyScreen(QtW.QWidget):
         title = 'Close program?'
         text = 'Are you sure you want to close the program?'
         yesNoDialog = YesNoDialog(self, title, text)
-        result = yesNoDialog.exec_()
+        result = yesNoDialog.exec()
         
         # Ignore if not accepted, else continue (close)
         if result != QtW.QDialog.Accepted:
@@ -636,7 +636,7 @@ class LobbyScreen(QtW.QWidget):
         title = 'Leave lobby?'
         text = 'Are you sure you want to leave the lobby?'
         yesNoDialog = YesNoDialog(self, title, text)
-        result = yesNoDialog.exec_()
+        result = yesNoDialog.exec()
         if result == QtW.QDialog.Accepted:
             self.menu_screen.remove_connection(self.username)
             self.hide()
@@ -707,8 +707,9 @@ class LobbyScreen(QtW.QWidget):
             for arg in kwargs.keys():
                 chat_message[arg] = kwargs[arg]
                 
-            if self.Refs('feed').push(chat_message):
-                print('sent')
+            # if self.Refs('feed').push(chat_message):
+            #     print('sent')
+            self.Refs('feed').push(chat_message)
             
         else: # call from the chat input box
             message = self.chat_input.text().strip()

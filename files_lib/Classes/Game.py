@@ -18,9 +18,11 @@ if __name__ == '__main__': # direct test call
     
     if r"..\Classes" not in sys.path:
         sys.path.append(r"..\..\Classes")
-    from Classes.Animations import Animation
+    import Classes.Animations as Animations
     from Classes.Expansions import Expansions
     from Classes.Tiles import Tiles
+    import Classes.Meeples as Meeples
+    import Classes.Possessions as Possessions
     
     if r"..\Dialogs" not in sys.path:
         sys.path.append(r"..\..\Dialogs")
@@ -50,6 +52,8 @@ else: # call from lobby
     from Classes.Animations import Animation
     from Classes.Expansions import Expansions
     from Classes.Tiles import Tiles
+    import Classes.Meeples as Meeples
+    import Classes.Possessions as Possessions
     
     # if r"..\Dialogs" not in sys.path:
     #     sys.path.append(r"..\Dialogs")
@@ -66,38 +70,60 @@ class GameScreen(QtW.QWidget):
         # Initial setup
         self._Game_init()
         self._Game_layout()
+        self._Game_start()
         self.setLayout(self.mainLayout)
         
-        # Expansions
-        self.Expansions = Expansions(self)
+        # Game phase 1: initial tile
+        self.Tiles.Board_init()
+        if self.username == self.lobby.Refs('admin').get():
+            if r'The River' not in self.expansions:
+            # if self.Expansions.expansions[r'The River'] == 0:
+                # Default start with tile H
+                file = self.Tiles.Choose_tile(1, 'H')[2]
+                self.Tiles.Place_tile(file, 1, 'H', 0, 0)
+            else:
+                # Start with a spring
+                file = self.Tiles.Choose_tile(2, 'D')[2]
+                self.Tiles.Place_tile(file, 2, 'D', 0, 0)
+                self.Tiles.New_tile(2) # First finish all The River tiles
+            
+            # Game phase 2: make next tile available
+            # self.Tiles.New_tile(1)
+            self.Tiles.New_tile(1, 'P')
         
+        # Game phase 3: ...
+    
+    def _Game_start(self):
         # Starting player
         starting_player = np.random.choice(self.player_list)
         if 'test' in self.lobby.lobby_key:
             self.Player_at_turn('user1', init=True)
+            self.current_player = 'user1'
         else:
             self.Player_at_turn(starting_player, init=True)
+            self.current_player = starting_player
         
-        # Game phase 1
-        self.Tiles.Board_init()
-        if self.Expansions.expansions[r'The River'] == 0:
-            # Default start with tile H
-            file = self.Tiles.Choose_tile(1, 'H')[2]
-            self.Tiles.Place_tile(file, 1, 'H', 0, 0)
-        else:
-            # Start with a spring
-            file = self.Tiles.Choose_tile(2, 'D')[2]
-            self.Tiles.Place_tile(file, 2, 'D', 0, 0)
+        # Expansions
+        expansions = self.Refs('expansions').get()
+        self.expansions = [exp for exp in expansions.keys() if expansions[exp] == 1]
+        self.Expansions = Expansions(self)
         
-        # Game phase 2
-        # Make next tile available
-        self.Tiles.New_tile(1)
+        # Listen to feed
+        self.Refs('feed').listen(self.feed_event)
+        self.feed_messages = []
     
     def _Game_init(self):
         # References from lobby
         self.username = self.lobby.username
         self.Refs = self.lobby.Refs
         self.font_size = self.lobby.font_size
+        
+        # Classes
+        self.pos_class = Possessions.Possessions(self)
+        
+        # Connections
+        self.connections = self.Refs('connections').get()
+        self.player_list = [player for player in self.connections if player is not None]
         
         # Tiles
         self.Tiles = Tiles(self)
@@ -107,6 +133,7 @@ class GameScreen(QtW.QWidget):
         
         # Materials
         self.materials = ['grass', 'road', 'city', 'monastery']
+        self.possessions = {material:dict() for material in self.materials}
     
     def _Game_layout(self):
         # Title
@@ -117,12 +144,10 @@ class GameScreen(QtW.QWidget):
         
         # Players
         def _Game_players(self):
-            players = self.Refs('connections').get()
-            self.player_list = [player for player in players if player is not None]
-            
             # Put each player in the row with points indicator
             self.players = QtW.QGridLayout()
             self.players_name_anims = dict()
+            self.players_points = dict()
             for idx, player in enumerate(self.player_list):
                 self.Refs(f'players/{player}/points').set(0)
                 
@@ -133,12 +158,13 @@ class GameScreen(QtW.QWidget):
                 
                 points = QtW.QLabel('0', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
                 points.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[1+self.font_size]))
+                self.players_points[player] = points
                 
                 self.players.addWidget(name,   1, idx)
                 self.players.addWidget(points, 2, idx)
                 
                 # Blinking animation
-                animation = Animation(name)
+                animation = Animations.Animation(name)
                 animation.add_blinking(1, 0.1, 2500, 200)
                 
                 self.players_name_anims[player] = animation
@@ -166,10 +192,8 @@ class GameScreen(QtW.QWidget):
             self.new_tile = QtE.Tile(r'..\Images\tile_logo.png', new_tile_size, game=self, rotating=True)
         else: # call from lobby
             self.new_tile = QtE.Tile(r'.\Images\tile_logo.png', new_tile_size, game=self, rotating=True)
-        # self.new_tile.clicked.connect(self.Tiles.Show_options)
-        # self.new_tile.clicked_l.connect(self.Tiles.Rotate(-90))
-        # self.new_tile.clicked_r.connect(self.Tiles.Rotate(90))
-        self.new_tile_anim = Animation(self.new_tile)
+        # self.new_tile_anim = Animations.Animation(self.new_tile)
+        # self.new_tile_anim = Animations.New_tile_swap(self, self.new_tile)
         
         # Tiles left
         self.tiles_left = 0
@@ -205,22 +229,17 @@ class GameScreen(QtW.QWidget):
     
     def _Game_inventory(self):
         #===== Initial inventory =====#
-        def _Meeple_standard():
-            tile_size = 50
-            if __name__ == '__main__': # independent call
-                file = r'..\Images\Meeples\Blue\SF.png'
-            else: # call from lobby
-                file = r'.\Images\Meeples\Blue\SF.png'
-            pixmap = QtE.GreenScreenPixmap(file)
-            meeple = QtE.ClickableImage(pixmap, tile_size, tile_size)
-            return meeple
-        
         self.meeples_standard = dict()
         self.meeples_standard_layout = QtW.QGridLayout()
         self.meeples_standard_layout.setHorizontalSpacing(0)
         self.meeples_standard_layout.setVerticalSpacing(0)
-        for idx in range(7): # start with 7 standard meeples
-            self.meeples_standard[idx] = _Meeple_standard()
+        
+        # Start with 7 standard meeples
+        self.meeple_types = ['standard']
+        for idx in range(7):
+            meeple = Meeples.Meeple_standard(self)
+            meeple.clicked.connect(self.Meeple_clicked(meeple)) # connect function
+            self.meeples_standard[idx] = meeple
             self.meeples_standard_layout.addWidget(self.meeples_standard[idx], np.floor((idx)/4).astype(int), idx%4, 1, 1)
         
         self.inventory = QtW.QGridLayout()
@@ -257,20 +276,60 @@ class GameScreen(QtW.QWidget):
         else:
             self.Refs(f'lobbies/{self.lobby.lobby_key}', prefix='').delete()
     
+    def feed_event(self, event):
+        if (event.data is not None) and (event.path not in self.feed_messages):
+            if event.path == '/':
+            # Initial startup (extract all previous messages)
+                print('\nRETRIEVING ALL PRIOR MESSAGES')
+                paths = list(self.Refs('feed').get().keys())
+                for idx, path in enumerate(paths):
+                    feed_event = self.Refs(f'feed/{path}').get()
+                    # ...
+                    pass
+                
+            else:
+            # New message
+                self.feed_messages += [event.path]
+                feed_event = event.data
+                print(f'\nNew event: {feed_event["event"]}')
+                if feed_event['event'] == 'new_tile':
+                # event, file, tile_idx, tile_letter, username
+                    self.Tiles.New_tile_event(feed_event)
+                elif feed_event['event'] == 'placed_tile':
+                # col, event, file, rotation, row, tile_idx, tile_letter, username
+                    self.Tiles.Place_tile_event(feed_event)
+                elif feed_event['event'] == 'new_tile_rotated':
+                # Do this for everybody who is NOT at turn
+                    if feed_event['username'] != self.username:
+                        rotation = feed_event['rotation']
+                        self.new_tile.rotate(rotation)
+                        # if feed_event['username'] == self.username:
+                            # self.Tiles.Show_options()
+                            # self.new_tile.game.Tiles.Show_options()
+                
     def End_turn(self):
         # Calculate points and stuff
         # ...
         
         # Give turn to the next player
-        current_player_idx = self.player_list.index(self.username)
-        next_player_idx = (current_player_idx + 1) % len(self.player_list)
-        next_player = self.player_list[next_player_idx]
-        self.Player_at_turn(next_player)
+        if False:
+            current_player_idx = self.player_list.index(self.username)
+            next_player_idx = (current_player_idx + 1) % len(self.player_list)
+            next_player = self.player_list[next_player_idx]
+            self.Player_at_turn(next_player)
+            self.current_player = next_player
+        
+            if r'The River' in self.expansions:
+                try: self.Tiles.New_tile(2)
+                except:
+                    self.Tiles.New_tile()
+        self.Tiles.New_tile(1, 'H')
         
     def Player_at_turn(self, player_at_turn, init=False):
         # Stop current player
         if init == False:
-            connections = self.Refs('connections').get()
+            # connections = self.Refs('connections').get()
+            connections = self.connections
             player_idx = list(connections.values()).index(1)
             player = list(connections.keys())[player_idx]
             self.Refs(f'connections/{player}').set(0)
@@ -279,13 +338,21 @@ class GameScreen(QtW.QWidget):
         # New player at turn
         self.Refs(f'connections/{player_at_turn}').set(1)
         self.players_name_anims[player_at_turn].start()
-        self.button_end_turn.setEnabled(1)
-        
-        # Enable/disable 'end turn' button
-        if self.username == player_at_turn:
-            self.button_end_turn.setEnabled(1)
-        else:
-            self.button_end_turn.setEnabled(0)
+    
+    def Meeple_clicked(self, meeple):
+        def clicked():
+            if meeple.meeple_type == 'standard':
+                # In no instance can this meeple be placed on another tile but the
+                # placed tile, so no need to highlight options before opening dialog.
+                meepleWindow = Meeples.MeeplePlaceWindow(self.last_placed_tile, self, meeple)
+                result = meepleWindow.exec()
+                if result == QtW.QDialog.DialogCode.Accepted:
+                    meepleWindow.Meeple_placed()
+                    # meepleWindow.Meeple_placed_event()
+                    Meeples.En_dis_able_meeples(self, enable=False) # disable all meeples
+            else:
+                raise Exception(f'Unknown meeple type: {meeple.meeple_type}')
+        return clicked
 
 #%% Main
 if __name__ == '__main__':
@@ -309,7 +376,7 @@ if __name__ == '__main__':
             
             self.Refs('open').set(False)
             self.Refs('connections').set({'user1':0, 'user2':0})
-            self.Refs('players').set({'user1':{'colour':"ffffff00"}, 'user2':{'colour':"ffff00ff"}})
+            self.Refs('players').set({'user1':{'colour':prop_s.colours[2]}, 'user2':{'colour':prop_s.colours[5]}})
             self.Refs('feed').set([])
         
         def Refs(self, key, item=None, load='get_set', prefix='lobby'):
@@ -339,7 +406,7 @@ if __name__ == '__main__':
                 db.reference(f'{prefix}/{key}').set(entries)
         
         def send_feed_message(self, **kwargs):
-            print('\n', kwargs)
+            # print('\n', kwargs)
             if len(kwargs.keys()) > 0: # call from internal game
                 chat_message = {'username': self.username}
                 for arg in kwargs.keys():
@@ -347,6 +414,7 @@ if __name__ == '__main__':
                     
                 # if self.Refs('feed').push(chat_message):
                 #     print('sent')
+                self.Refs('feed').push(chat_message)
                 
             else: # call from the chat input box
                 message = self.chat_input.text().strip()
