@@ -3,20 +3,17 @@ import PyQt6.QtWidgets as QtW
 import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
-import string
-import sys
-
 class Expansions():
     def __init__(self, game):
         self.game = game
         self.lobby_key = game.lobby.lobby_key
         
-        self.expansions = self.game.Refs('expansions').get()
-        if self.expansions[r'The Abbot'] == 1:
+        self.expansions = self.game.expansions
+        if r'The Abbot' in self.expansions:
             self._Exp_The_Abbot()
-        if self.expansions[r'The River'] == 1:
+        if r'The River' in self.expansions:
             self._Exp_The_River()
-        if self.expansions[r'Inns && Cathedrals'] == 1:
+        if r'Inns && Cathedrals' in self.expansions:
             self._Exp_Inns_Cathedrals()
         
         self.game.Tiles.Update_tiles_left_label()
@@ -38,7 +35,8 @@ class Expansions():
         numbers = [1 for x in range(8)]
         self.game.Tiles.Add_tiles(4, numbers)
         
-        #%% Materials
+        #%% Game properties
+        self.game.meeple_types += ['abbot']
         self.game.materials += ['garden']
         #%%
     
@@ -47,7 +45,7 @@ class Expansions():
         numbers = [1 for x in range(12)]
         self.game.Tiles.Add_tiles(2, numbers)
         
-        #%% Materials
+        #%% Game properties
         self.game.materials += ['water']
         #%%
     
@@ -68,7 +66,8 @@ class Expansions():
         numbers = [1 for x in range(10)] + [2] + [1 for x in range(6)]
         self.game.Tiles.Add_tiles(3, numbers)
         
-        #%% Materials
+        #%% Game properties
+        self.game.meeple_types += ['big']
         self.game.materials += ['cathedral', 'inn']
         #%%
     
