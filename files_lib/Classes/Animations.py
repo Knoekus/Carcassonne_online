@@ -100,7 +100,46 @@ class Animation(QtC.QSequentialAnimationGroup):
         self.finished.disconnect()
         self.finished.connect(Redraw_image)
         self.start()
+    
+    def DEPRECATED_swap_image(self, file, tile_idx, tile_letter, time):
+        if type(self.parent_obj) != type(QtE.Tile(None)):
+            raise Exception("Swap image of a QtE.Tile object.")
         
+        # Blink in and out
+        effect = QtW.QGraphicsOpacityEffect(self.parent_obj)
+        self.parent_obj.setGraphicsEffect(effect)
+        
+        animation1 = QtC.QPropertyAnimation(effect, b"opacity")
+        animation1.setEasingCurve(QtC.QEasingCurve.Type.InQuad)
+        animation1.setStartValue(1)
+        animation1.setEndValue(0)
+        animation1.setDuration(time/2)
+        
+        animation2 = QtC.QPropertyAnimation(effect, b"opacity")
+        animation2.setEasingCurve(QtC.QEasingCurve.Type.OutQuad)
+        animation2.setStartValue(0)
+        animation2.setEndValue(1)
+        animation2.setDuration(time/2)
+        
+        # Swap image
+        def Redraw_image():
+            # parent.draw_image(new_image)
+            print('animation file:', file)
+            self.parent_obj.set_tile(file, tile_idx, tile_letter, self.parent_obj.parent().materials)
+            self.removeAnimation(animation1)
+            self.addAnimation(animation2)
+            self.finished.disconnect()
+            self.finished.connect(self._reset)
+            self.start()
+        
+        self.clear()
+        self.addAnimation(animation1)
+        self.finished.disconnect()
+        self.finished.connect(Redraw_image)
+        animation1.start()
+        self.finished.connect(self.swap_finished)
+        self.start()
+    
     #%% Stopping
     def stop_animation(self):
         self.repeat = False
@@ -113,3 +152,126 @@ class Animation(QtC.QSequentialAnimationGroup):
             try: self.parent_obj.enable()
             except Exception as e:
                 print(f'Error: {e}')
+
+class New_tile_swap(QtC.QSequentialAnimationGroup):
+    def __init__(self, game, new_tile, time=500):
+        super().__init__(new_tile)
+        self.game = game
+        self.new_tile = new_tile
+        self.time = time
+        # self.finished.connect(self.stopped)
+        
+        # Effect
+        self.effect = QtW.QGraphicsOpacityEffect(self.new_tile)
+        self.new_tile.setGraphicsEffect(self.effect)
+        
+        # # Blink out
+        # self.animation1 = QtC.QPropertyAnimation(self.effect, b"opacity")
+        # self.animation1.setEasingCurve(QtC.QEasingCurve.Type.InQuad)
+        # self.animation1.setStartValue(1)
+        # self.animation1.setEndValue(0)
+        # self.animation1.setDuration(self.time/2)
+        
+        # # Blink in
+        # self.animation2 = QtC.QPropertyAnimation(self.effect, b"opacity")
+        # self.animation2.setEasingCurve(QtC.QEasingCurve.Type.OutQuad)
+        # self.animation2.setStartValue(0)
+        # self.animation2.setEndValue(1)
+        # self.animation2.setDuration(self.time/2)
+    
+    def _Finish1(self):
+        print('Checkpoint 2')
+        self.new_tile.set_tile(self.file, self.index, self.letter)
+        self.removeAnimation(self.animation1)
+        
+        # Blink in
+        self.animation2 = QtC.QPropertyAnimation(self.effect, b"opacity")
+        self.animation2.setEasingCurve(QtC.QEasingCurve.Type.OutQuad)
+        self.animation2.setStartValue(0)
+        self.animation2.setEndValue(1)
+        self.animation2.setDuration(self.time/2)
+        
+        self.addAnimation(self.animation2)
+        self.finished.disconnect()
+        self.finished.connect(self._Finish2)
+        self.start()
+        print('Checkpoint 3')
+    
+    def _Finish2(self):
+        print('Checkpoint 4')
+        if self.game.username == self.player:
+            self.new_tile.enable()
+        self.removeAnimation(self.animation2)
+        self.finished.disconnect()
+        print('Checkpoint 5')
+    
+    def swap(self, file, index, letter, player):
+        self.file = file
+        self.index = index
+        self.letter = letter
+        self.player = player
+        
+        # Set up sequence
+        self.finished.connect(self._Finish1)
+        
+        # Blink out
+        self.animation1 = QtC.QPropertyAnimation(self.effect, b"opacity")
+        self.animation1.setEasingCurve(QtC.QEasingCurve.Type.InQuad)
+        self.animation1.setStartValue(1)
+        self.animation1.setEndValue(0)
+        self.animation1.setDuration(self.time/2)
+        
+        self.addAnimation(self.animation1)
+        self.start()
+        print('Checkpoint 1')
+    
+    def stopped(self):
+        print('Finished animation')
+
+class New_tile_swap2(QtC.QPropertyAnimation):
+    def __init__(self, game, new_tile, time=500):
+        self.game = game
+        self.new_tile = new_tile
+        self.time = time
+        
+        effect = QtW.QGraphicsOpacityEffect(self.new_tile)
+        self.new_tile.setGraphicsEffect(effect)
+        
+        super().__init__(effect, b"opacity")
+        self.setDuration(self.time/2)
+        
+    def swap(self, file, index, letter, player):
+        self.file = file
+        self.index = index
+        self.letter = letter
+        self.player = player
+        
+        # Blink in
+        self.setEasingCurve(QtC.QEasingCurve.Type.InQuad)
+        self.setStartValue(1)
+        self.setEndValue(0)
+        self.finished.connect(self._Finish1)
+        print('Checkpoint 1')
+        self.start()
+    
+    def _Finish1(self):
+        print('Checkpoint 2')
+        # Replace tile
+        self.new_tile.set_tile(self.file, self.index, self.letter)
+        
+        # Blink in
+        self.setEasingCurve(QtC.QEasingCurve.Type.OutQuad)
+        self.setStartValue(0)
+        self.setEndValue(1)
+        
+        # self.finished.disconnect()
+        self.finished.connect(self._Finish2)
+        self.start()
+        print('Checkpoint 3')
+    
+    def _Finish2(self):
+        print('Checkpoint 4')
+        self.finished.disconnect()
+        if self.game.username == self.player:
+            self.new_tile.enable()
+        print('Checkpoint 5')
