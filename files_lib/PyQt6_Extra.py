@@ -13,6 +13,24 @@ import tile_data
 import PIL
 from PIL.ImageQt import ImageQt
 
+class QLabel(QtW.QLabel):
+    def __init__(self, text, font, alignment='center'):
+        # Alignment
+        if alignment == 'center':
+            align = QtC.Qt.AlignmentFlag.AlignCenter
+        elif alignment == 'left':
+            align = QtC.Qt.AlignmentFlag.AlignLeft
+        elif alignment == 'right':
+            align = QtC.Qt.AlignmentFlag.AlignRight
+        else:
+            raise Exception('Alignment type not implemented.')
+            
+        # Make label
+        super().__init__(text, alignment=align)
+        
+        # Set font
+        self.setFont(font)
+
 class ClickableLabel(QtW.QLabel):
     clicked = QtC.pyqtSignal()
     def __init__(self, parent=None):
