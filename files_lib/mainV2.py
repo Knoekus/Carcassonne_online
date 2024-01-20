@@ -1,0 +1,82 @@
+#%% Imports
+# PyQt6
+import PyQt6.QtGui     as QtG
+import PyQt6.QtWidgets as QtW
+import PyQt6.QtCore    as QtC
+import PyQt6_Extra     as QtE
+
+# Custom classes
+import Visualisations.Menu_screen_vis as MenuVis
+import Functionalities.Menu_screen_func as MenuFunc
+import Properties
+
+# Other packages
+import sys
+import firebase_admin as fb
+
+#%% Functions
+def Firebase_init():
+    # Firebase initialisation
+    if not fb._apps: # only initialize if app doesn't exist
+        # Initialize Firebase Admin SDK
+        cred = fb.credentials.Certificate(r'..\SDK_KEY_KEEP_SAFE\clientserver1-firebase-adminsdk-roo18-d3927e4c28.json')
+        fb.initialize_app(cred, {
+            'databaseURL': 'https://clientserver1-default-rtdb.europe-west1.firebasedatabase.app/'
+        })
+
+class Carcassonne_online(QtW.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self._Window_properties()
+        self._Parameters()
+        self._Layout()
+        self.Menu()
+        
+    def _Window_properties(self):
+        self.setWindowTitle('Menu')
+        self.setGeometry(100, 100, 400, 300)
+        self.showMaximized()
+    
+    def _Parameters(self):
+        # Own choice
+        self.test = True
+        self.default_font_size = 5 # 0-15
+        
+        # Presets
+        self.refs = {'lobbies':fb.db.reference('lobbies')} # Firebase reference preparation
+        
+        # Classes
+        self.Properties = Properties.Properties(self.default_font_size)
+    
+    def _Layout(self):
+        '''
+        The main layout is a stacked widget, such that we can stack the lobby and game screens when they are ready.
+        '''
+        # Stacked 
+        self.stacked_widget = QtW.QStackedWidget()
+        self.setCentralWidget(self.stacked_widget)
+    
+    def Menu(self):
+        # Visualisation
+        self.menu_vis = MenuVis.Menu_screen_vis(self)
+        self.stacked_widget.addWidget(self.menu_vis)
+        
+        # Functionality
+        self.menu_func = MenuFunc.Menu_screen_func(self)
+        
+#%% Main
+if __name__ == '__main__':
+    # Firebase initialisation
+    Firebase_init()
+    
+    # Setup application
+    app = QtW.QApplication(sys.argv)
+    app.setStyle('Breeze') # ['Breeze', 'Oxygen', 'QtCurve', 'Windows', 'Fusion']
+    app.setWindowIcon(QtG.QIcon(r'.\Images\Coin_icon.png'))
+    
+    # Open menu screen
+    Carcassonne = Carcassonne_online()
+    Carcassonne.show()
+    Carcassonne.activateWindow()
+    Carcassonne.raise_()
+    sys.exit(app.exec())
