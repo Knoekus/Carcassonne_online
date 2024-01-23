@@ -21,6 +21,7 @@ class Menu_screen_func():
     def __init__(self, Carcassonne):
         self.Carcassonne = Carcassonne
         self.menu_vis = self.Carcassonne.menu_vis
+        self.Carcassonne.stacked_widget.addWidget(self.menu_vis)
         
         # Connect buttons
         self.Connect_buttons()
@@ -42,9 +43,9 @@ class Menu_screen_func():
             self._Open_lobby_screen()
             
             # # Add player 2
-            # self.Refs('connections/fake_user').set(0)
-            # self.Refs('players/fake_user/colour').set(prop_s.colours[1]) # give colour
-            # self.Refs(f'colours/{prop_s.colours[1]}').set(1)
+            # self.Carcassonne.Refs('connections/fake_user').set(0)
+            # self.Carcassonne.Refs('players/fake_user/colour').set(prop_s.colours[1]) # give colour
+            # self.Carcassonne.Refs(f'colours/{prop_s.colours[1]}').set(1)
         else:
             # Open the username dialog
             username_dialog = UsernameDialog(self)
@@ -63,7 +64,7 @@ class Menu_screen_func():
                 pass
     
     def _Generate_lobby_key(self):
-        lobbies = self.Refs('', prefix='lobbies').get()
+        lobbies = self.Carcassonne.Refs('', prefix='lobbies').get()
         if lobbies != None:
             lobbies = list(lobbies.keys())
         else:
@@ -76,7 +77,7 @@ class Menu_screen_func():
         return lobby_key
     
     def _Is_username_free(self):
-        if self.Carcassonne.username in self.Refs('connections').get():
+        if self.Carcassonne.username in self.Carcassonne.Refs('connections').get():
             return False
         else: return True
     
@@ -89,10 +90,10 @@ class Menu_screen_func():
             self._Open_lobby_screen()
         else:
             lobby_key = self.menu_vis.lobby_key_input.text().strip().upper()
-            if lobby_key in self.Refs('', prefix='lobbies').get():
+            if lobby_key in self.Carcassonne.Refs('', prefix='lobbies').get():
                 # In the meantime, create the references to the lobby
                 self.Carcassonne.lobby_key = lobby_key
-                if self.Refs('open').get() == True:
+                if self.Carcassonne.Refs('open').get() == True:
                     username_dialog = UsernameDialog(self)
                     result = username_dialog.exec()
                     if result == QtW.QDialog.Accepted:
@@ -113,57 +114,32 @@ class Menu_screen_func():
     def _Open_lobby_screen(self):
         # Visualisation
         self.Carcassonne.lobby_vis = LobbyVis.Lobby_screen_vis(self.Carcassonne)
-        self.Carcassonne.stacked_widget.addWidget(self.Carcassonne.lobby_vis)
         
         # Functionality
         self.Carcassonne.lobby_func = LobbyFunc.Lobby_screen_func(self.Carcassonne)
-        pass
     
     def _Save_connection_to_lobby(self):
+        if self.Carcassonne.test == True:
+            idx = 2*int(self.Carcassonne.username[-1]) # user1: orange, user2: green
+            blank_colour = self.Carcassonne.Properties.colours[idx]
+        else:
+            blank_colour = self.Carcassonne.Properties.colours[0] # start with blank colour
+            
         # Player attributes
-        self.Refs(f'connections/{self.Carcassonne.username}').set(0)
-        blank_colour = self.Carcassonne.Properties.colours[0] # start with blank colour
-        self.Refs(f'players/{self.Carcassonne.username}/colour').set(blank_colour)
-        self.Refs(f'players/{self.Carcassonne.username}/points').set(0)
+        self.Carcassonne.Refs(f'connections/{self.Carcassonne.username}').set(0)
+        self.Carcassonne.Refs(f'players/{self.Carcassonne.username}/colour').set(blank_colour)
+        self.Carcassonne.Refs(f'players/{self.Carcassonne.username}/points').set(0)
         
     def _Save_lobby_to_database(self):
         # Lobby attributes
-        self.Refs('active_player').set(self.Carcassonne.username)
-        self.Refs('admin').set(self.Carcassonne.username)
-        self.Refs('feed').set([])
-        self.Refs('open').set(True)
+        self.Carcassonne.Refs('active_player').set(self.Carcassonne.username)
+        self.Carcassonne.Refs('admin').set(self.Carcassonne.username)
+        self.Carcassonne.Refs('feed').set([])
+        self.Carcassonne.Refs('open').set(True)
         for colour in self.Carcassonne.Properties.colours[1:]:
-            self.Refs(f'colours/{colour}').set(0)
+            self.Carcassonne.Refs(f'colours/{colour}').set(0)
         for expansion in self.Carcassonne.Properties.expansions:
-            self.Refs(f'expansions/{expansion}').set(0)
+            self.Carcassonne.Refs(f'expansions/{expansion}').set(0)
             
         # Save player to lobby
         self._Save_connection_to_lobby()
-    
-    #%% Helper functions
-    def Refs(self, key, item=None, load='get_set', prefix='lobby'):
-        '''load : reference type
-                "get_set" (default)
-                    get a reference to perform a get() or set() actions on. Returns the reference.
-                    
-                "add_del"
-                    add or delete an item from a reference. Returns nothing.
-                
-            prefix : reference type
-                "lobby" (default)
-                    perform reference extraction on lobbies/{lobby_key}.'''
-        # Set default prefix
-        if prefix == 'lobby':
-            prefix = f'lobbies/{self.Carcassonne.lobby_key}'
-            
-        if load == 'get_set':
-            return db.reference(f'{prefix}/{key}')
-        elif load == 'add_del':
-            entries = db.reference(f'{prefix}/{key}').get()
-            if type(entries) == dict:
-                entries = list(entries.keys())
-            if item in entries: # item should be deleted
-                entries.remove(item)
-            else: # item should be added
-                entries.append(item)
-            db.reference(f'{prefix}/{key}').set(entries)

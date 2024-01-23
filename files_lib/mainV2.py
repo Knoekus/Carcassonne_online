@@ -59,10 +59,36 @@ class Carcassonne_online(QtW.QMainWindow):
     def Menu(self):
         # Visualisation
         self.menu_vis = MenuVis.Menu_screen_vis(self)
-        self.stacked_widget.addWidget(self.menu_vis)
         
         # Functionality
         self.menu_func = MenuFunc.Menu_screen_func(self)
+    
+    def Refs(self, key, item=None, load='get_set', prefix='lobby'):
+        '''load : reference type
+                "get_set" (default)
+                    get a reference to perform a get() or set() actions on. Returns the reference.
+                    
+                "add_del"
+                    add or delete an item from a reference. Returns nothing.
+                
+            prefix : reference type
+                "lobby" (default)
+                    perform reference extraction on lobbies/{lobby_key}.'''
+        # Set default prefix
+        if prefix == 'lobby':
+            prefix = f'lobbies/{self.lobby_key}'
+            
+        if load == 'get_set':
+            return fb.db.reference(f'{prefix}/{key}')
+        elif load == 'add_del':
+            entries = fb.db.reference(f'{prefix}/{key}').get()
+            if type(entries) == dict:
+                entries = list(entries.keys())
+            if item in entries: # item should be deleted
+                entries.remove(item)
+            else: # item should be added
+                entries.append(item)
+            fb.db.reference(f'{prefix}/{key}').set(entries)
         
 #%% Main
 if __name__ == '__main__':

@@ -12,19 +12,17 @@ import PyQt6_Extra     as QtE
 # ...
 
 #%% Menu screen visualisation
-# class Menu_screen_vis(QtW.QMainWindow):
 class Menu_screen_vis(QtW.QWidget):
     def __init__(self, Carcassonne):
-        self.Carcassonne = Carcassonne
         super().__init__()
+        self.Carcassonne = Carcassonne
+        
         self.Window_properties()
         self.Parameters()
         self.Layout()
         
     def Window_properties(self):
         self.setWindowTitle('Menu')
-        self.setGeometry(100, 100, 400, 300)
-        self.showMaximized()
     
     def Parameters(self):
         # Presets
