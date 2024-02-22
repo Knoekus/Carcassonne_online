@@ -96,7 +96,7 @@ class Lobby_screen_vis(QtW.QWidget):
             # Button itself
             button = self.colour_picker_buttons[colour] = QtW.QPushButton(minimumHeight=100)
             # TODO: functionality: button.clicked.connect(self.Select_colour(colour))
-            button.setStyleSheet(self._Colour_picker_stylesheet(colour))
+            button.setStyleSheet(self._Colour_picker_stylesheet(colour, 1))
             self.colour_picker_hbox.addWidget(button)
             
             # Checkmark
@@ -115,26 +115,40 @@ class Lobby_screen_vis(QtW.QWidget):
             button.setEnabled(True)
             # TODO: functionality: button.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
     
-    def _Colour_picker_stylesheet(self, colour):
-        return f'''QPushButton {{
-                                    background-color: rgba{tuple(int(colour[i:i+2], 16) for i in (0, 2, 4, 6))};
-                                    min-width:  80px;
-                                    max-width:  80px;
-                                    min-height: 80px;
-                                    max-height: 80px;
-                                    border-radius: 46px;
-                                    border-style: solid;
-                                    border-width: 2px;
-                                    border-color: rgb(50,50,50);
-                                    padding: 4px;
-                                }}
-                                QPushButton:pressed {{
-                                    background-color: rgb{tuple(int(colour[i:i+2], 16)/1.1 for i in (0, 2, 4))};
-                                    border-width: 4px;
-                                }}
-                                QPushButton:disabled {{
-                                    background-color: rgb{tuple(int(colour[i:i+2], 16)/1.5 for i in (0, 2, 4))};
-                                }}'''
+    def _Colour_picker_stylesheet(self, colour, index):
+        if index == 1:
+            return f'''QPushButton {{
+                                        background-color: rgba{tuple(int(colour[i:i+2], 16) for i in (0, 2, 4, 6))};
+                                        min-width:  80px;
+                                        max-width:  80px;
+                                        min-height: 80px;
+                                        max-height: 80px;
+                                        border-radius: 46px;
+                                        border-style: solid;
+                                        border-width: 2px;
+                                        border-color: rgb(50,50,50);
+                                        padding: 4px;
+                                    }}
+                                    QPushButton:pressed {{
+                                        background-color: rgb{tuple(int(colour[i:i+2], 16)/1.1 for i in (0, 2, 4))};
+                                        border-width: 4px;
+                                    }}
+                                    QPushButton:disabled {{
+                                        background-color: rgb{tuple(int(colour[i:i+2], 16)/1.5 for i in (0, 2, 4))};
+                                    }}'''
+        elif index == 2:
+            return f'''QPushButton:disabled {{
+                                        background-color: rgba{tuple(int(colour[i:i+2], 16) for i in (0, 2, 4, 6))};
+                                        min-width:  20px;
+                                        max-width:  20px;
+                                        min-height: 20px;
+                                        max-height: 20px;
+                                        border-radius: 14px;
+                                        border-style: solid;
+                                        border-width: 2px;
+                                        border-color: rgb(50,50,50);
+                                        padding: 2px;
+                                    }}'''
     
     def _Player_list_init(self):
         self._Player_list_vars()
@@ -146,9 +160,29 @@ class Lobby_screen_vis(QtW.QWidget):
         
         # Player list grid
         self.player_list_grid = QtW.QGridLayout()
-    
+        self.player_list_grid.setColumnMinimumWidth(0, 60) # leader yes/no
+        self.player_list_grid.setColumnMinimumWidth(1, 40) # colour indicator
+        self.player_list_grid.setColumnStretch(2, 1000)    # username
+        
+        # Colour indicator
+        indicator = self.player_list_colour_indicators[self.Carcassonne.username]
+        indicator = QtW.QPushButton()
+        indicator.setEnabled(False)
+        indicator.setStyleSheet(self._Colour_picker_stylesheet(self.current_colour, 2))
+        
+        # Username
+        username = self.player_list_usernames[self.Carcassonne.username]
+        username = QtW.QLabel(self.Carcassonne.username)
+        font = self.Carcassonne.Properties.Font(size=0, bold=False)
+        username.setFont(font)
+        
+        # Add to layout
+        self.player_list_grid.addWidget(indicator, 0, 1, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
+        self.player_list_grid.addWidget(username,  0, 2, alignment=QtC.Qt.AlignmentFlag.AlignLeft)
+
     def _Player_list_vars(self):
-        self.player_list_colours = dict()
+        self.player_list_colour_indicators = {self.Carcassonne.username: None}
+        self.player_list_usernames = {self.Carcassonne.username: None}
     
     def _Expansions_list_init(self):
         self._Expansions_list_vars()
