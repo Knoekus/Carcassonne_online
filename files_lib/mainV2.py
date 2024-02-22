@@ -42,9 +42,6 @@ class Carcassonne_online(QtW.QMainWindow):
         self.test = True
         self.default_font_size = 5 # 0-15
         
-        # Presets
-        self.refs = {'lobbies':fb.db.reference('lobbies')} # Firebase reference preparation
-        
         # Classes
         self.Properties = Properties.Properties(self.default_font_size)
     

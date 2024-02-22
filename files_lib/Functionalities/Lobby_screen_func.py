@@ -20,14 +20,13 @@ class Lobby_screen_func():
         self.Carcassonne.stacked_widget.setCurrentWidget(self.lobby_vis)
         
         # Connect buttons
-        # ...
+        self.Connect_buttons()
     
-    def _Colour_picker_func(self):
-        # Listener
-        self.player_colours_updater = PlayerColoursUpdater(self.Carcassonne.Refs)
-        self.player_colours_updater.updateSignal.connect(self.colour_picker_vis._Draw_colours)
-        self.player_colours_updater.listen_for_updates()
-        self.player_colours_updater.start()
+    def Connect_buttons(self):
+        # Colour picker buttons
+        for colour in self.lobby_vis.colour_picker_buttons.keys():
+            button = self.lobby_vis.colour_picker_buttons[colour]
+            button.clicked.connect(self.Select_colour(colour))
     
     def _Select_colour(self, button_colour):
         """Function for all colour buttons. When a button is clicked, its colour is assigned to the player that selected it."""
@@ -51,11 +50,18 @@ class Lobby_screen_func():
                 if button_colour != self.all_colours[0]:
                     colours_update[button_colour] = 1
                 self.Carcassonne.Refs('colours').update(colours_update) # update to only cause 1 event change
-                self.Carcassonne.Refs(f'players/{self.Carcassonne.username}/colour').set(button_colour)
                 
-                # Set local selected colour
+                # Set selected colour
+                self.Carcassonne.Refs(f'players/{self.Carcassonne.username}/colour').set(button_colour)
                 self.current_colour.set(button_colour)
         return select_new_colour
+    
+    def _Colour_picker_func(self):
+        # Listener
+        self.player_colours_updater = PlayerColoursUpdater(self.Carcassonne.Refs)
+        self.player_colours_updater.updateSignal.connect(self.colour_picker_vis._Draw_colours)
+        self.player_colours_updater.listen_for_updates()
+        self.player_colours_updater.start()
 
 class PlayerColoursUpdater(QtC.QThread):
     updateSignal = QtC.pyqtSignal(list)
