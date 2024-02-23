@@ -1,3 +1,26 @@
-**Pushing events**
-Currently, the leading player is performing an action (client-side), then pushing an event to the server, which will have to be received and reproduced by other connections (and not repeated by the leading player).
-This could be changed to the leading player first pushing the event to the server, then all connections can perform the event on their own client (leading player included) and therefore everything will synchronise better.
+**Ideas**
+Pushing events to feed
+	(1) Push to a game event list, assigning a list to the event with a slot for each player. 
+		Once a player has carried out the event, they set their slot to 1.
+		Once all slots are set to 1, the event gets removed and the next event (if available) is performed.
+	(2) Push to a player event list, giving each player a separate list.
+		Once a player has carried out the event, they remove it from their own list immediately and move on to the next.
+		
+	(Summary) 1 might store the data more efficiently, saving database storage space.
+		1 might be difficult to perform smoothly since everyone has to wait for the slowest client.
+		2 might be better for synchronisation, since each client can work at their own pace.
+	(Choice) Probably going to try option 2, then see if data storage in the database becomes a problem.
+
+**Points of action**
+Feed_func
+	None
+
+Menu_screen_func
+	136	Sets active_player in database, currently that is the admin. 
+		Could move this to the lobby to be specified later, once the game is started and a random player is assigned.
+
+Lobby_screen_vis
+	A whole bunch of moving to functionality.
+
+Lobby_screen_func
+	None

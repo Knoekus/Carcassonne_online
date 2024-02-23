@@ -120,6 +120,7 @@ class Menu_screen_func():
     
     def _Save_connection_to_lobby(self):
         if self.Carcassonne.test == True:
+            # When testing
             idx = 2*int(self.Carcassonne.username[-1]) # user1: orange, user2: green
             blank_colour = self.Carcassonne.Properties.colours[idx]
         else:
@@ -129,17 +130,18 @@ class Menu_screen_func():
         self.Carcassonne.Refs(f'connections/{self.Carcassonne.username}').set(0)
         self.Carcassonne.Refs(f'players/{self.Carcassonne.username}/colour').set(blank_colour)
         self.Carcassonne.Refs(f'players/{self.Carcassonne.username}/points').set(0)
+        self.Carcassonne.Refs(f'players/{self.Carcassonne.username}/feed').set({'init':True})
         
     def _Save_lobby_to_database(self):
         # Lobby attributes
-        self.Carcassonne.Refs('active_player').set(self.Carcassonne.username)
+        self.Carcassonne.Refs('active_player').set(self.Carcassonne.username) # FIXME: only add this once the game is started? maybe
         self.Carcassonne.Refs('admin').set(self.Carcassonne.username)
-        self.Carcassonne.Refs('feed').set([])
         self.Carcassonne.Refs('open').set(True)
         for colour in self.Carcassonne.Properties.colours[1:]:
             self.Carcassonne.Refs(f'colours/{colour}').set(0)
         for expansion in self.Carcassonne.Properties.expansions:
             self.Carcassonne.Refs(f'expansions/{expansion}').set(0)
+        self.Carcassonne.Refs('feed_count').set(0)
             
         # Save player to lobby
         self._Save_connection_to_lobby()
