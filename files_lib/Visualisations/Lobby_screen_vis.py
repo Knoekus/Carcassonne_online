@@ -87,7 +87,7 @@ class Lobby_screen_vis(QtW.QWidget):
     
     def _Colour_picker_vars(self):
         self.all_colours = self.Carcassonne.Properties.colours
-        self.current_colour = self.Carcassonne.Refs(f'players/{self.Carcassonne.username}/colour').get()
+        self.player_colour_ref = self.Carcassonne.Refs(f'players/{self.Carcassonne.username}/colour')
         self.colour_picker_buttons = {colour:None for colour in self.all_colours}
     
     def _Colour_picker_button(self, colour):
@@ -95,25 +95,17 @@ class Lobby_screen_vis(QtW.QWidget):
         # Initialisation
             # Button itself
             button = self.colour_picker_buttons[colour] = QtW.QPushButton(minimumHeight=100)
-            # TODO: functionality: button.clicked.connect(self.Select_colour(colour))
             button.setStyleSheet(self._Colour_picker_stylesheet(colour, 1))
+            button.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
             self.colour_picker_hbox.addWidget(button)
             
             # Checkmark
-            if colour == self.current_colour: # initiate with checkmark in current colour
+            if colour == self.player_colour_ref.get(): # initiate with checkmark in current colour
                 button.setIcon(QtG.QIcon(r'.\Images\checkmark_icon.png'))
                 button.setIconSize(QtC.QSize(50,50))
         else:
         # Button already exists, so use it
             button = self.colour_picker_buttons[colour]
-        
-        if self.Carcassonne.Refs(f'colours/{colour}').get() == 1 and colour != self.current_colour.get(): # don't disable current colour
-        # Selected by someone else, so disable
-            button.setEnabled(False)
-        else:
-        # Not selected, so enable
-            button.setEnabled(True)
-            # TODO: functionality: button.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
     
     def _Colour_picker_stylesheet(self, colour, index):
         if index == 1:
@@ -168,7 +160,7 @@ class Lobby_screen_vis(QtW.QWidget):
         indicator = self.player_list_colour_indicators[self.Carcassonne.username]
         indicator = QtW.QPushButton()
         indicator.setEnabled(False)
-        indicator.setStyleSheet(self._Colour_picker_stylesheet(self.current_colour, 2))
+        indicator.setStyleSheet(self._Colour_picker_stylesheet(self.player_colour_ref.get(), 2))
         
         # Username
         username = self.player_list_usernames[self.Carcassonne.username]
