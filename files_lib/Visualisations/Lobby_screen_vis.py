@@ -152,15 +152,15 @@ class Lobby_screen_vis(QtW.QWidget):
         
         # Player list grid
         self.player_list_grid = QtW.QGridLayout()
-        self.player_list_grid.setColumnMinimumWidth(0, 60) # leader yes/no
-        self.player_list_grid.setColumnMinimumWidth(1, 40) # colour indicator
-        self.player_list_grid.setColumnStretch(2, 1000)    # username
+        # self.player_list_grid.setColumnMinimumWidth(0, 60) # leader yes/no
+        # self.player_list_grid.setColumnMinimumWidth(1, 40) # colour indicator
+        # self.player_list_grid.setColumnStretch(2, 1000)    # username
         
         # Add all current connections to player list
         for player in self.player_list_usernames:
             self._Player_list_add_player(player)
     
-    def _Player_list_add_player(self, player):
+    def _Player_list_add_player(self, player, feed=False):
         # Admin indicator
         admin = self.player_list_admins[player] = QtW.QLabel()
         admin.setText('(leader)')
@@ -183,11 +183,16 @@ class Lobby_screen_vis(QtW.QWidget):
         
         # Add to layout
         row_idx = self.player_list_grid.rowCount()
-        print('  Row index:', row_idx)
+        print('  Row index before:', row_idx)
         print(f'  {player} - {indicator_colour}')
         self.player_list_grid.addWidget(admin,     row_idx, 0, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
         self.player_list_grid.addWidget(indicator, row_idx, 1, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
         self.player_list_grid.addWidget(username,  row_idx, 2, alignment=QtC.Qt.AlignmentFlag.AlignLeft)
+        print('  Row index after: ', self.player_list_grid.rowCount())
+        
+        # Disable colour in picker, if applicable
+        if player != self.Carcassonne.username and indicator_colour != self.all_colours[0]:
+            self.colour_picker_buttons[indicator_colour].setEnabled(False)
 
     def _Player_list_vars(self):
         self.connections_ref = self.Carcassonne.Refs('connections')
@@ -248,8 +253,22 @@ class Lobby_screen_vis(QtW.QWidget):
         font = self.Carcassonne.Properties.Font(size=0, bold=False)
         self.start_button.setFont(font)
         # TODO: functionality: self.start_button.clicked.connect(self.start_game_admin)
+        
         self.start_button.setEnabled(False)
-        self.start_button.setToolTip('Only the lobby leader can start the game.')
+        if self.Carcassonne.username != self.Carcassonne.Refs('admin').get():
+        # Disable start button for non-admins
+            self.start_button.setToolTip('Only the lobby leader can start the game.')
+        elif len(self.Carcassonne.Refs('connections').get()) == 1:
+        # You are the admin, but alone in the lobby
+            self.start_button.setToolTip('At least one more player is needed to start the game.')
+        else:
+        # You are the admin, check if all players have selected a colour
+            for player in self.player_list_usernames:
+                if self.Carcassonne.Refs(f'players/{player}/colour').get() == self.all_colours[0]:
+                    self.start_button.setToolTip('All players must select a colour to start the game.')
+                    break
+            else:
+                self.start_button.setEnabled(True)
         
         # Layout
         self.lobby_buttons_grid = QtW.QGridLayout()
@@ -257,6 +276,14 @@ class Lobby_screen_vis(QtW.QWidget):
         self.lobby_buttons_grid.addWidget(self.start_button, 0, 4)
         for idx in range(5): # equal size for all columns
             self.lobby_buttons_grid.setColumnStretch(idx, 1)
+        
+        # For testing, add an 'add player' button
+        if self.Carcassonne.test == True:
+            self.add_player_button = QtW.QPushButton('Add user2')
+            font = self.Carcassonne.Properties.Font(size=0, bold=False)
+            self.add_player_button.setFont(font)
+            
+            self.lobby_buttons_grid.addWidget(self.add_player_button, 0, 2)
     
     def _Chat(self):
         self.chat_display = QtW.QTextEdit()
@@ -287,7 +314,9 @@ class Lobby_screen_vis(QtW.QWidget):
         # If player who joined receives their own join event
             return
         
-        self._Player_list_add_player(player)
+        print('\nAdding player...')
+        self._Player_list_add_player(player, feed=True)
+        # FIXME: this is executing, but not showing in the player list.
         print('Player added.')
         
     def _Feed_receive_colour_button_clicked(self, data):
