@@ -156,25 +156,45 @@ class Lobby_screen_vis(QtW.QWidget):
         self.player_list_grid.setColumnMinimumWidth(1, 40) # colour indicator
         self.player_list_grid.setColumnStretch(2, 1000)    # username
         
+        # Add all current connections to player list
+        for player in self.player_list_usernames:
+            self._Player_list_add_player(player)
+    
+    def _Player_list_add_player(self, player):
+        # Admin indicator
+        admin = self.player_list_admins[player] = QtW.QLabel()
+        admin.setText('(leader)')
+        font = self.Carcassonne.Properties.Font(size=0, bold=False)
+        admin.setFont(font)
+        if player != self.Carcassonne.Refs('admin').get():
+            admin.setVisible(False)
+        
         # Colour indicator
-        indicator = self.player_list_colour_indicators[self.Carcassonne.username]
-        indicator = QtW.QPushButton()
+        indicator = self.player_list_colour_indicators[player] = QtW.QPushButton()
         indicator.setEnabled(False)
-        indicator.setStyleSheet(self._Colour_picker_stylesheet(self.player_colour_ref.get(), 2))
+        indicator_colour = self.Carcassonne.Refs(f'players/{player}/colour').get()
+        indicator.setStyleSheet(self._Colour_picker_stylesheet(indicator_colour, 2))
         
         # Username
-        username = self.player_list_usernames[self.Carcassonne.username]
-        username = QtW.QLabel(self.Carcassonne.username)
+        username = self.player_list_usernames[player] = QtW.QLabel()
+        username.setText(player)
         font = self.Carcassonne.Properties.Font(size=0, bold=False)
         username.setFont(font)
         
         # Add to layout
-        self.player_list_grid.addWidget(indicator, 0, 1, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
-        self.player_list_grid.addWidget(username,  0, 2, alignment=QtC.Qt.AlignmentFlag.AlignLeft)
+        row_idx = self.player_list_grid.rowCount()
+        print('  Row index:', row_idx)
+        print(f'  {player} - {indicator_colour}')
+        self.player_list_grid.addWidget(admin,     row_idx, 0, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
+        self.player_list_grid.addWidget(indicator, row_idx, 1, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
+        self.player_list_grid.addWidget(username,  row_idx, 2, alignment=QtC.Qt.AlignmentFlag.AlignLeft)
 
     def _Player_list_vars(self):
-        self.player_list_colour_indicators = {self.Carcassonne.username: None}
-        self.player_list_usernames = {self.Carcassonne.username: None}
+        self.connections_ref = self.Carcassonne.Refs('connections')
+        
+        self.player_list_admins            = {x:None for x in self.connections_ref.get()}
+        self.player_list_colour_indicators = {x:None for x in self.connections_ref.get()}
+        self.player_list_usernames         = {x:None for x in self.connections_ref.get()}
     
     def _Expansions_list_init(self):
         self._Expansions_list_vars()
@@ -256,3 +276,48 @@ class Lobby_screen_vis(QtW.QWidget):
         self.input_layout = QtW.QHBoxLayout()
         self.input_layout.addWidget(self.chat_input)
         self.input_layout.addWidget(self.send_button)
+    
+    #%% Feed handling
+    def _Feed_receive_player_joined(self, data):
+        # Import data
+        player = data['user']
+        
+        # Function
+        if player == self.Carcassonne.username:
+        # If player who joined receives their own join event
+            return
+        
+        self._Player_list_add_player(player)
+        print('Player added.')
+        
+    def _Feed_receive_colour_button_clicked(self, data):
+        # Import data
+        old_colour = data['old_colour']
+        new_colour = data['new_colour']
+        player_clicked = data['user']
+        
+        # Function
+        if self.Carcassonne.username == player_clicked:
+        # This player changed the colour
+            if new_colour != self.all_colours[0] and self.Carcassonne.Refs(f'colours/{new_colour}').get() == 1:
+            # If selected non-blank colour is occupied, don't do anything
+                return
+        
+            # Free up previously selected colour
+            self.colour_picker_buttons[old_colour].setIcon(QtG.QIcon())
+            
+            # Occupy newly selected colour
+            self.colour_picker_buttons[new_colour].setIcon(QtG.QIcon(r'.\Images\checkmark_icon.png'))
+            self.colour_picker_buttons[new_colour].setIconSize(QtC.QSize(50,50))
+        else:
+        # This player did not change the colour
+            # Enable the old colour button
+            self.colour_picker_buttons[old_colour].setEnabled(True)
+            
+            # Disable the new colour button
+            if new_colour != self.all_colours[0]:
+                self.colour_picker_buttons[new_colour].setEnabled(False)
+        
+        # Update player's colour indicator
+        indicator = self.player_list_colour_indicators[player_clicked]
+        indicator.setStyleSheet(self._Colour_picker_stylesheet(new_colour, 2))

@@ -1,5 +1,9 @@
 #%% Imports
+# PyQt6
 import PyQt6.QtCore    as QtC
+
+# Custom classes
+import Functionalities.Lobby_screen_func as LobbyFunc
 
 #%% Feed functionality
 class Feed_func():
@@ -7,6 +11,7 @@ class Feed_func():
         self.Carcassonne = Carcassonne
         self.Refs = self.Carcassonne.Refs
         
+    # def Feed_start(self):
         self.Refs(f'players/{self.Carcassonne.username}/feed').listen(self._Event_receive)
     
     def Event_send(self, count, event):
@@ -48,8 +53,13 @@ class Feed_func():
         # Process the event
         if 'init' not in event.data.keys():
         # Ignore the initialisation
-            if event.data['event'] == 'colour_button_clicked':
+            if event.data['event'] == 'player_joined':
+                '''A new player joined the lobby and should be added to the players list.'''
+                self.Carcassonne.lobby_vis._Feed_receive_player_joined(event.data)
+                
+            elif event.data['event'] == 'colour_button_clicked':
                 '''In the lobby, a colour button got clicked and should therefore be occupied.'''
+                self.Carcassonne.lobby_vis._Feed_receive_colour_button_clicked(event.data)
                 self.Carcassonne.lobby_func._Feed_receive_colour_button_clicked(event.data)
                 
             else:
