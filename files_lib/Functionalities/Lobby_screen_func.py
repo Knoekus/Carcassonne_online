@@ -48,12 +48,40 @@ class Lobby_screen_func():
             
             # Connect function
             button.clicked.connect(self._Select_colour(colour))
+        
+        # For testing: add player button
+        self.lobby_vis.add_player_button.clicked.connect(self._Add_player)
     
     def _Select_colour(self, button_colour):
         """Function for all colour buttons. When a button is clicked, its colour is assigned to the player that selected it."""
         def select_new_colour():
             self._Feed_send_colour_button_clicked(button_colour)
         return select_new_colour
+    
+    def _Add_player(self):
+        # When testing
+        username = 'user2'
+        idx = 2*int(username[-1]) # user1: orange, user2: green
+        blank_colour = self.Carcassonne.Properties.colours[idx]
+        
+        self.Carcassonne.Refs(f'colours/{blank_colour}').set(1)
+            
+        # Player attributes
+        self.Carcassonne.Refs(f'connections/{username}').set(0)
+        self.Carcassonne.Refs(f'players/{username}/colour').set(blank_colour)
+        self.Carcassonne.Refs(f'players/{username}/points').set(0)
+        self.Carcassonne.Refs(f'players/{username}/feed').set({'init':True})
+        
+        # Disable button
+        self.lobby_vis.add_player_button.setEnabled(False)
+        
+        # Make feed message
+        count = self.Carcassonne.Refs('feed_count').get() + 1
+        event = {'event':'player_joined',
+                 'user':'user2'}
+        
+        # Send message to feed
+        self.Carcassonne.feed.Event_send(count, event)
     
     # def _Colour_picker_func(self):
     #     # Listener
