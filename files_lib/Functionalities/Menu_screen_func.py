@@ -8,6 +8,7 @@ import PyQt6_Extra     as QtE
 # Custom classes
 import Visualisations.Lobby_screen_vis as LobbyVis
 import Functionalities.Lobby_screen_func as LobbyFunc
+# import Functionalities.Feed_func as FeedFunc
 from Dialogs.Username import UsernameDialog
 from Dialogs.YesNo    import YesNoDialog
 
@@ -117,12 +118,17 @@ class Menu_screen_func():
         
         # Functionality
         self.Carcassonne.lobby_func = LobbyFunc.Lobby_screen_func(self.Carcassonne)
+        
+        # Start feed
+        # self.Carcassonne.feed.Feed_start()
     
     def _Save_connection_to_lobby(self):
         if self.Carcassonne.test == True:
             # When testing
             idx = 2*int(self.Carcassonne.username[-1]) # user1: orange, user2: green
             blank_colour = self.Carcassonne.Properties.colours[idx]
+            
+            self.Carcassonne.Refs(f'colours/{blank_colour}').set(1)
         else:
             blank_colour = self.Carcassonne.Properties.colours[0] # start with blank colour
             

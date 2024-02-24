@@ -27,7 +27,10 @@ class Lobby_screen_func():
         self.Connect_buttons()
     
     def Connect_feed(self):
-        self.feed = FeedFunc.Feed_func(self.Carcassonne)
+        self.Carcassonne.feed = FeedFunc.Feed_func(self.Carcassonne)
+        
+        # Send join event to feed
+        self._Feed_send_player_joined()
     
     def Connect_buttons(self):
         # Colour picker buttons
@@ -49,47 +52,27 @@ class Lobby_screen_func():
     def _Select_colour(self, button_colour):
         """Function for all colour buttons. When a button is clicked, its colour is assigned to the player that selected it."""
         def select_new_colour():
-            if True:
-                self._Feed_send_colour_button_clicked(button_colour)
-            else:
-                player_colour_ref = self.lobby_vis.player_colour_ref
-                
-                # If new colour selected and it's still free or it's blank
-                if button_colour != player_colour_ref.get() and\
-                   (self.Carcassonne.Refs(f'colours/{button_colour}').get() == 0 or button_colour == self.lobby_vis.all_colours[0]):
-                    # Remove checkmark from old selected colour
-                    self.lobby_vis.colour_picker_buttons[player_colour_ref.get()].setIcon(QtG.QIcon())
-                    
-                    # Add checkmark to new selected colour
-                    self.lobby_vis.colour_picker_buttons[button_colour].setIcon(QtG.QIcon(r'.\Images\checkmark_icon.png'))
-                    self.lobby_vis.colour_picker_buttons[button_colour].setIconSize(QtC.QSize(50,50))
-                    
-                    # If current colour not blank, set old colour to be free and occupy new colour
-                    colours_update = {}
-                    if player_colour_ref.get() != self.lobby_vis.all_colours[0]:
-                        colours_update[player_colour_ref.get()] = 0
-                    if button_colour != self.lobby_vis.all_colours[0]:
-                        colours_update[button_colour] = 1
-                    # self.Carcassonne.Refs('colours').update(colours_update) # update to only cause 1 event change
-                    
-                    # Set selected colour
-                    # self.Carcassonne.Refs(f'players/{self.Carcassonne.username}/colour').set(button_colour)
-                    # player_colour_ref.set(button_colour)
-                    
-                    # FIXME: test
-                    # Make the above code into an event push to the database, monitoring if everybody has processed the event and only then moving on to the next event.
-                
+            self._Feed_send_colour_button_clicked(button_colour)
         return select_new_colour
     
-    def _Colour_picker_func(self):
-        # Listener
-        self.player_colours_updater = PlayerColoursUpdater(self.Carcassonne.Refs)
-        self.player_colours_updater.updateSignal.connect(self.colour_picker_vis._Draw_colours)
-        self.player_colours_updater.listen_for_updates()
-        self.player_colours_updater.start()
+    # def _Colour_picker_func(self):
+    #     # Listener
+    #     self.player_colours_updater = PlayerColoursUpdater(self.Carcassonne.Refs)
+    #     self.player_colours_updater.updateSignal.connect(self.colour_picker_vis._Draw_colours)
+    #     self.player_colours_updater.listen_for_updates()
+    #     self.player_colours_updater.start()
     
     
-    
+    #%% Feed handling
+    def _Feed_send_player_joined(self):
+        # Make feed message
+        count = self.Carcassonne.Refs('feed_count').get() + 1
+        event = {'event':'player_joined',
+                 'user':self.Carcassonne.username}
+        
+        # Send message to feed
+        self.Carcassonne.feed.Event_send(count, event)
+        
     def _Feed_send_colour_button_clicked(self, button_colour):
         old_colour = self.lobby_vis.player_colour_ref.get()
         new_colour = button_colour
@@ -106,7 +89,7 @@ class Lobby_screen_func():
                  'new_colour':new_colour}
         
         # Send message to feed
-        self.feed.Event_send(count, event)
+        self.Carcassonne.feed.Event_send(count, event)
 
     def _Feed_receive_colour_button_clicked(self, data):
         # Import data
@@ -115,54 +98,25 @@ class Lobby_screen_func():
         player_clicked = data['user']
         
         # Function
-        if False: # old
-            player_colour_ref = self.lobby_vis.player_colour_ref
+        if self.Carcassonne.username == player_clicked:
+        # This player changed the colour
+            if new_colour != self.lobby_vis.all_colours[0] and self.Carcassonne.Refs(f'colours/{new_colour}').get() == 1:
+            # If selected non-blank colour is occupied, don't do anything
+                return
             
-            # If new colour selected and it's still free or it's blank
-            if button_colour != player_colour_ref.get() and\
-               (self.Carcassonne.Refs(f'colours/{button_colour}').get() == 0 or button_colour == self.lobby_vis.all_colours[0]):
-                # Remove checkmark from old selected colour
-                self.lobby_vis.colour_picker_buttons[player_colour_ref.get()].setIcon(QtG.QIcon())
-                
-                # Add checkmark to new selected colour
-                self.lobby_vis.colour_picker_buttons[button_colour].setIcon(QtG.QIcon(r'.\Images\checkmark_icon.png'))
-                self.lobby_vis.colour_picker_buttons[button_colour].setIconSize(QtC.QSize(50,50))
-                
-                # If current colour not blank, set old colour to be free and occupy new colour
-                colours_update = {}
-                if player_colour_ref.get() != self.lobby_vis.all_colours[0]:
-                    colours_update[player_colour_ref.get()] = 0
-                if button_colour != self.lobby_vis.all_colours[0]:
-                    colours_update[button_colour] = 1
-        else: # new
+            # Free up previously selected colour
+            if old_colour != self.lobby_vis.all_colours[0]:
+            # If the old colour was not blank
+                self.Carcassonne.Refs(f'colours/{old_colour}').set(0)
+            
+            # Occupy newly selected colour
+            self.Carcassonne.Refs(f'players/{player_clicked}/colour').set(new_colour)
             if new_colour != self.lobby_vis.all_colours[0]:
-            # If other than blank colour was clicked
-                if self.Carcassonne.Refs(f'colours/{new_colour}').get() == 1:
-                # If selected non-blank colour is occupied, don't do anything
-                    return
-                
-            if self.Carcassonne.username == player_clicked:
-            # This player changed the colour
-                # Free up previously selected colour
-                self.lobby_vis.colour_picker_buttons[old_colour].setIcon(QtG.QIcon())
-                if old_colour != self.lobby_vis.all_colours[0]:
-                # If the old colour was not blank
-                    self.Carcassonne.Refs(f'colours/{old_colour}').set(0)
-                
-                # Occupy newly selected colour
-                self.lobby_vis.colour_picker_buttons[new_colour].setIcon(QtG.QIcon(r'.\Images\checkmark_icon.png'))
-                self.lobby_vis.colour_picker_buttons[new_colour].setIconSize(QtC.QSize(50,50))
-                if new_colour != self.lobby_vis.all_colours[0]:
-                # If the new colour is not blank
-                    self.Carcassonne.Refs(f'colours/{new_colour}').set(1)
-                    self.Carcassonne.Refs(f'players/{player_clicked}/colour').set(new_colour)
-            else:
-            # This player did not change the colour
-                # Enable the old colour button
-                self.lobby_vis.colour_picker_buttons[old_colour].setEnabled(True)
-                
-                # Disable the new colour button
-                self.lobby_vis.colour_picker_buttons[new_colour].setEnabled(False)
+            # If the new colour is not blank
+                self.Carcassonne.Refs(f'colours/{new_colour}').set(1)
+        else:
+        # This player did not change the colour
+            pass # only visualisation
         
         
 
