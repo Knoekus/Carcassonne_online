@@ -2,8 +2,8 @@
 # PyQt6
 import PyQt6.QtCore    as QtC
 
-# Custom classes
-import Functionalities.Lobby_screen_func as LobbyFunc
+# Other packages
+from firebase_admin import db
 
 #%% Feed functionality
 class Feed_func():
@@ -11,8 +11,15 @@ class Feed_func():
         self.Carcassonne = Carcassonne
         self.Refs = self.Carcassonne.Refs
         
-    # def Feed_start(self):
-        self.Refs(f'players/{self.Carcassonne.username}/feed').listen(self._Event_receive)
+        self.Feed_start()
+        
+    def Feed_start(self):
+        # self.Refs(f'players/{self.Carcassonne.username}/feed').listen(self._Event_receive)
+        
+        # Thread for listener
+        self.feed_listener = FeedUpdater(self)
+        self.feed_listener.updateSignal.connect(self._Event_receive)
+        self.feed_listener.listen_for_updates()
     
     def Event_send(self, count, event):
         # Update the feed count
@@ -67,34 +74,26 @@ class Feed_func():
             
             # Cleanup
             self.Refs(f'players/{self.Carcassonne.username}/feed/{path}').delete()
-        
-        
-        
-        # self.Refs('feed').set(0)
-        
-        # self.Refs('feed').push({'type':'init'})
-        
-        # # Listener
-        # self.feed_listener = FeedUpdater(self.Refs)
-        # self.feed_listener.updateSignal.connect()
-        # self.feed_listener.listen_for_updates()
-        # self.feed_listener.start()
 
-# class FeedUpdater(QtC.QThread):
-#     updateSignal = QtC.pyqtSignal(list)
+class FeedUpdater(QtC.QThread):
+    updateSignal = QtC.pyqtSignal(db.Event)
 
-#     def __init__(self, refs):
-#         super().__init__()
-#         self.Refs = refs
-
-#     def run(self):
-#         # Get list of colours
-#         self.updateSignal.emit()
+    def __init__(self, Feed_func):
+        super().__init__()
+        self.Feed_func = Feed_func
     
-#     def listen_for_updates(self):
-#         # when these references update, they trigger a function
-#         self.Refs('colours').listen(self.on_player_colours_update)
+    def listen_for_updates(self):
+        self.Feed_func.Refs(f'players/{self.Feed_func.Carcassonne.username}/feed').listen(self.on_event)
+        self.start()
     
-#     def on_player_colours_update(self, event):
-#         if event.data is not None:
-#             self.run()
+    def on_event(self, event):
+        # if event.data is not None:
+        #     self.run()
+        
+        self.updateSignal.emit(event)
+        
+        # self.Feed_func._Event_receive(event)
+
+    # def run(self):
+    #     # Get list of colours
+    #     self.updateSignal.emit()
