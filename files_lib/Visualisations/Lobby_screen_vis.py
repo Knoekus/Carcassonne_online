@@ -49,7 +49,7 @@ class Lobby_screen_vis(QtW.QWidget):
         self.main_layout.addWidget(self.colour_picker_header,   4, 0)
         self.main_layout.addLayout(self.colour_picker_hbox,     5, 0)
         self.main_layout.addWidget(self.player_list_header,     6, 0)
-        self.main_layout.addLayout(self.player_list_grid,       7, 0)
+        self.main_layout.addWidget(self.player_list_widget,     7, 0)
         self.main_layout.addWidget(self.expansions_list_header, 8, 0)
         self.main_layout.addLayout(self.expansions_list_grid,   9, 0)
         self.main_layout.addWidget(QtE.QHSeparationLine(),     10, 0)
@@ -131,11 +131,11 @@ class Lobby_screen_vis(QtW.QWidget):
         elif index == 2:
             return f'''QPushButton:disabled {{
                                         background-color: rgba{tuple(int(colour[i:i+2], 16) for i in (0, 2, 4, 6))};
-                                        min-width:  20px;
-                                        max-width:  20px;
-                                        min-height: 20px;
-                                        max-height: 20px;
-                                        border-radius: 14px;
+                                        min-width:  18px;
+                                        max-width:  18px;
+                                        min-height: 18px;
+                                        max-height: 18px;
+                                        border-radius: 13px;
                                         border-style: solid;
                                         border-width: 2px;
                                         border-color: rgb(50,50,50);
@@ -151,55 +151,131 @@ class Lobby_screen_vis(QtW.QWidget):
         self.player_list_header.setFont(font)
         
         # Player list grid
+        self.player_list_widget = QtW.QWidget()
         self.player_list_grid = QtW.QGridLayout()
-        # self.player_list_grid.setColumnMinimumWidth(0, 60) # leader yes/no
-        # self.player_list_grid.setColumnMinimumWidth(1, 40) # colour indicator
-        # self.player_list_grid.setColumnStretch(2, 1000)    # username
+        self.player_list_widget.setLayout(self.player_list_grid)
+        self.player_list_grid.setColumnMinimumWidth(0, 60) # leader yes/no
+        self.player_list_grid.setColumnMinimumWidth(1, 40) # colour indicator
+        self.player_list_grid.setColumnStretch(2, 1000)    # username
         
-        # Add all current connections to player list
-        for player in self.player_list_usernames:
-            self._Player_list_add_player(player)
+        # Add all widgets
+        for row_idx, player in enumerate(self.all_players.keys()):
+            self._Player_list_add_player(row_idx, player)
     
-    def _Player_list_add_player(self, player, feed=False):
+    def _Player_list_vars(self):
+        self.connections_ref = self.Carcassonne.Refs('connections')
+        
+        # Fill player list
+        self.all_players = self.connections_ref.get()
+        while len(self.all_players) != 6: # 6 is the maximum number of colours (and therefore players) in a lobby
+            player_idx = len(self.all_players)+1
+            self.all_players[f'placeholder_username_{player_idx}'] = 10 # this is longer than the max character limit (20)
+        
+        self.player_list_admins            = {x:None for x in range(6)}
+        self.player_list_colour_indicators = {x:None for x in range(6)}
+        self.player_list_usernames         = {x:None for x in range(6)}
+    
+    def _Player_list_update(self):
+        # Set all current connections to a widget and make it visible
+        self.all_players = self.connections_ref.get()
+        print(self.all_players)
+        for row_idx, player in enumerate(self.all_players.keys()):
+            admin     = self.player_list_admins[row_idx]
+            indicator = self.player_list_colour_indicators[row_idx]
+            username  = self.player_list_usernames[row_idx]
+            
+            # Set admin
+            if player == self.Carcassonne.Refs('admin').get():
+                admin.setText('(leader)')
+            else:
+                admin.setText('')
+            
+            # Indicator
+            indicator.setVisible(True)
+            indicator_colour = self.Carcassonne.Refs(f'players/{player}/colour').get() # FIXME: this does not work? idk why
+            indicator.setStyleSheet(self._Colour_picker_stylesheet(indicator_colour, 2))
+            
+            # Username
+            username.setText(player)
+            
+            # Disable colour in picker, if applicable
+            if player != self.Carcassonne.username and indicator_colour != self.all_colours[0]:
+                self.colour_picker_buttons[indicator_colour].setEnabled(False)
+        
+        # Hide all unused placeholders
+        while len(self.all_players) != 6: # 6 is the maximum number of colours (and therefore players) in a lobby
+            admin     = self.player_list_admins[len(self.all_players)]
+            indicator = self.player_list_colour_indicators[len(self.all_players)]
+            username  = self.player_list_usernames[len(self.all_players)]
+            
+            admin.setText('')
+            indicator.setVisible(False)
+            username.setText('')
+            
+            player_idx = len(self.all_players)+1
+            self.all_players[f'placeholder_username_{player_idx}'] = 10 # this is longer than the max character limit (20)
+
+    def _Player_list_add_player(self, row_idx, player):
         # Admin indicator
-        admin = self.player_list_admins[player] = QtW.QLabel()
-        admin.setText('(leader)')
+        admin = self.player_list_admins[row_idx] = QtW.QLabel()
         font = self.Carcassonne.Properties.Font(size=0, bold=False)
         admin.setFont(font)
-        if player != self.Carcassonne.Refs('admin').get():
-            admin.setVisible(False)
         
         # Colour indicator
-        indicator = self.player_list_colour_indicators[player] = QtW.QPushButton()
+        indicator = self.player_list_colour_indicators[row_idx] = QtW.QPushButton()
         indicator.setEnabled(False)
-        indicator_colour = self.Carcassonne.Refs(f'players/{player}/colour').get()
+        if len(player) <= 20:
+        # Not a placeholder
+            indicator_colour = self.Carcassonne.Refs(f'players/{player}/colour').get()
+        else:
+        # Placeholder
+            indicator_colour = self.all_colours[0]
         indicator.setStyleSheet(self._Colour_picker_stylesheet(indicator_colour, 2))
         
         # Username
-        username = self.player_list_usernames[player] = QtW.QLabel()
-        username.setText(player)
-        font = self.Carcassonne.Properties.Font(size=0, bold=False)
+        username = self.player_list_usernames[row_idx] = QtW.QLabel()
+        font = self.Carcassonne.Properties.Font(size=3, bold=False)
         username.setFont(font)
+        
+        # Make placeholders invisible (this works!)
+        if len(player) > 20:
+            indicator.setVisible(False)
+        else:
+            if player == self.Carcassonne.Refs('admin').get():
+                admin.setText('(leader)')
+            else:
+                admin.setText('')
+            username.setText(player)
+            
+        # Make placeholders invisible (this does NOT work!)
+        # if len(player) > 20:
+        #     admin.setVisible(False)
+        #     indicator.setVisible(False)
+        #     username.setVisible(False)
+        # else:
+        #     # Admin
+        #     admin.setVisible(True)
+        #     if player != self.Carcassonne.Refs('admin').get():
+        #         admin.setText('(leader)')
+        #     else:
+        #         admin.setText('')
+                
+        #     # Indicator
+        #     indicator.setVisible(True)
+            
+        #     # Username
+        #     username.setVisible(True)
+        #     username.setText(player)
         
         # Add to layout
         row_idx = self.player_list_grid.rowCount()
-        print('  Row index before:', row_idx)
-        print(f'  {player} - {indicator_colour}')
         self.player_list_grid.addWidget(admin,     row_idx, 0, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
         self.player_list_grid.addWidget(indicator, row_idx, 1, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
         self.player_list_grid.addWidget(username,  row_idx, 2, alignment=QtC.Qt.AlignmentFlag.AlignLeft)
-        print('  Row index after: ', self.player_list_grid.rowCount())
         
         # Disable colour in picker, if applicable
         if player != self.Carcassonne.username and indicator_colour != self.all_colours[0]:
             self.colour_picker_buttons[indicator_colour].setEnabled(False)
-
-    def _Player_list_vars(self):
-        self.connections_ref = self.Carcassonne.Refs('connections')
-        
-        self.player_list_admins            = {x:None for x in self.connections_ref.get()}
-        self.player_list_colour_indicators = {x:None for x in self.connections_ref.get()}
-        self.player_list_usernames         = {x:None for x in self.connections_ref.get()}
     
     def _Expansions_list_init(self):
         self._Expansions_list_vars()
@@ -313,11 +389,7 @@ class Lobby_screen_vis(QtW.QWidget):
         if player == self.Carcassonne.username:
         # If player who joined receives their own join event
             return
-        
-        print('\nAdding player...')
-        self._Player_list_add_player(player, feed=True)
-        # FIXME: this is executing, but not showing in the player list.
-        print('Player added.')
+        self._Player_list_update()
         
     def _Feed_receive_colour_button_clicked(self, data):
         # Import data
@@ -348,5 +420,8 @@ class Lobby_screen_vis(QtW.QWidget):
                 self.colour_picker_buttons[new_colour].setEnabled(False)
         
         # Update player's colour indicator
-        indicator = self.player_list_colour_indicators[player_clicked]
+        for idx in range(6):
+            if self.player_list_usernames[idx].text() == player_clicked:
+                break
+        indicator = self.player_list_colour_indicators[idx]
         indicator.setStyleSheet(self._Colour_picker_stylesheet(new_colour, 2))
