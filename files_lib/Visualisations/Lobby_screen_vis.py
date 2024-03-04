@@ -175,46 +175,6 @@ class Lobby_screen_vis(QtW.QWidget):
         self.player_list_colour_indicators = {x:None for x in range(6)}
         self.player_list_usernames         = {x:None for x in range(6)}
     
-    def _Player_list_update(self):
-        # Set all current connections to a widget and make it visible
-        self.all_players = self.connections_ref.get()
-        print(self.all_players)
-        for row_idx, player in enumerate(self.all_players.keys()):
-            admin     = self.player_list_admins[row_idx]
-            indicator = self.player_list_colour_indicators[row_idx]
-            username  = self.player_list_usernames[row_idx]
-            
-            # Set admin
-            if player == self.Carcassonne.Refs('admin').get():
-                admin.setText('(leader)')
-            else:
-                admin.setText('')
-            
-            # Indicator
-            indicator.setVisible(True)
-            indicator_colour = self.Carcassonne.Refs(f'players/{player}/colour').get() # FIXME: this does not work? idk why
-            indicator.setStyleSheet(self._Colour_picker_stylesheet(indicator_colour, 2))
-            
-            # Username
-            username.setText(player)
-            
-            # Disable colour in picker, if applicable
-            if player != self.Carcassonne.username and indicator_colour != self.all_colours[0]:
-                self.colour_picker_buttons[indicator_colour].setEnabled(False)
-        
-        # Hide all unused placeholders
-        while len(self.all_players) != 6: # 6 is the maximum number of colours (and therefore players) in a lobby
-            admin     = self.player_list_admins[len(self.all_players)]
-            indicator = self.player_list_colour_indicators[len(self.all_players)]
-            username  = self.player_list_usernames[len(self.all_players)]
-            
-            admin.setText('')
-            indicator.setVisible(False)
-            username.setText('')
-            
-            player_idx = len(self.all_players)+1
-            self.all_players[f'placeholder_username_{player_idx}'] = 10 # this is longer than the max character limit (20)
-
     def _Player_list_add_player(self, row_idx, player):
         # Admin indicator
         admin = self.player_list_admins[row_idx] = QtW.QLabel()
@@ -290,29 +250,28 @@ class Lobby_screen_vis(QtW.QWidget):
         self.expansions_list_grid.setColumnMinimumWidth(0, 10) # extra 10px padding
         
         # Get data
-        # TODO: functionality: admin = self.lobby.Refs('admin').get()
+        admin = self.lobby.Refs('admin').get()
         
         # Draw switches
         for idx, expansion in enumerate(self.Carcassonne.Properties.expansions):
             # Add switch
-            switch = self.expansions_switches[expansion] = QtW.QCheckBox(expansion)
+            expansion_switch = self.expansions_switches[expansion] = QtW.QCheckBox(expansion)
             font = self.Carcassonne.Properties.Font(size=0, bold=False)
-            switch.setFont(font)
+            expansion_switch.setFont(font)
             
             checked = self.Carcassonne.Refs(f'expansions/{expansion}').get()
-            switch.setChecked(checked)
-            # button.setStyleSheet(f"""QCheckBox::indicator{{
-            #                           width:  {prop_s.font_sizes[1+self.lobby.font_size]}px;
-            #                           height: {prop_s.font_sizes[0+self.lobby.font_size]}px;
-            #                           }}""") # make a little wider
+            expansion_switch.setChecked(checked)
+            # expansion_switch.setStyleSheet(f"""QCheckBox::indicator{{
+            #                               width:  {prop_s.font_sizes[1+self.lobby.font_size]}px;
+            #                               height: {prop_s.font_sizes[0+self.lobby.font_size]}px;
+            #                               }}""") # make a little wider
             
-            self.expansions_list_grid.addWidget(switch, idx, 1)
-            # TODO: functionality: switch.clicked.connect(self.Expansions_clicked(button))
+            self.expansions_list_grid.addWidget(expansion_switch, idx, 1)
+            # TODO: functionality: expansion_switch.clicked.connect(self.Expansions_clicked(button))
             
-            # TODO: functionality
-            # if admin != self.Carcassonne.username:
-            #     switch.setEnabled(False)
-            #     switch.setToolTip('Only the lobby leader can select expansions.')
+            if admin != self.Carcassonne.username:
+                expansion_switch.setEnabled(False)
+                expansion_switch.setToolTip('Only the lobby leader can select expansions.')
     
     def _Expansions_list_vars(self):
         self.expansions_switches = dict()
@@ -329,22 +288,7 @@ class Lobby_screen_vis(QtW.QWidget):
         font = self.Carcassonne.Properties.Font(size=0, bold=False)
         self.start_button.setFont(font)
         # TODO: functionality: self.start_button.clicked.connect(self.start_game_admin)
-        
-        self.start_button.setEnabled(False)
-        if self.Carcassonne.username != self.Carcassonne.Refs('admin').get():
-        # Disable start button for non-admins
-            self.start_button.setToolTip('Only the lobby leader can start the game.')
-        elif len(self.Carcassonne.Refs('connections').get()) == 1:
-        # You are the admin, but alone in the lobby
-            self.start_button.setToolTip('At least one more player is needed to start the game.')
-        else:
-        # You are the admin, check if all players have selected a colour
-            for player in self.player_list_usernames:
-                if self.Carcassonne.Refs(f'players/{player}/colour').get() == self.all_colours[0]:
-                    self.start_button.setToolTip('All players must select a colour to start the game.')
-                    break
-            else:
-                self.start_button.setEnabled(True)
+        self._Update_start_button()
         
         # Layout
         self.lobby_buttons_grid = QtW.QGridLayout()
@@ -380,6 +324,24 @@ class Lobby_screen_vis(QtW.QWidget):
         self.input_layout.addWidget(self.chat_input)
         self.input_layout.addWidget(self.send_button)
     
+    def _Update_start_button(self):
+        self.start_button.setEnabled(False)
+        if self.Carcassonne.username != self.Carcassonne.Refs('admin').get():
+        # Disable start button for non-admins
+            self.start_button.setToolTip('Only the lobby leader can start the game.')
+        elif len(self.Carcassonne.Refs('connections').get()) == 1:
+        # You are the admin, but alone in the lobby
+            self.start_button.setToolTip('At least one more player is needed to start the game.')
+        else:
+        # You are the admin, check if all players have selected a colour
+            for player in self.player_list_usernames:
+                if self.Carcassonne.Refs(f'players/{player}/colour').get() == self.all_colours[0]:
+                    self.start_button.setToolTip('All players must select a colour to start the game.')
+                    break
+            else:
+                self.start_button.setEnabled(True)
+                self.start_button.setToolTip('Start the game!')
+    
     #%% Feed handling
     def _Feed_receive_player_joined(self, data):
         # Import data
@@ -389,7 +351,48 @@ class Lobby_screen_vis(QtW.QWidget):
         if player == self.Carcassonne.username:
         # If player who joined receives their own join event
             return
-        self._Player_list_update()
+        
+        # Set all current connections to a widget and make it visible
+        self.all_players = self.connections_ref.get()
+        print(self.all_players)
+        for row_idx, player in enumerate(self.all_players.keys()):
+            admin     = self.player_list_admins[row_idx]
+            indicator = self.player_list_colour_indicators[row_idx]
+            username  = self.player_list_usernames[row_idx]
+            
+            # Set admin
+            if player == self.Carcassonne.Refs('admin').get():
+                admin.setText('(leader)')
+            else:
+                admin.setText('')
+            
+            # Indicator
+            indicator.setVisible(True)
+            indicator_colour = self.Carcassonne.Refs(f'players/{player}/colour').get()
+            indicator.setStyleSheet(self._Colour_picker_stylesheet(indicator_colour, 2))
+            
+            # Username
+            username.setText(player)
+            
+            # Disable colour in picker, if applicable
+            if player != self.Carcassonne.username and indicator_colour != self.all_colours[0]:
+                self.colour_picker_buttons[indicator_colour].setEnabled(False)
+        
+        # Hide all unused placeholders
+        while len(self.all_players) != 6: # 6 is the maximum number of colours (and therefore players) in a lobby
+            admin     = self.player_list_admins[len(self.all_players)]
+            indicator = self.player_list_colour_indicators[len(self.all_players)]
+            username  = self.player_list_usernames[len(self.all_players)]
+            
+            admin.setText('')
+            indicator.setVisible(False)
+            username.setText('')
+            
+            player_idx = len(self.all_players)+1
+            self.all_players[f'placeholder_username_{player_idx}'] = 10 # this is longer than the max character limit (20)
+        
+        # Update start button
+        self._Update_start_button()
         
     def _Feed_receive_colour_button_clicked(self, data):
         # Import data
@@ -425,3 +428,6 @@ class Lobby_screen_vis(QtW.QWidget):
                 break
         indicator = self.player_list_colour_indicators[idx]
         indicator.setStyleSheet(self._Colour_picker_stylesheet(new_colour, 2))
+        
+        # Update start button
+        self._Update_start_button()
