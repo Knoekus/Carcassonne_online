@@ -84,14 +84,6 @@ class Lobby_screen_func():
         print('sending add player event')
         self.Carcassonne.feed.Event_send(count, event)
     
-    # def _Colour_picker_func(self):
-    #     # Listener
-    #     self.player_colours_updater = PlayerColoursUpdater(self.Carcassonne.Refs)
-    #     self.player_colours_updater.updateSignal.connect(self.colour_picker_vis._Draw_colours)
-    #     self.player_colours_updater.listen_for_updates()
-    #     self.player_colours_updater.start()
-    
-    
     #%% Feed handling
     def _Feed_send_player_joined(self):
         # Make feed message
