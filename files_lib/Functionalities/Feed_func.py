@@ -21,15 +21,15 @@ class Feed_func():
         self.feed_listener.updateSignal.connect(self._Event_receive)
         self.feed_listener.listen_for_updates()
     
-    def Event_send(self, count, event):
+    def Event_send(self, event):
         # Update the feed count
-        feed_count = self.Refs('feed_count').get()
-        self.Refs('feed_count').set(feed_count+1)
+        feed_count = self.Refs('feed_count').get()+1
+        self.Refs('feed_count').set(feed_count)
         
         # Push event to each player
         connections = self.Refs('connections').get()
         for player in connections:
-            self.Refs(f'players/{player}/feed/{count}').set(event)
+            self.Refs(f'players/{player}/feed/{feed_count}').set(event)
     
     def _Event_receive(self, event):
         # Receive
@@ -60,14 +60,25 @@ class Feed_func():
         # Process the event
         if 'init' not in event.data.keys():
         # Ignore the initialisation
-            if event.data['event'] == 'player_joined':
-                '''A new player joined the lobby and should be added to the players list.'''
-                self.Carcassonne.lobby_vis._Feed_receive_player_joined(event.data)
-                
-            elif event.data['event'] == 'colour_button_clicked':
+            if event.data['event'] == 'colour_button_clicked':
                 '''In the lobby, a colour button got clicked and should therefore be occupied.'''
                 self.Carcassonne.lobby_vis._Feed_receive_colour_button_clicked(event.data)
                 self.Carcassonne.lobby_func._Feed_receive_colour_button_clicked(event.data)
+                
+            elif event.data['event'] == 'new_admin':
+                '''A new player got assigned the admin role, so the player list should be updated.'''
+                print('new admin')
+                pass # FIXME: pass
+            
+            elif event.data['event'] == 'player_joined':
+                '''A new player joined the lobby and should be added to the players list.'''
+                self.Carcassonne.lobby_vis._Feed_receive_player_joined(event.data)
+            
+            elif event.data['event'] == 'player_left':
+                '''A player left the lobby and should be removed from the players list. 
+                   If it was the admin, a new admin should be assigned'''
+                self.Carcassonne.lobby_vis._Feed_receive_player_left(event.data)
+                self.Carcassonne.lobby_func._Feed_receive_player_left(event.data)
                 
             else:
                 print('unknown event type:', event.data['event'])

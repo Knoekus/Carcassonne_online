@@ -8,12 +8,10 @@ import PyQt6_Extra     as QtE
 # Custom classes
 import Visualisations.Lobby_screen_vis as LobbyVis
 import Functionalities.Lobby_screen_func as LobbyFunc
-# import Functionalities.Feed_func as FeedFunc
 from Dialogs.Username import UsernameDialog
 from Dialogs.YesNo    import YesNoDialog
 
 # Other packages
-from firebase_admin import db
 import random
 import string
 
@@ -118,9 +116,6 @@ class Menu_screen_func():
         
         # Functionality
         self.Carcassonne.lobby_func = LobbyFunc.Lobby_screen_func(self.Carcassonne)
-        
-        # Start feed
-        # self.Carcassonne.feed.Feed_start()
     
     def _Save_connection_to_lobby(self):
         if self.Carcassonne.test == True:

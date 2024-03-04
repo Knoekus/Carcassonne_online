@@ -250,7 +250,7 @@ class Lobby_screen_vis(QtW.QWidget):
         self.expansions_list_grid.setColumnMinimumWidth(0, 10) # extra 10px padding
         
         # Get data
-        admin = self.lobby.Refs('admin').get()
+        admin = self.Carcassonne.Refs('admin').get()
         
         # Draw switches
         for idx, expansion in enumerate(self.Carcassonne.Properties.expansions):
@@ -342,7 +342,45 @@ class Lobby_screen_vis(QtW.QWidget):
                 self.start_button.setEnabled(True)
                 self.start_button.setToolTip('Start the game!')
     
-    #%% Feed handling
+    #%% Feed handling, receiving
+    def _Feed_receive_colour_button_clicked(self, data):
+        # Import data
+        old_colour = data['old_colour']
+        new_colour = data['new_colour']
+        player_clicked = data['user']
+        
+        # Function
+        if self.Carcassonne.username == player_clicked:
+        # This player changed the colour
+            if new_colour != self.all_colours[0] and self.Carcassonne.Refs(f'colours/{new_colour}').get() == 1:
+            # If selected non-blank colour is occupied, don't do anything
+                return
+        
+            # Free up previously selected colour
+            self.colour_picker_buttons[old_colour].setIcon(QtG.QIcon())
+            
+            # Occupy newly selected colour
+            self.colour_picker_buttons[new_colour].setIcon(QtG.QIcon(r'.\Images\checkmark_icon.png'))
+            self.colour_picker_buttons[new_colour].setIconSize(QtC.QSize(50,50))
+        else:
+        # This player did not change the colour
+            # Enable the old colour button
+            self.colour_picker_buttons[old_colour].setEnabled(True)
+            
+            # Disable the new colour button
+            if new_colour != self.all_colours[0]:
+                self.colour_picker_buttons[new_colour].setEnabled(False)
+        
+        # Update player's colour indicator
+        for idx in range(6):
+            if self.player_list_usernames[idx].text() == player_clicked:
+                break
+        indicator = self.player_list_colour_indicators[idx]
+        indicator.setStyleSheet(self._Colour_picker_stylesheet(new_colour, 2))
+        
+        # Update start button
+        self._Update_start_button()
+    
     def _Feed_receive_player_joined(self, data):
         # Import data
         player = data['user']
@@ -393,41 +431,11 @@ class Lobby_screen_vis(QtW.QWidget):
         
         # Update start button
         self._Update_start_button()
-        
-    def _Feed_receive_colour_button_clicked(self, data):
+    
+    def _Feed_receive_player_left(self, data):
         # Import data
-        old_colour = data['old_colour']
-        new_colour = data['new_colour']
-        player_clicked = data['user']
+        player_left = data['user']
         
         # Function
-        if self.Carcassonne.username == player_clicked:
-        # This player changed the colour
-            if new_colour != self.all_colours[0] and self.Carcassonne.Refs(f'colours/{new_colour}').get() == 1:
-            # If selected non-blank colour is occupied, don't do anything
-                return
+        # FIXME: ...
         
-            # Free up previously selected colour
-            self.colour_picker_buttons[old_colour].setIcon(QtG.QIcon())
-            
-            # Occupy newly selected colour
-            self.colour_picker_buttons[new_colour].setIcon(QtG.QIcon(r'.\Images\checkmark_icon.png'))
-            self.colour_picker_buttons[new_colour].setIconSize(QtC.QSize(50,50))
-        else:
-        # This player did not change the colour
-            # Enable the old colour button
-            self.colour_picker_buttons[old_colour].setEnabled(True)
-            
-            # Disable the new colour button
-            if new_colour != self.all_colours[0]:
-                self.colour_picker_buttons[new_colour].setEnabled(False)
-        
-        # Update player's colour indicator
-        for idx in range(6):
-            if self.player_list_usernames[idx].text() == player_clicked:
-                break
-        indicator = self.player_list_colour_indicators[idx]
-        indicator.setStyleSheet(self._Colour_picker_stylesheet(new_colour, 2))
-        
-        # Update start button
-        self._Update_start_button()

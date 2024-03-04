@@ -7,10 +7,10 @@ import PyQt6_Extra     as QtE
 
 # Custom classes
 import Functionalities.Feed_func as FeedFunc
-# ...
+from Dialogs.YesNo import YesNoDialog
 
 # Other packages
-# ...
+import random
 
 #%% Lobby screen functionality
 class Lobby_screen_func():
@@ -49,9 +49,28 @@ class Lobby_screen_func():
             # Connect function
             button.clicked.connect(self._Select_colour(colour))
         
+        # Expansion buttons
+        # ...
+        
+        # Lobby buttons
+        # ...
+        
         # For testing: add player button
         self.lobby_vis.add_player_button.clicked.connect(self._Add_player_testing)
     
+    def _Leave_lobby(self):
+        title = 'Leave lobby?'
+        text = 'Are you sure you want to leave the lobby?'
+        yesNoDialog = YesNoDialog(self, title, text)
+        result = yesNoDialog.exec()
+        if result == QtW.QDialog.Accepted:
+            self._Remove_connection_from_lobby(self.username)
+            self._Feed_send_player_left()
+            self.Carcassonne.stacked_widget.setCurrentWidget(self.menu_vis) # Go back to menu screen
+    
+    def _Remove_connection_from_lobby(self, player):
+        pass
+            
     def _Select_colour(self, button_colour):
         """Function for all colour buttons. When a button is clicked, its colour is assigned to the player that selected it."""
         def select_new_colour():
@@ -81,19 +100,9 @@ class Lobby_screen_func():
                  'user':'user2'}
         
         # Send message to feed
-        print('sending add player event')
         self.Carcassonne.feed.Event_send(count, event)
     
-    #%% Feed handling
-    def _Feed_send_player_joined(self):
-        # Make feed message
-        count = self.Carcassonne.Refs('feed_count').get() + 1
-        event = {'event':'player_joined',
-                 'user':self.Carcassonne.username}
-        
-        # Send message to feed
-        self.Carcassonne.feed.Event_send(count, event)
-        
+    #%% Feed handling, sending
     def _Feed_send_colour_button_clicked(self, button_colour):
         old_colour = self.lobby_vis.player_colour_ref.get()
         new_colour = button_colour
@@ -103,15 +112,39 @@ class Lobby_screen_func():
             return
         
         # Make feed message
-        count = self.Carcassonne.Refs('feed_count').get() + 1
         event = {'event':'colour_button_clicked',
                  'user':self.Carcassonne.username,
                  'old_colour':old_colour,
                  'new_colour':new_colour}
         
         # Send message to feed
-        self.Carcassonne.feed.Event_send(count, event)
+        self.Carcassonne.feed.Event_send(event)
+    
+    def _Feed_send_new_admin(self, new_admin):
+        # Make feed message
+        event = {'event':'new_admin',
+                 'user':new_admin}
+        
+        # Send message to feed
+        self.Carcassonne.feed.Event_send(event)
+        
+    def _Feed_send_player_joined(self):
+        # Make feed message
+        event = {'event':'player_joined',
+                 'user':self.Carcassonne.username}
+        
+        # Send message to feed
+        self.Carcassonne.feed.Event_send(event)
+    
+    def _Feed_send_player_left(self):
+        # Make feed message
+        event = {'event':'player_left',
+                 'user':self.Carcassonne.username}
+        
+        # Send message to feed
+        self.Carcassonne.feed.Event_send(event)
 
+    #%% Feed handling, receiving
     def _Feed_receive_colour_button_clicked(self, data):
         # Import data
         old_colour = data['old_colour']
@@ -138,26 +171,32 @@ class Lobby_screen_func():
         else:
         # This player did not change the colour
             pass # only visualisation
-        
-        
-
-class PlayerColoursUpdater(QtC.QThread):
-    updateSignal = QtC.pyqtSignal(list)
-
-    def __init__(self, refs):
-        super().__init__()
-        self.Refs = refs
-
-    def run(self):
-        # Get list of colours
-        # --> could try doing something smart with only updating necessary colours
-        colours = self.Refs('colours').get()
-        self.updateSignal.emit(list(colours.keys()))
     
-    def listen_for_updates(self):
-        # when these references update, they trigger a function
-        self.Refs('colours').listen(self.on_player_colours_update)
-    
-    def on_player_colours_update(self, event):
-        if event.data is not None:
-            self.run()
+    def _Feed_receive_player_left(self, data):
+        # Import data
+        player_left = data['user']
+        
+        # Function
+        lobby_conns = list(self.Refs('connections').get().keys())
+        if len(lobby_conns) > 1:
+        # If there are more connections, only remove the one
+            # Make colour available again
+            colour = self.Refs(f'players/{player_left}/colour').get()
+            if colour != self.Carcassonne.Properties.colours[0]:
+            # If colour was not transparent
+                self.Refs(f'colours/{colour}').set(0) # available again
+            
+            # Delete data from database
+            self.Refs(f'connections/{player_left}').delete()
+            self.Refs(f'players/{player_left}').delete()
+            
+            # If the lost connection was admin, choose a random new admin
+            if self.Refs('admin').get() == player_left:
+                lobby_conns.remove(player_left)
+                new_admin = random.choice(lobby_conns)
+                self.Refs('admin').set(new_admin)
+                self._Feed_send_new_admin(new_admin)
+
+        else:
+        # Lost connection was the only one in the lobby, so remove it
+            self.Refs(f'lobbies/{self.lobby_key}', prefix='').delete()
