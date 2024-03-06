@@ -44,8 +44,11 @@ class Feed_func():
         if event.data != None:
         # There is data, so get event path and perform the event
             path = event.path[1:]
+        elif self.Carcassonne.lobby_key == None:
+        # If the player has left the lobby, the lobby key is None.
+            return
         else:
-        # When an event is removed, data == None. The client should move on to the next event
+        # When an event is removed, data == None. The client should move on to the next event.
         # Check if there is a next event to be processed
             feed_count = self.Refs('feed_count').get()
             feed_events = self.Refs(f'players/{self.Carcassonne.username}/feed').get()

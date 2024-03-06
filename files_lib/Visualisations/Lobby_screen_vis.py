@@ -237,6 +237,44 @@ class Lobby_screen_vis(QtW.QWidget):
         if player != self.Carcassonne.username and indicator_colour != self.all_colours[0]:
             self.colour_picker_buttons[indicator_colour].setEnabled(False)
     
+    def _Player_list_update(self):
+        # Set all current players to a widget and make it visible
+        for row_idx, player in enumerate(self.all_players.keys()):
+            admin     = self.player_list_admins[row_idx]
+            indicator = self.player_list_colour_indicators[row_idx]
+            username  = self.player_list_usernames[row_idx]
+            
+            # Set admin
+            if player == self.Carcassonne.Refs('admin').get():
+                admin.setText('(leader)')
+            else:
+                admin.setText('')
+            
+            # Indicator
+            indicator.setVisible(True)
+            indicator_colour = self.Carcassonne.Refs(f'players/{player}/colour').get()
+            indicator.setStyleSheet(self._Colour_picker_stylesheet(indicator_colour, 2))
+            
+            # Username
+            username.setText(player)
+            
+            # Disable colour in picker, if applicable
+            if player != self.Carcassonne.username and indicator_colour != self.all_colours[0]:
+                self.colour_picker_buttons[indicator_colour].setEnabled(False)
+        
+        # Hide all unused placeholders
+        while len(self.all_players) != 6: # 6 is the maximum number of colours (and therefore players) in a lobby
+            admin     = self.player_list_admins[len(self.all_players)]
+            indicator = self.player_list_colour_indicators[len(self.all_players)]
+            username  = self.player_list_usernames[len(self.all_players)]
+            
+            admin.setText('')
+            indicator.setVisible(False)
+            username.setText('')
+            
+            player_idx = len(self.all_players)+1
+            self.all_players[f'placeholder_username_{player_idx}'] = 10 # this is longer than the max character limit (20)
+    
     def _Expansions_list_init(self):
         self._Expansions_list_vars()
         
@@ -390,46 +428,9 @@ class Lobby_screen_vis(QtW.QWidget):
         # If player who joined receives their own join event
             return
         
-        # Set all current connections to a widget and make it visible
+        # Update all players and player list
         self.all_players = self.connections_ref.get()
-        print(self.all_players)
-        for row_idx, player in enumerate(self.all_players.keys()):
-            admin     = self.player_list_admins[row_idx]
-            indicator = self.player_list_colour_indicators[row_idx]
-            username  = self.player_list_usernames[row_idx]
-            
-            # Set admin
-            if player == self.Carcassonne.Refs('admin').get():
-                admin.setText('(leader)')
-            else:
-                admin.setText('')
-            
-            # Indicator
-            indicator.setVisible(True)
-            indicator_colour = self.Carcassonne.Refs(f'players/{player}/colour').get()
-            indicator.setStyleSheet(self._Colour_picker_stylesheet(indicator_colour, 2))
-            
-            # Username
-            username.setText(player)
-            
-            # Disable colour in picker, if applicable
-            if player != self.Carcassonne.username and indicator_colour != self.all_colours[0]:
-                self.colour_picker_buttons[indicator_colour].setEnabled(False)
-        
-        # Hide all unused placeholders
-        while len(self.all_players) != 6: # 6 is the maximum number of colours (and therefore players) in a lobby
-            admin     = self.player_list_admins[len(self.all_players)]
-            indicator = self.player_list_colour_indicators[len(self.all_players)]
-            username  = self.player_list_usernames[len(self.all_players)]
-            
-            admin.setText('')
-            indicator.setVisible(False)
-            username.setText('')
-            
-            player_idx = len(self.all_players)+1
-            self.all_players[f'placeholder_username_{player_idx}'] = 10 # this is longer than the max character limit (20)
-        
-        # Update start button
+        self._Player_list_update()
         self._Update_start_button()
     
     def _Feed_receive_player_left(self, data):
@@ -437,5 +438,13 @@ class Lobby_screen_vis(QtW.QWidget):
         player_left = data['user']
         
         # Function
-        # FIXME: ...
+        if player_left == self.Carcassonne.username:
+        # If player who left receives their own join event
+            return
+        
+        # Update all players and player list
+        self.all_players = self.connections_ref.get()
+        self.all_players.pop(player_left, None) # try to delete player from list
+        self._Player_list_update()
+        self._Update_start_button()
         
