@@ -26,6 +26,13 @@ class Lobby_screen_func():
         # Connect buttons
         self.Connect_buttons()
     
+    def closeEvent(self, event):
+        # FIXME: this does not work, because the closeEvent should be defined in the widget class
+        result = self._Leave_lobby(close_event=True)
+        print(result)
+        if result != QtW.QDialog.DialogCode.Accepted:
+            event.ignore()
+    
     def Connect_feed(self):
         self.Carcassonne.feed = FeedFunc.Feed_func(self.Carcassonne)
         
@@ -53,23 +60,26 @@ class Lobby_screen_func():
         # ...
         
         # Lobby buttons
-        # ...
+        self.lobby_vis.leave_button.clicked.connect(self._Leave_lobby)
         
         # For testing: add player button
         self.lobby_vis.add_player_button.clicked.connect(self._Add_player_testing)
     
-    def _Leave_lobby(self):
+    def _Leave_lobby(self, close_event=False):
         title = 'Leave lobby?'
         text = 'Are you sure you want to leave the lobby?'
-        yesNoDialog = YesNoDialog(self, title, text)
+        yesNoDialog = YesNoDialog(self.Carcassonne, self.lobby_vis, title, text)
         result = yesNoDialog.exec()
-        if result == QtW.QDialog.Accepted:
-            self._Remove_connection_from_lobby(self.username)
+        if result == QtW.QDialog.DialogCode.Accepted:
+            # self._Remove_connection_from_lobby(self.username)
             self._Feed_send_player_left()
-            self.Carcassonne.stacked_widget.setCurrentWidget(self.menu_vis) # Go back to menu screen
+            self.Carcassonne.stacked_widget.setCurrentWidget(self.Carcassonne.menu_vis) # Go back to menu screen
+        
+        if close_event == True:
+            return result
     
-    def _Remove_connection_from_lobby(self, player):
-        pass
+    # def _Remove_connection_from_lobby(self, player):
+    #     pass
             
     def _Select_colour(self, button_colour):
         """Function for all colour buttons. When a button is clicked, its colour is assigned to the player that selected it."""
@@ -177,26 +187,42 @@ class Lobby_screen_func():
         player_left = data['user']
         
         # Function
-        lobby_conns = list(self.Refs('connections').get().keys())
+        conns = self.Carcassonne.Refs('connections').get()
+        if conns == None:
+            return
+        else:
+            lobby_conns = list(conns.keys())
+        
+        if player_left not in lobby_conns:
+        # Double check to make sure the player who left is still in the database
+            if player_left == self.Carcassonne.username:
+            # Remove link to lobby if you are the player who left
+                self.Carcassonne.lobby_key = None
+            return
+        
         if len(lobby_conns) > 1:
         # If there are more connections, only remove the one
             # Make colour available again
-            colour = self.Refs(f'players/{player_left}/colour').get()
+            colour = self.Carcassonne.Refs(f'players/{player_left}/colour').get()
             if colour != self.Carcassonne.Properties.colours[0]:
             # If colour was not transparent
-                self.Refs(f'colours/{colour}').set(0) # available again
+                self.Carcassonne.Refs(f'colours/{colour}').set(0) # available again
             
             # Delete data from database
-            self.Refs(f'connections/{player_left}').delete()
-            self.Refs(f'players/{player_left}').delete()
+            self.Carcassonne.Refs(f'connections/{player_left}').delete()
+            self.Carcassonne.Refs(f'players/{player_left}').delete()
             
             # If the lost connection was admin, choose a random new admin
-            if self.Refs('admin').get() == player_left:
+            if self.Carcassonne.Refs('admin').get() == player_left:
                 lobby_conns.remove(player_left)
                 new_admin = random.choice(lobby_conns)
-                self.Refs('admin').set(new_admin)
+                self.Carcassonne.Refs('admin').set(new_admin)
                 self._Feed_send_new_admin(new_admin)
 
         else:
         # Lost connection was the only one in the lobby, so remove it
-            self.Refs(f'lobbies/{self.lobby_key}', prefix='').delete()
+            self.Carcassonne.Refs(f'lobbies/{self.Carcassonne.lobby_key}', prefix='').delete()
+        
+        if player_left == self.Carcassonne.username:
+        # Remove link to lobby if you are the player who left
+            self.Carcassonne.lobby_key = None
