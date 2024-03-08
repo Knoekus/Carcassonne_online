@@ -72,18 +72,15 @@ class Menu_screen_vis(QtW.QWidget):
         self.join_lobby_button = QtW.QPushButton('Join lobby')
         font = self.Carcassonne.Properties.Font(size=0, bold=False)
         self.join_lobby_button.setFont(font)
-        # TODO: functionality: self.join_lobby_button.clicked.connect(self.join_lobby)
         
         # Line edit
         self.lobby_key_input = QtW.QLineEdit(alignment=QtC.Qt.AlignmentFlag.AlignCenter)
         font = self.Carcassonne.Properties.Font(size=0, bold=False)
         self.lobby_key_input.setFont(font)
         self.lobby_key_input.setPlaceholderText('Enter lobby key...')
-        # TODO: functionality: self.lobby_key_input.returnPressed.connect(self.join_lobby_button.click)
         
     def _Close(self):
         # Button
         self.close_button = QtW.QPushButton('Close program')
         font = self.Carcassonne.Properties.Font(size=0, bold=False)
         self.close_button.setFont(font)
-        # TODO: functionality: self.close_button.clicked.connect(self.close)

@@ -57,7 +57,9 @@ class Lobby_screen_func():
             button.clicked.connect(self._Select_colour(colour))
         
         # Expansion buttons
-        # ...
+        for expansion_switch in self.lobby_vis.expansions_switches.values():
+            expansion = expansion_switch.text()
+            expansion_switch.clicked.connect(self._Expansions_clicked(expansion))
         
         # Lobby buttons
         self.lobby_vis.leave_button.clicked.connect(self._Leave_lobby)
@@ -65,21 +67,34 @@ class Lobby_screen_func():
         # For testing: add player button
         self.lobby_vis.add_player_button.clicked.connect(self._Add_player_testing)
     
+    def _Expansions_clicked(self, expansion):
+        def clicked():
+            # Function
+            button = self.lobby_vis.expansions_switches[expansion]
+            state = button.checkState()
+            if state == QtC.Qt.CheckState.Unchecked: # unchecked
+                self.Carcassonne.Refs(f'expansions/{expansion}').set(0)
+            elif state == QtC.Qt.CheckState.Checked: # checked
+                self.Carcassonne.Refs(f'expansions/{expansion}').set(1)
+            else:
+                raise Warning('CheckState not implemented:', state)
+            
+            # Send feed event
+            self._Feed_send_expansions_update(expansion)
+            
+        return clicked
+    
     def _Leave_lobby(self, close_event=False):
         title = 'Leave lobby?'
         text = 'Are you sure you want to leave the lobby?'
         yesNoDialog = YesNoDialog(self.Carcassonne, self.lobby_vis, title, text)
         result = yesNoDialog.exec()
         if result == QtW.QDialog.DialogCode.Accepted:
-            # self._Remove_connection_from_lobby(self.username)
             self._Feed_send_player_left()
             self.Carcassonne.stacked_widget.setCurrentWidget(self.Carcassonne.menu_vis) # Go back to menu screen
         
         if close_event == True:
             return result
-    
-    # def _Remove_connection_from_lobby(self, player):
-    #     pass
             
     def _Select_colour(self, button_colour):
         """Function for all colour buttons. When a button is clicked, its colour is assigned to the player that selected it."""
@@ -105,12 +120,11 @@ class Lobby_screen_func():
         self.lobby_vis.add_player_button.setEnabled(False)
         
         # Make feed message
-        count = self.Carcassonne.Refs('feed_count').get() + 1
         event = {'event':'player_joined',
                  'user':'user2'}
         
         # Send message to feed
-        self.Carcassonne.feed.Event_send(count, event)
+        self.Carcassonne.feed.Event_send(event)
     
     #%% Feed handling, sending
     def _Feed_send_colour_button_clicked(self, button_colour):
@@ -126,6 +140,14 @@ class Lobby_screen_func():
                  'user':self.Carcassonne.username,
                  'old_colour':old_colour,
                  'new_colour':new_colour}
+        
+        # Send message to feed
+        self.Carcassonne.feed.Event_send(event)
+    
+    def _Feed_send_expansions_update(self, expansion):
+        # Make feed message
+        event = {'event':'expansion_clicked',
+                 'expansion':expansion}
         
         # Send message to feed
         self.Carcassonne.feed.Event_send(event)
