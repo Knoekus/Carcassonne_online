@@ -67,6 +67,10 @@ class Feed_func():
                 '''In the lobby, a colour button got clicked and should therefore be occupied.'''
                 self.Carcassonne.lobby_vis._Feed_receive_colour_button_clicked(event.data)
                 self.Carcassonne.lobby_func._Feed_receive_colour_button_clicked(event.data)
+            
+            elif event.data['event'] == 'expansion_clicked':
+                '''The admin clicked an expansion, so everybody has to switch the state of said expansion.'''
+                self.Carcassonne.lobby_vis._Feed_receive_expansions_update(event.data)
                 
             elif event.data['event'] == 'new_admin':
                 '''A new player got assigned the admin role, so the player list should be updated.'''

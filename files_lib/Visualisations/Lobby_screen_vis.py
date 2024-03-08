@@ -297,15 +297,10 @@ class Lobby_screen_vis(QtW.QWidget):
             font = self.Carcassonne.Properties.Font(size=0, bold=False)
             expansion_switch.setFont(font)
             
-            checked = self.Carcassonne.Refs(f'expansions/{expansion}').get()
-            expansion_switch.setChecked(checked)
-            # expansion_switch.setStyleSheet(f"""QCheckBox::indicator{{
-            #                               width:  {prop_s.font_sizes[1+self.lobby.font_size]}px;
-            #                               height: {prop_s.font_sizes[0+self.lobby.font_size]}px;
-            #                               }}""") # make a little wider
+            state = self.Carcassonne.Refs(f'expansions/{expansion}').get()
+            expansion_switch.setChecked(state)
             
             self.expansions_list_grid.addWidget(expansion_switch, idx, 1)
-            # TODO: functionality: expansion_switch.clicked.connect(self.Expansions_clicked(button))
             
             if admin != self.Carcassonne.username:
                 expansion_switch.setEnabled(False)
@@ -419,6 +414,17 @@ class Lobby_screen_vis(QtW.QWidget):
         # Update start button
         self._Update_start_button()
     
+    def _Feed_receive_expansions_update(self, data):
+        # Import data
+        expansion = data['expansion']
+        
+        # Function
+        expansions_info = self.Carcassonne.Refs('expansions').get()
+        
+        # Edit switch
+        button = self.expansions_switches[expansion]
+        button.setChecked(expansions_info[expansion])
+    
     def _Feed_receive_player_joined(self, data):
         # Import data
         player = data['user']
@@ -441,6 +447,12 @@ class Lobby_screen_vis(QtW.QWidget):
         if player_left == self.Carcassonne.username:
         # If player who left receives their own join event
             return
+        
+        # Make colour available again
+        colour = self.Carcassonne.Refs(f'players/{player_left}/colour').get()
+        if colour != self.Carcassonne.Properties.colours[0]:
+        # If colour was not transparent
+            self.colour_picker_buttons[colour].setEnabled(True)
         
         # Update all players and player list
         self.all_players = self.connections_ref.get()

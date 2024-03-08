@@ -27,13 +27,24 @@ class Menu_screen_func():
     
     def Connect_buttons(self):
         # Create lobby
-        self.menu_vis.create_lobby_button.clicked.connect(self._Create_lobby)
+        self.menu_vis.create_lobby_button.clicked.connect(self.Create_lobby)
         
         # Join lobby
-        self.menu_vis.join_lobby_button.clicked.connect(self._Join_lobby)
+        self.menu_vis.join_lobby_button.clicked.connect(self.Join_lobby)
         self.menu_vis.lobby_key_input.returnPressed.connect(self.menu_vis.join_lobby_button.click)
+        
+        # Close program
+        self.menu_vis.close_button.clicked.connect(self.Close_program)
     
-    def _Create_lobby(self):
+    def Close_program(self):
+        title = 'Close Carcassonne Online?'
+        text = 'Are you sure you want to close Carcassonne Online?'
+        yesNoDialog = YesNoDialog(self.Carcassonne, self.menu_vis, title, text)
+        result = yesNoDialog.exec()
+        if result == QtW.QDialog.DialogCode.Accepted:
+            self.Carcassonne.close()
+    
+    def Create_lobby(self):
         if self.Carcassonne.test == True: # test mode
             self.Carcassonne.lobby_key = 'test'
             self.Carcassonne.username = 'user1'
@@ -80,7 +91,7 @@ class Menu_screen_func():
             return False
         else: return True
     
-    def _Join_lobby(self):
+    def Join_lobby(self):
         if self.Carcassonne.test == True: # test mode
             self.Carcassonne.lobby_key = 'test'
             self.Carcassonne.username = 'user2'
