@@ -7,7 +7,9 @@ class Properties():
         # Static properties
         self.font       = 'Microsoft Sans Serif'
         self.colours    = ['ffffff00', 'ff1414ff', 'ff7d00ff', 'ffff00ff', '14ff14ff', '3232ffff', 'cc32ffff']
-        self.expansions = ['The River', r'Inns && Cathedrals', 'The Abbot']
+        self.expansions = {'The River':             'Start the game by building a river with additional tiles.',
+                           r'Inns && Cathedrals':   'Adds a Big Meeple, Inns for more valuable roads, and Cathedrals for more valuable cities.',
+                           'The Abbot':             'Adds an Abbot meeple, which can be placed on added garden tiles.'}
         self.font_sizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 42, 48, 56, 62, 70, 78, 86, 94]
         self.default_font_size = default_font_size
         

@@ -1,4 +1,4 @@
-import prop_s
+# import prop_s
 
 import PyQt6.QtGui as QtG
 import PyQt6.QtWidgets as QtW
