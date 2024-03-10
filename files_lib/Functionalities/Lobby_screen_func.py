@@ -26,12 +26,12 @@ class Lobby_screen_func():
         # Connect buttons
         self.Connect_buttons()
     
-    def closeEvent(self, event):
-        # FIXME: this does not work, because the closeEvent should be defined in the widget class
-        result = self._Leave_lobby(close_event=True)
-        print(result)
-        if result != QtW.QDialog.DialogCode.Accepted:
-            event.ignore()
+    # def closeEvent(self, event):
+    #     # FIXME: this does not work, because the closeEvent should be defined in the widget class
+    #     result = self._Leave_lobby(close_event=True)
+    #     print(result)
+    #     if result != QtW.QDialog.DialogCode.Accepted:
+    #         event.ignore()
     
     def Connect_feed(self):
         self.Carcassonne.feed = FeedFunc.Feed_func(self.Carcassonne)
@@ -56,6 +56,11 @@ class Lobby_screen_func():
             # Connect function
             button.clicked.connect(self._Select_colour(colour))
         
+        # Player list buttons
+        for username_label in self.lobby_vis.player_list_usernames.values():
+            # username = username_label.text()
+            username_label.clicked.connect(self._New_admin_clicked(username_label))
+        
         # Expansion buttons
         for expansion_switch in self.lobby_vis.expansions_switches.values():
             expansion = expansion_switch.text()
@@ -65,7 +70,18 @@ class Lobby_screen_func():
         self.lobby_vis.leave_button.clicked.connect(self._Leave_lobby)
         
         # For testing: add player button
-        self.lobby_vis.add_player_button.clicked.connect(self._Add_player_testing)
+        if self.Carcassonne.test == True:
+            self.lobby_vis.add_player_button.clicked.connect(self._Add_player_testing)
+            
+            self.lobby_vis.send_button.clicked.connect(self._Feed_send_chat_message)
+            self.lobby_vis.chat_input.returnPressed.connect(self.lobby_vis.send_button.click)
+    
+    def _New_admin_clicked(self, username_label):
+        def clicked():
+            new_admin = username_label.text()
+            self.Carcassonne.Refs('admin').set(new_admin)
+            self._Feed_send_new_admin(new_admin)
+        return clicked
     
     def _Expansions_clicked(self, expansion):
         def clicked():
@@ -127,6 +143,21 @@ class Lobby_screen_func():
         self.Carcassonne.feed.Event_send(event)
     
     #%% Feed handling, sending
+    def _Feed_send_chat_message(self):
+        message = self.lobby_vis.chat_input.text().strip()
+        if len(message)>0:
+            # Make feed message
+            event = {'event':'chat_message',
+                     'user':self.Carcassonne.username,
+                     'message':message}
+            
+            # Send message to feed
+            self.Carcassonne.feed.Event_send(event)
+            
+            # Database
+            if self.Carcassonne.Refs('chat').push(message):
+                self.lobby_vis.chat_input.clear()
+        
     def _Feed_send_colour_button_clicked(self, button_colour):
         old_colour = self.lobby_vis.player_colour_ref.get()
         new_colour = button_colour
@@ -155,7 +186,7 @@ class Lobby_screen_func():
     def _Feed_send_new_admin(self, new_admin):
         # Make feed message
         event = {'event':'new_admin',
-                 'user':new_admin}
+                 'new_admin':new_admin}
         
         # Send message to feed
         self.Carcassonne.feed.Event_send(event)

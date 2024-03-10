@@ -25,6 +25,12 @@ def Firebase_init():
         })
 
 class Carcassonne_online(QtW.QMainWindow):
+    def closeEvent(self, event):
+        if self.stacked_widget.currentIndex() > 0:
+        # Don't force exit out of lobby
+            # FIXME: make dialog box to say 'leave lobby first' or something along those lines
+            event.ignore()
+        
     def __init__(self):
         super().__init__()
         self._Window_properties()

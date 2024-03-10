@@ -33,13 +33,25 @@ class QLabel(QtW.QLabel):
 
 class ClickableLabel(QtW.QLabel):
     clicked = QtC.pyqtSignal()
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, enabled=False):
         super().__init__(parent)
-        self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
+        self.enabled = enabled
+        if self.enabled == True:
+            self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
     
     def mousePressEvent(self, event):
-        self.new_admin = self.text()
-        self.clicked.emit()
+        # self.new_admin = self.text()
+        # self.clicked.emit()
+        if self.enabled == True:
+            self.clicked.emit()
+    
+    def enable(self):
+        self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
+        self.enabled = True
+    
+    def disable(self):
+        self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.ArrowCursor))
+        self.enabled = False
         
 class QHSeparationLine(QtW.QFrame):
     '''

@@ -58,14 +58,14 @@ class Menu_screen_func():
             # self.Carcassonne.Refs(f'colours/{prop_s.colours[1]}').set(1)
         else:
             # Open the username dialog
-            username_dialog = UsernameDialog(self)
+            username_dialog = UsernameDialog(self.Carcassonne, self.menu_vis)
             
             # In the meantime, create the actual lobby
             self.Carcassonne.lobby_key = self._Generate_lobby_key()
             
             # Retrieve username info
             result = username_dialog.exec()
-            if result == QtW.QDialog.Accepted:
+            if result == QtW.QDialog.DialogCode.Accepted:
                 self.Carcassonne.username = username_dialog.get_username()
                 self._Save_lobby_to_database()
                 self._Open_lobby_screen()
@@ -104,9 +104,9 @@ class Menu_screen_func():
                 # In the meantime, create the references to the lobby
                 self.Carcassonne.lobby_key = lobby_key
                 if self.Carcassonne.Refs('open').get() == True:
-                    username_dialog = UsernameDialog(self)
+                    username_dialog = UsernameDialog(self.Carcassonne, self.menu_vis)
                     result = username_dialog.exec()
-                    if result == QtW.QDialog.Accepted:
+                    if result == QtW.QDialog.DialogCode.Accepted:
                         self.Carcassonne.username = username_dialog.get_username()
                         if self._Is_username_free():
                             self._Save_connection_to_lobby()

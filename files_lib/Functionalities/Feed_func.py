@@ -63,32 +63,37 @@ class Feed_func():
         # Process the event
         if 'init' not in event.data.keys():
         # Ignore the initialisation
-            if event.data['event'] == 'colour_button_clicked':
+            event_type = event.data['event']
+            
+            if event_type == 'chat_message':
+                '''A chat message was sent and should be visualised.'''
+                self.Carcassonne.lobby_vis._Feed_receive_chat_message(event)
+                
+            elif event_type == 'colour_button_clicked':
                 '''In the lobby, a colour button got clicked and should therefore be occupied.'''
                 self.Carcassonne.lobby_vis._Feed_receive_colour_button_clicked(event.data)
                 self.Carcassonne.lobby_func._Feed_receive_colour_button_clicked(event.data)
             
-            elif event.data['event'] == 'expansion_clicked':
+            elif event_type == 'expansion_clicked':
                 '''The admin clicked an expansion, so everybody has to switch the state of said expansion.'''
                 self.Carcassonne.lobby_vis._Feed_receive_expansions_update(event.data)
                 
-            elif event.data['event'] == 'new_admin':
+            elif event_type == 'new_admin':
                 '''A new player got assigned the admin role, so the player list should be updated.'''
-                print('new admin')
-                pass # FIXME: pass
+                self.Carcassonne.lobby_vis._Feed_receive_new_admin(event.data)
             
-            elif event.data['event'] == 'player_joined':
+            elif event_type == 'player_joined':
                 '''A new player joined the lobby and should be added to the players list.'''
                 self.Carcassonne.lobby_vis._Feed_receive_player_joined(event.data)
             
-            elif event.data['event'] == 'player_left':
+            elif event_type == 'player_left':
                 '''A player left the lobby and should be removed from the players list. 
                    If it was the admin, a new admin should be assigned'''
                 self.Carcassonne.lobby_vis._Feed_receive_player_left(event.data)
                 self.Carcassonne.lobby_func._Feed_receive_player_left(event.data)
                 
             else:
-                print('unknown event type:', event.data['event'])
+                print('Unknown event type:', event_type)
             
             # Cleanup
             self.Refs(f'players/{self.Carcassonne.username}/feed/{path}').delete()
