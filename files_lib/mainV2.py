@@ -8,6 +8,7 @@ import PyQt6_Extra     as QtE
 # Custom classes
 import Visualisations.Menu_screen_vis as MenuVis
 import Functionalities.Menu_screen_func as MenuFunc
+from Dialogs.OK_dialog    import OKDialog
 import Properties
 
 # Other packages
@@ -28,8 +29,11 @@ class Carcassonne_online(QtW.QMainWindow):
     def closeEvent(self, event):
         if self.stacked_widget.currentIndex() > 0:
         # Don't force exit out of lobby
-            # FIXME: make dialog box to say 'leave lobby first' or something along those lines
             event.ignore()
+            title = 'Leave lobby before exiting'
+            text = 'Please leave the lobby before exiting the game.'
+            OK_dialog = OKDialog(self, self, title, text)
+            OK_dialog.exec()
         
     def __init__(self):
         super().__init__()
