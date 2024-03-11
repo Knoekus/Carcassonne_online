@@ -26,13 +26,6 @@ class Lobby_screen_func():
         # Connect buttons
         self.Connect_buttons()
     
-    # def closeEvent(self, event):
-    #     # FIXME: this does not work, because the closeEvent should be defined in the widget class
-    #     result = self._Leave_lobby(close_event=True)
-    #     print(result)
-    #     if result != QtW.QDialog.DialogCode.Accepted:
-    #         event.ignore()
-    
     def Connect_feed(self):
         self.Carcassonne.feed = FeedFunc.Feed_func(self.Carcassonne)
         
@@ -68,6 +61,7 @@ class Lobby_screen_func():
         
         # Lobby buttons
         self.lobby_vis.leave_button.clicked.connect(self._Leave_lobby)
+        self.lobby_vis.start_button.clicked.connect(self._Start_game)
         
         # For testing: add player button
         if self.Carcassonne.test == True:
@@ -75,13 +69,6 @@ class Lobby_screen_func():
             
             self.lobby_vis.send_button.clicked.connect(self._Feed_send_chat_message)
             self.lobby_vis.chat_input.returnPressed.connect(self.lobby_vis.send_button.click)
-    
-    def _New_admin_clicked(self, username_label):
-        def clicked():
-            new_admin = username_label.text()
-            self.Carcassonne.Refs('admin').set(new_admin)
-            self._Feed_send_new_admin(new_admin)
-        return clicked
     
     def _Expansions_clicked(self, expansion):
         def clicked():
@@ -111,12 +98,24 @@ class Lobby_screen_func():
         
         if close_event == True:
             return result
+    
+    def _New_admin_clicked(self, username_label):
+        def clicked():
+            new_admin = username_label.text()
+            self.Carcassonne.Refs('admin').set(new_admin)
+            self._Feed_send_new_admin(new_admin)
+        return clicked
             
     def _Select_colour(self, button_colour):
         """Function for all colour buttons. When a button is clicked, its colour is assigned to the player that selected it."""
         def select_new_colour():
             self._Feed_send_colour_button_clicked(button_colour)
         return select_new_colour
+    
+    def _Start_game(self):
+        if self.Carcassonne.test == True:
+            self.lobby_vis.chat_input.setText('--> Game started!')
+            self._Feed_send_chat_message()
     
     def _Add_player_testing(self):
         # When testing

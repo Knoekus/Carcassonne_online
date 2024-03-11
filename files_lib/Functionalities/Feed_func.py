@@ -14,8 +14,6 @@ class Feed_func():
         self.Feed_start()
         
     def Feed_start(self):
-        # self.Refs(f'players/{self.Carcassonne.username}/feed').listen(self._Event_receive)
-        
         # Thread for listener
         self.feed_listener = FeedUpdater(self)
         self.feed_listener.updateSignal.connect(self._Event_receive)
@@ -110,13 +108,4 @@ class FeedUpdater(QtC.QThread):
         self.start()
     
     def on_event(self, event):
-        # if event.data is not None:
-        #     self.run()
-        
         self.updateSignal.emit(event)
-        
-        # self.Feed_func._Event_receive(event)
-
-    # def run(self):
-    #     # Get list of colours
-    #     self.updateSignal.emit()

@@ -13,9 +13,6 @@ import PyQt6_Extra     as QtE
 
 #%% Lobby screen visualisation
 class Lobby_screen_vis(QtW.QWidget):
-    def closeEvent(self, event):
-        event.ignore()
-        
     def __init__(self, Carcassonne):
         super().__init__()
         self.Carcassonne = Carcassonne
@@ -52,7 +49,7 @@ class Lobby_screen_vis(QtW.QWidget):
         self.main_layout.addWidget(self.colour_picker_header,   4, 0)
         self.main_layout.addLayout(self.colour_picker_hbox,     5, 0)
         self.main_layout.addWidget(self.player_list_header,     6, 0)
-        self.main_layout.addWidget(self.player_list_widget,     7, 0)
+        self.main_layout.addWidget(self.player_list_scroll,     7, 0)
         self.main_layout.addWidget(self.expansions_list_header, 8, 0)
         self.main_layout.addLayout(self.expansions_list_grid,   9, 0)
         self.main_layout.addWidget(QtE.QHSeparationLine(),     10, 0)
@@ -154,9 +151,13 @@ class Lobby_screen_vis(QtW.QWidget):
         self.player_list_header.setFont(font)
         
         # Player list grid
+        self.player_list_scroll = QtW.QScrollArea()
+        self.player_list_scroll.setWidgetResizable(True)
         self.player_list_widget = QtW.QWidget()
         self.player_list_grid = QtW.QGridLayout()
         self.player_list_widget.setLayout(self.player_list_grid)
+        self.player_list_scroll.setWidget(self.player_list_widget)
+        
         self.player_list_grid.setColumnMinimumWidth(0, 60) # leader yes/no
         self.player_list_grid.setColumnMinimumWidth(1, 40) # colour indicator
         self.player_list_grid.setColumnStretch(2, 1000)    # username
@@ -348,7 +349,6 @@ class Lobby_screen_vis(QtW.QWidget):
         self.start_button = QtW.QPushButton('Start')
         font = self.Carcassonne.Properties.Font(size=0, bold=False)
         self.start_button.setFont(font)
-        # TODO: functionality: self.start_button.clicked.connect(self.start_game_admin)
         self._Update_start_button()
         
         # Layout
