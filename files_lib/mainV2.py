@@ -28,7 +28,7 @@ def Firebase_init():
 class Carcassonne_online(QtW.QMainWindow):
     def closeEvent(self, event):
         if self.stacked_widget.currentIndex() > 0:
-        # Don't force exit out of lobby
+        # Lobby index = 1, game = 2: don't force exit out of them.
             event.ignore()
             title = 'Leave lobby before exiting'
             text = 'Please leave the lobby before exiting the game.'

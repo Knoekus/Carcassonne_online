@@ -400,6 +400,11 @@ class Lobby_screen_vis(QtW.QWidget):
             else:
                 self.start_button.setEnabled(True)
                 self.start_button.setToolTip('Start the game!')
+        
+        # Developing
+        if self.Carcassonne.test == True:
+            self.start_button.setEnabled(True)
+            self.start_button.setToolTip('Start the game!')
     
     #%% Feed handling, receiving
     def _Feed_receive_chat_message(self, event):

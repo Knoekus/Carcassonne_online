@@ -7,6 +7,8 @@ import PyQt6_Extra     as QtE
 
 # Custom classes
 import Functionalities.Feed_func as FeedFunc
+import Visualisations.Game_screen_vis as GameVis
+import Functionalities.Game_screen_func as GameFunc
 from Dialogs.YesNo import YesNoDialog
 
 # Other packages
@@ -30,7 +32,7 @@ class Lobby_screen_func():
         self.Carcassonne.feed = FeedFunc.Feed_func(self.Carcassonne)
         
         # Send join event to feed
-        self._Feed_send_player_joined()
+        self._Feed_send_player_joined_lobby()
     
     def Connect_buttons(self):
         # Colour picker buttons
@@ -61,7 +63,7 @@ class Lobby_screen_func():
         
         # Lobby buttons
         self.lobby_vis.leave_button.clicked.connect(self._Leave_lobby)
-        self.lobby_vis.start_button.clicked.connect(self._Start_game)
+        self.lobby_vis.start_button.clicked.connect(self._Feed_send_start_game)
         
         # For testing: add player button
         if self.Carcassonne.test == True:
@@ -93,7 +95,7 @@ class Lobby_screen_func():
         yesNoDialog = YesNoDialog(self.Carcassonne, self.lobby_vis, title, text)
         result = yesNoDialog.exec()
         if result == QtW.QDialog.DialogCode.Accepted:
-            self._Feed_send_player_left()
+            self._Feed_send_player_left_lobby()
             self.Carcassonne.stacked_widget.setCurrentWidget(self.Carcassonne.menu_vis) # Go back to menu screen
         
         if close_event == True:
@@ -111,11 +113,6 @@ class Lobby_screen_func():
         def select_new_colour():
             self._Feed_send_colour_button_clicked(button_colour)
         return select_new_colour
-    
-    def _Start_game(self):
-        if self.Carcassonne.test == True:
-            self.lobby_vis.chat_input.setText('--> Game started!')
-            self._Feed_send_chat_message()
     
     def _Add_player_testing(self):
         # When testing
@@ -190,18 +187,25 @@ class Lobby_screen_func():
         # Send message to feed
         self.Carcassonne.feed.Event_send(event)
         
-    def _Feed_send_player_joined(self):
+    def _Feed_send_player_joined_lobby(self):
         # Make feed message
-        event = {'event':'player_joined',
+        event = {'event':'player_joined_lobby',
                  'user':self.Carcassonne.username}
         
         # Send message to feed
         self.Carcassonne.feed.Event_send(event)
     
-    def _Feed_send_player_left(self):
+    def _Feed_send_player_left_lobby(self):
         # Make feed message
-        event = {'event':'player_left',
+        event = {'event':'player_left_lobby',
                  'user':self.Carcassonne.username}
+        
+        # Send message to feed
+        self.Carcassonne.feed.Event_send(event)
+    
+    def _Feed_send_start_game(self):
+        # Make feed message
+        event = {'event':'start_game'}
         
         # Send message to feed
         self.Carcassonne.feed.Event_send(event)
@@ -270,7 +274,7 @@ class Lobby_screen_func():
                 new_admin = random.choice(lobby_conns)
                 self.Carcassonne.Refs('admin').set(new_admin)
                 self._Feed_send_new_admin(new_admin)
-
+        
         else:
         # Lost connection was the only one in the lobby, so remove it
             self.Carcassonne.Refs(f'lobbies/{self.Carcassonne.lobby_key}', prefix='').delete()
@@ -278,3 +282,10 @@ class Lobby_screen_func():
         if player_left == self.Carcassonne.username:
         # Remove link to lobby if you are the player who left
             self.Carcassonne.lobby_key = None
+    
+    def _Feed_receive_start_game(self):
+        # Visualisation
+        self.Carcassonne.game_vis = GameVis.Game_screen_vis(self.Carcassonne)
+        
+        # Functionality
+        self.Carcassonne.game_func = GameFunc.Game_screen_func(self.Carcassonne)
