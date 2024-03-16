@@ -132,7 +132,7 @@ class Lobby_screen_func():
         self.lobby_vis.add_player_button.setEnabled(False)
         
         # Make feed message
-        event = {'event':'player_joined',
+        event = {'event':'player_joined_lobby',
                  'user':'user2'}
         
         # Send message to feed
@@ -205,7 +205,8 @@ class Lobby_screen_func():
     
     def _Feed_send_start_game(self):
         # Make feed message
-        event = {'event':'start_game'}
+        event = {'event':'start_game',
+                 'user':self.Carcassonne.username}
         
         # Send message to feed
         self.Carcassonne.feed.Event_send(event)
@@ -283,9 +284,14 @@ class Lobby_screen_func():
         # Remove link to lobby if you are the player who left
             self.Carcassonne.lobby_key = None
     
-    def _Feed_receive_start_game(self):
+    def _Feed_receive_start_game(self, data):
         # Visualisation
         self.Carcassonne.game_vis = GameVis.Game_screen_vis(self.Carcassonne)
         
         # Functionality
         self.Carcassonne.game_func = GameFunc.Game_screen_func(self.Carcassonne)
+        
+        # Admin tasks
+        if data['user'] == self.Carcassonne.username:
+            # Close lobby
+            self.Carcassonne.Refs('open').set(False)

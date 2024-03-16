@@ -16,6 +16,10 @@ class Properties():
         self.tile_size  = 150 / 320 # /320 because that is the original pixel size of a tile
         self.tile_spacing = 1
         self.tile_titles = [r'Tiles_1base', r'Tiles_2river1', r'Tiles_3InnsAndC', r'Tiles_4abbot']
+        
+        # Inventory columns
+        self.inventory_cols = 3
+        self.standard_meeple_cols = 4
 
     # def Font(self, size, bold:bool):
     def Font(self, **kwargs):

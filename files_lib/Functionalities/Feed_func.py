@@ -71,7 +71,7 @@ class Feed_func():
                              ]:
                 self._Lobby_events(event)
             
-            elif event_type in [None,
+            elif event_type in ['pass_turn',
                                ]:
                 self._Game_events(event)
                 
@@ -83,7 +83,12 @@ class Feed_func():
     
     def _Game_events(self, event):
         # All events that can occur while in the game screen
-        pass
+        event_type = event.data['event']
+        
+        if event_type == 'pass_turn':
+            '''The turn is passed on from previous_player to next_player.'''
+            self.Carcassonne.game_vis._Feed_receive_pass_turn(event.data)
+            self.Carcassonne.game_func._Feed_receive_pass_turn(event.data)
     
     def _Lobby_events(self, event):
         # All events that can occur while in the lobby screen
@@ -118,7 +123,7 @@ class Feed_func():
         
         elif event_type == 'start_game':
             '''The lobby admin started the game.'''
-            self.Carcassonne.lobby_func._Feed_receive_start_game()
+            self.Carcassonne.lobby_func._Feed_receive_start_game(event.data)
 
 class FeedUpdater(QtC.QThread):
     updateSignal = QtC.pyqtSignal(db.Event)
