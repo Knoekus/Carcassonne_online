@@ -37,12 +37,7 @@ class Meeple(QtE.ClickableImage):
         colour = self.Carcassonne.Refs(f'players/{self.Carcassonne.username}/colour').get()
         file = self._Get_file()
         
-        # When launching game screen directly, go up an extra folder
-        if self.Carcassonne.lobby_key == 'test2':
-            file = '.'+file
-        
         # Main image
-        # self.pixmap_original = self.Colour_fill_meeple(file, colour)
         self.pixmap_original = self._Colour_fill_file(file, colour)
         self.pixmap = self.pixmap_original
         
@@ -58,11 +53,11 @@ class Meeple(QtE.ClickableImage):
         self.pixmap_grey = QtG.QPixmap.fromImage(img2)
     
     def _Get_file(self):
-        if self.meeple_type == 'meeples_standard':
+        if self.meeple_type == 'standard':
             file = './Images/Meeples/_Default/SF.png'
-        elif self.meeple_type == 'meeples_big':
+        elif self.meeple_type == 'big':
             file = './Images/Meeples/_Default/BF.png'
-        elif self.meeple_type == 'meeples_abbot':
+        elif self.meeple_type == 'abbot':
             file = './Images/Meeples/_Default/AB.png'
         else:
             raise Exception(f'Meeple type {self.meeple_type} unknown.')

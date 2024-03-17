@@ -1,8 +1,8 @@
 #%% Imports
 # PyQt6
+import PyQt6.QtCore    as QtC
 import PyQt6.QtGui     as QtG
 import PyQt6.QtWidgets as QtW
-import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
 # Custom classes

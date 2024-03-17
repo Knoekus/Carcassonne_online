@@ -10,6 +10,17 @@ class Feed_func():
     def __init__(self, Carcassonne):
         self.Carcassonne = Carcassonne
         self.Feed_start()
+        self.lobby_events = ['chat_message',
+                             'colour_button_clicked',
+                             'expansion_clicked',
+                             'new_admin',
+                             'player_joined_lobby',
+                             'player_left_lobby',
+                             'start_game',
+                            ]
+        self.game_events = ['pass_turn',
+                            'tile_taken',
+                           ]
         
     def Feed_start(self):
         # Thread for listener
@@ -61,18 +72,10 @@ class Feed_func():
         # Ignore the initialisation
             event_type = event.data['event']
             
-            if event_type in ['chat_message',
-                              'colour_button_clicked',
-                              'expansion_clicked',
-                              'new_admin',
-                              'player_joined_lobby',
-                              'player_left_lobby',
-                              'start_game',
-                             ]:
+            if event_type in self.lobby_events:
                 self._Lobby_events(event)
             
-            elif event_type in ['pass_turn',
-                               ]:
+            elif event_type in self.game_events:
                 self._Game_events(event)
                 
             else:
@@ -89,6 +92,10 @@ class Feed_func():
             '''The turn is passed on from previous_player to next_player.'''
             self.Carcassonne.game_vis._Feed_receive_pass_turn(event.data)
             self.Carcassonne.game_func._Feed_receive_pass_turn(event.data)
+            
+        elif event_type == 'tile_taken':
+            '''A new tile is taken from the pile.'''
+            self.Carcassonne.game_vis._Feed_receive_tile_taken(event.data)
     
     def _Lobby_events(self, event):
         # All events that can occur while in the lobby screen
