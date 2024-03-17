@@ -1,14 +1,37 @@
+#%% Imports
+# PyQt6
+import PyQt6.QtCore    as QtC
 import PyQt6.QtGui     as QtG
 import PyQt6.QtWidgets as QtW
-import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
+# Custom classes
 import Classes.Animations as Animations
 
+# Other packages
+import time
+
+#%% Possessions class
 class Possessions():
-    def __init__(self, game):
-        self.game = game
-        self.finished_anim = Animations.AnimationGroup_parallel(3)
+    def __init__(self, Carcassonne):
+        self.Carcassonne = Carcassonne
+        # self.finished_anim = Animations.AnimationGroup_parallel(3)
+    
+    def Setup(self):
+        self.Carcassonne.possessions = {material:dict() for material in self.Carcassonne.materials}
+        
+    def Connections(self):
+        '''Get an up-to-date player list of the current connections to the lobby.'''
+        for idx in range(50):
+            player_list_dict = self.Carcassonne.Refs('connections').get()
+            if type(player_list_dict) == type(dict()):
+                player_list = player_list_dict.keys()
+                break
+            else:
+                time.sleep(0.1)
+        else:
+            raise Exception('No connections found after 5 seconds.')
+        return player_list
         
     def Update_possessions(self, tile_data, row, col):
         def get_neighbours(material, data, idx):
@@ -17,28 +40,28 @@ class Possessions():
             neighbours = []
             if idx in data[0][1:-1]: # north
                 edges += 1
-                tile = self.game.board_tiles[row-1][col]
+                tile = self.Carcassonne.board_tiles[row-1][col]
                 if len(tile.material_data) > 0: # tile is not empty
                     col_idx = data[0][1:-1].index(idx)+1
                     mat_idx_n = tile.material_data[material][-1][col_idx]
                     neighbours += [(tile, mat_idx_n)]
             if idx in [data[x][-1] for x in range(len(data))][1:-1]: # east
                 edges += 1
-                tile = self.game.board_tiles[row][col+1]
+                tile = self.Carcassonne.board_tiles[row][col+1]
                 if len(tile.material_data) > 0: # tile is not empty
                     row_idx = [data[x][-1] for x in range(len(data))][1:-1].index(idx)+1
                     mat_idx_n = tile.material_data[material][row_idx][0]
                     neighbours += [(tile, mat_idx_n)]
             if idx in data[-1][1:-1]: # south
                 edges += 1
-                tile = self.game.board_tiles[row+1][col]
+                tile = self.Carcassonne.board_tiles[row+1][col]
                 if len(tile.material_data) > 0: # tile is not empty
                     col_idx = data[-1][1:-1].index(idx)+1
                     mat_idx_n = tile.material_data[material][0][col_idx]
                     neighbours += [(tile, mat_idx_n)]
             if idx in [data[x][0] for x in range(len(data))][1:-1]: # west
                 edges += 1
-                tile = self.game.board_tiles[row][col-1]
+                tile = self.Carcassonne.board_tiles[row][col-1]
                 if len(tile.material_data) > 0: # tile is not empty
                     row_idx = [data[x][0] for x in range(len(data))][1:-1].index(idx)+1
                     mat_idx_n = tile.material_data[material][row_idx][-1]
@@ -59,9 +82,9 @@ class Possessions():
                 elif len(neighbours) == 1:
                 # There is a neighbouring tile, don't create new possession but append to existing one
                     tile_n, mat_idx_n = neighbours[0]
-                    possessions = self.game.possessions
+                    possessions = self.Carcassonne.possessions
                     pos_idx = tile_n.possessions[material][mat_idx_n]
-                    self.game.board_tiles[row][col].update_possessions(material, mat_idx, pos_idx) # update tile reference
+                    self.Carcassonne.board_tiles[row][col].update_possessions(material, mat_idx, pos_idx) # update tile reference
                     pos_n = possessions[material][pos_idx]
                     self._Append_possession(pos_n, edges, material, mat_idx, row, col)
                     
@@ -71,19 +94,19 @@ class Possessions():
         
         # Update indirectly connected possessions
         for row_n, col_n in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
-            tile_n = self.game.board_tiles[row + row_n][col + col_n]
+            tile_n = self.Carcassonne.board_tiles[row + row_n][col + col_n]
             if len(tile_n.material_data) > 0:
                 if 'monastery' in tile_n.material_data.keys():
                     pos_idx = tile_n.possessions['monastery'][1]
-                    pos_n = self.game.possessions['monastery'][pos_idx]
+                    pos_n = self.Carcassonne.possessions['monastery'][pos_idx]
                     self._Append_possession(pos_n, edges, material, mat_idx, row, col)
                 
     def _New_possession(self, edges, material, mat_idx, row, col):
-        possessions = self.game.possessions
+        possessions = self.Carcassonne.possessions
         pos_idx = len(possessions[material])
         
         # Make reference to possession inside the tile data
-        tile = self.game.board_tiles[row][col]
+        tile = self.Carcassonne.board_tiles[row][col]
         tile.update_possessions(material, mat_idx, pos_idx) # update tile reference
         
         # Create possession
@@ -94,8 +117,8 @@ class Possessions():
                                                   [(tile, mat_idx)],
                                               'player_strength': # meeple strength per player
                                                   {player: 
-                                                   {meeple_type:0 for meeple_type in self.game.meeple_types}
-                                                   for player in self.game.connections},
+                                                   {meeple_type:0 for meeple_type in self.Carcassonne.meeples.keys()}
+                                                   for player in self.Connections()},
                                               'finished_cities': # number of finished cities in field
                                                   0
                                               }
@@ -106,13 +129,13 @@ class Possessions():
                                                   [(tile, mat_idx)],
                                               'player_strength': # meeple strength per player
                                                   {player: 
-                                                   {meeple_type:0 for meeple_type in self.game.meeple_types}
-                                                   for player in self.game.connections},
+                                                   {meeple_type:0 for meeple_type in self.Carcassonne.meeples.keys()}
+                                                   for player in self.Connections()},
                                               'open_edges': # number of open edges of this possession
                                                   edges
                                               }
             # Add inn support if that expansion is active
-            if r'Inns && Cathedrals' in self.game.expansions:
+            if r'Inns && Cathedrals' in self.Carcassonne.expansions:
                 possessions[material][pos_idx]['inn'] = False
         elif material == 'city':
             possessions[material][pos_idx] = {'open': # can this still be used to append/merge?
@@ -121,8 +144,8 @@ class Possessions():
                                                   [(tile, mat_idx)],
                                               'player_strength': # meeple strength per player
                                                   {player: 
-                                                   {meeple_type:0 for meeple_type in self.game.meeple_types}
-                                                   for player in self.game.connections},
+                                                   {meeple_type:0 for meeple_type in self.Carcassonne.meeples.keys()}
+                                                   for player in self.Connections()},
                                               'open_edges': # number of open edges of this possession
                                                   edges,
                                               'shield_tiles': # number of shields in city
@@ -133,7 +156,7 @@ class Possessions():
             possessions[material][pos_idx]['shield_tiles'] = shield_count
             
             # Add cathedral support if that expansion is active
-            if r'Inns && Cathedrals' in self.game.expansions:
+            if r'Inns && Cathedrals' in self.Carcassonne.expansions:
                 possessions[material][pos_idx]['cathedral'] = False
         elif material == 'monastery':
             possessions[material][pos_idx] = {'open': # can this still be used to append/merge?
@@ -142,21 +165,21 @@ class Possessions():
                                                   (tile, mat_idx),
                                               'player_strength': # meeple strength per player
                                                   {player: 
-                                                   {meeple_type:0 for meeple_type in self.game.meeple_types}
-                                                   for player in self.game.connections},
+                                                   {meeple_type:0 for meeple_type in self.Carcassonne.meeples.keys()}
+                                                   for player in self.Connections()},
                                               'surrounding_tiles': # number of surrounding tiles
                                                   1 # tile itself makes it 1 instead of 0
                                               }
             # Calculate surrounding tiles
             for row_n, col_n in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
-                neighbour_tile = self.game.board_tiles[row + row_n][col + col_n]
+                neighbour_tile = self.Carcassonne.board_tiles[row + row_n][col + col_n]
                 if len(neighbour_tile.material_data) > 0:
                     possessions[material][pos_idx]['surrounding_tiles'] += 1
     
     def _Join_possessions(self, neighbours, edges, material, mat_idx, row, col):
         # Join two possessions together into one big possession
-        possessions = self.game.possessions
-        tile = self.game.board_tiles[row][col]
+        possessions = self.Carcassonne.possessions
+        tile = self.Carcassonne.board_tiles[row][col]
         
         # New reference
         pos_merged_idx = len(possessions[material])
@@ -186,11 +209,11 @@ class Possessions():
             elif attribute == 'player_strength':
             # player strength
                 pos_merged['player_strength'] = {player: 
-                                         {meeple_type:0 for meeple_type in self.game.meeple_types}
-                                         for player in self.game.connections}
+                                         {meeple_type:0 for meeple_type in self.Carcassonne.meeples.keys()}
+                                         for player in self.Connections()}
                 for pos_n in pos_neighs.values():
-                    for player in self.game.connections:
-                        for meeple_type in self.game.meeple_types:
+                    for player in self.Connections():
+                        for meeple_type in self.Carcassonne.meeples.keys():
                             pos_merged['player_strength'][player][meeple_type] += pos_n['player_strength'][player][meeple_type]
                             
             elif attribute in ['tiles']:
@@ -218,7 +241,7 @@ class Possessions():
     
     def _Append_possession(self, pos_n, edges, material, mat_idx, row, col):
         # Append tile to an existing possession
-        tile = self.game.board_tiles[row][col]
+        tile = self.Carcassonne.board_tiles[row][col]
         
         # Append tile to possession
         if 'tiles' in pos_n.keys():
@@ -235,10 +258,10 @@ class Possessions():
         if 'shield_tiles' in pos_n.keys():
             shield_count = self.Shields_on_tile(tile)
             pos_n['shield_tiles'] += shield_count
-        if 'inn' in pos_n.keys() and r'Inns && Cathedrals' in self.game.expansions:
+        if 'inn' in pos_n.keys() and r'Inns && Cathedrals' in self.Carcassonne.expansions:
             inn_bool = self.Inn_on_tile(tile)
             pos_n['inn'] = pos_n['inn'] or inn_bool
-        if 'cathedral' in pos_n.keys() and r'Inns && Cathedrals' in self.game.expansions:
+        if 'cathedral' in pos_n.keys() and r'Inns && Cathedrals' in self.Carcassonne.expansions:
             cathedral_bool = self.Cathedral_on_tile(tile)
             pos_n['cathedral'] = pos_n['cathedral'] or cathedral_bool
         
@@ -298,7 +321,7 @@ class Possessions():
         
         # Decide on winner
         winner = (None, 0)
-        for player in self.game.connections:
+        for player in self.Connections():
             strength = 0
             meeples = pos_n['player_strength'][player]
             for meeple_type in meeples:
@@ -320,7 +343,7 @@ class Possessions():
                 pass
             elif material == 'road':
                 points = len(pos_n['tiles'])
-                if 'inn' in pos_n.keys() and r'Inns && Cathedrals' in self.game.expansions:
+                if 'inn' in pos_n.keys() and r'Inns && Cathedrals' in self.Carcassonne.expansions:
                     if pos_n['inn'] == True:
                         if pos_n['open_edges'] == 0:
                             points *= 2
@@ -330,7 +353,7 @@ class Possessions():
             elif material == 'city':
                 points = 2*len(pos_n['tiles'])
                 points += 2*pos_n['shield_tiles']
-                if 'cathedral' in pos_n.keys() and r'Inns && Cathedrals' in self.game.expansions:
+                if 'cathedral' in pos_n.keys() and r'Inns && Cathedrals' in self.Carcassonne.expansions:
                     if pos_n['cathedral'] == True:
                         if pos_n['open_edges'] == 0:
                             points *= 1.5
@@ -350,7 +373,7 @@ class Possessions():
         if False:
         # For some reason, this animation breaks when in lobby
             # Intermediate state of points
-            points_label = self.game.players_points[winner]
+            points_label = self.Carcassonne.players_points[winner]
             points_before = int(points_label.text())
             points_label.setText(f'{points_before} + {int(points)}')
             
@@ -358,7 +381,7 @@ class Possessions():
             def anim_finished():
                 points_after = int(points_before + points)
                 points_label.setText(f'{points_after}')
-                self.game.Refs(f'players/{winner}/points').set(points_after)
+                self.Carcassonne.Refs(f'players/{winner}/points').set(points_after)
                 
                 self.Give_back_meeples(winner, pos_n, material)
             
@@ -371,11 +394,11 @@ class Possessions():
             self.finished_anim.finished.connect(anim_finished)
             self.finished_anim.start()
         else:
-            points_label = self.game.players_points[winner]
+            points_label = self.Carcassonne.players_points[winner]
             points_before = int(points_label.text())
             points_after = int(points_before + points)
             points_label.setText(f'{points_after}')
-            self.game.Refs(f'players/{winner}/points').set(points_after)
+            self.Carcassonne.Refs(f'players/{winner}/points').set(points_after)
             
             self.Give_back_meeples(winner, pos_n, material)
     
@@ -389,9 +412,9 @@ class Possessions():
                 # Only give back meeples of finished possession
                     if meeple[2] == 'standard':
                         tile.reset_image()
-                        if self.game.username == winner:
+                        if self.Carcassonne.username == winner:
                         # Give back first unavailable meeple of winner
-                            for meeple_button in self.game.meeples_standard.values():
+                            for meeple_button in self.Carcassonne.meeples_standard.values():
                                 if meeple_button.available == False:
                                     meeple_button.make_available()
                                     break

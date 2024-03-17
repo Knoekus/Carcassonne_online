@@ -1,8 +1,8 @@
 #%% Imports
 # PyQt6
+import PyQt6.QtCore    as QtC
 import PyQt6.QtGui     as QtG
 import PyQt6.QtWidgets as QtW
-import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
 # Custom classes
@@ -470,13 +470,11 @@ class Lobby_screen_vis(QtW.QWidget):
     def _Feed_receive_expansions_update(self, data):
         # Import data
         expansion = data['expansion']
+        new_state = data['new_state']
         
         # Function
-        expansions_info = self.Carcassonne.Refs('expansions').get()
-        
-        # Edit switch
         button = self.expansions_switches[expansion]
-        button.setChecked(expansions_info[expansion])
+        button.setChecked(new_state)
     
     def _Feed_receive_new_admin(self, data):
         # Import data

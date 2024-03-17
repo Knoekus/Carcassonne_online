@@ -1,8 +1,8 @@
 #%% Imports
 # PyQt6
+import PyQt6.QtCore    as QtC
 import PyQt6.QtGui     as QtG
 import PyQt6.QtWidgets as QtW
-import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
 # Custom classes
@@ -78,14 +78,16 @@ class Lobby_screen_func():
             button = self.lobby_vis.expansions_switches[expansion]
             state = button.checkState()
             if state == QtC.Qt.CheckState.Unchecked: # unchecked
-                self.Carcassonne.Refs(f'expansions/{expansion}').set(0)
+                new_state = 0
             elif state == QtC.Qt.CheckState.Checked: # checked
-                self.Carcassonne.Refs(f'expansions/{expansion}').set(1)
+                new_state = 1
             else:
                 raise Warning('CheckState not implemented:', state)
             
+            self.Carcassonne.Refs(f'expansions/{expansion}').set(new_state)
+            
             # Send feed event
-            self._Feed_send_expansions_update(expansion)
+            self._Feed_send_expansions_update(expansion, new_state)
             
         return clicked
     
@@ -171,10 +173,11 @@ class Lobby_screen_func():
         # Send message to feed
         self.Carcassonne.feed.Event_send(event)
     
-    def _Feed_send_expansions_update(self, expansion):
+    def _Feed_send_expansions_update(self, expansion, new_state):
         # Make feed message
         event = {'event':'expansion_clicked',
-                 'expansion':expansion}
+                 'expansion':expansion,
+                 'new_state':new_state}
         
         # Send message to feed
         self.Carcassonne.feed.Event_send(event)

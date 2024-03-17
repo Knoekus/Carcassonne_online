@@ -1,18 +1,20 @@
-# import prop_s
-
-import PyQt6.QtGui as QtG
+#%% Imports
+# PyQt6
+import PyQt6.QtCore    as QtC
+import PyQt6.QtGui     as QtG
 import PyQt6.QtWidgets as QtW
-import PyQt6.QtCore as QtC
+import PyQt6_Extra     as QtE
+
+# Custom classes
+# import Classes.Animations as Animations
 import tile_data
 
-# import sys
-# if r"Classes" not in sys.path:
-#     sys.path.append(r"..\Classes")
-# from Classes.Tiles import Tiles
-
+# Other packages
 import PIL
 from PIL.ImageQt import ImageQt
+import time
 
+#%% PyQt6 Extra
 class QLabel(QtW.QLabel):
     def __init__(self, text, font, alignment='center'):
         # Alignment
@@ -161,10 +163,10 @@ class ClickableImage(QImage):
                 self.clicked_r.emit()
 
 class Tile(ClickableImage):
-    def __init__(self, file, size=None, game=None, rotating=False):
+    def __init__(self, file, size=None, Carcassonne=None, rotating=False):
         super().__init__(file, size, size)
         self.reset()
-        self.game = game
+        self.Carcassonne = Carcassonne
         self.rotating = rotating
         self.possessions = dict()
         self.coords = ()
@@ -214,16 +216,31 @@ class Tile(ClickableImage):
         self.letter = tile_letter
         
         self.draw_image(file)
-        if tile_idx != None: # only do this if an actual tile is set
-            # for material in all_materials:
-            #     try:
-            #         self.material_data[material] = tile_data.tiles[tile_idx][tile_letter][material]
-            #     except: None # ignore material if it's not in the game or the tile has no information about it
+        # if tile_idx != None: # only do this if an actual tile is set
+        #     # for material in all_materials:
+        #     #     try:
+        #     #         self.material_data[material] = tile_data.tiles[tile_idx][tile_letter][material]
+        #     #     except: None # ignore material if it's not in the game or the tile has no information about it
+        #     self.material_data = tile_data.tiles[tile_idx][tile_letter]
+        #     # self.meeples = {material:
+        #     #                     {mat_idx:0 for mat_idx in range(1, max(max(self.material_data[material]))+1)}
+        #     #                 for material in self.material_data.keys()}
+        #     self.meeples = {player:list() for player in self.game.connections}
+        if all_materials != None: # only do this if an actual tile is set
+            # Add material data
             self.material_data = tile_data.tiles[tile_idx][tile_letter]
-            # self.meeples = {material:
-            #                     {mat_idx:0 for mat_idx in range(1, max(max(self.material_data[material]))+1)}
-            #                 for material in self.material_data.keys()}
-            self.meeples = {player:list() for player in self.game.connections}
+            
+            # Add meeple list for each connection
+            for idx in range(50):
+                player_list_dict = self.Carcassonne.Refs('connections').get()
+                if type(player_list_dict) == type(dict()):
+                    player_list = player_list_dict.keys()
+                    break
+                else:
+                    time.sleep(0.1)
+            else:
+                raise Exception('No connections found after 5 seconds.')
+            self.meeples = {player:list() for player in player_list}
         
     def rotate(self, angle):
         if angle not in [-90, 90]:

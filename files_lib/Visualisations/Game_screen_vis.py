@@ -1,8 +1,8 @@
 #%% Imports
 # PyQt6
+import PyQt6.QtCore    as QtC
 import PyQt6.QtGui     as QtG
 import PyQt6.QtWidgets as QtW
-import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
 # Custom classes
@@ -10,6 +10,7 @@ import Classes.Meeples as Meeples
 
 # Other packages
 import numpy as np
+import time
 
 #%% Game screen visualisation
 class Game_screen_vis(QtW.QWidget):
@@ -39,13 +40,15 @@ class Game_screen_vis(QtW.QWidget):
             self.players_points = dict()
             
             # Get player list
-            for idx in range(10):
+            for idx in range(50):
                 player_list_dict = self.Carcassonne.Refs('connections').get()
                 if type(player_list_dict) == type(dict()):
                     player_list = player_list_dict.keys()
                     break
+                else:
+                    time.sleep(0.1)
             else:
-                raise Exception('No connections found after 10 tries.')
+                raise Exception('No connections found after 5 seconds.')
             
             # Add each player to player list
             for idx, player in enumerate(player_list):
@@ -102,7 +105,7 @@ class Game_screen_vis(QtW.QWidget):
             # if __name__ == '__main__': # independent call
             #     self.new_tile = QtE.Tile(r'..\Images\tile_logo.png', new_tile_size, game=self, rotating=True)
             # else: # call from lobby
-            self.new_tile = QtE.Tile(r'.\Images\tile_logo.png', new_tile_size, game=self, rotating=True)
+            self.new_tile = QtE.Tile(r'.\Images\tile_logo.png', new_tile_size, Carcassonne=self.Carcassonne, rotating=True)
             
             # self.new_tile_anim = Animations.Animation(self.new_tile)
             # self.new_tile_anim = Animations.New_tile_swap(self, self.new_tile)
@@ -119,17 +122,20 @@ class Game_screen_vis(QtW.QWidget):
             self.inventory_label.setFont(font)
             
             #===== Initial inventory =====#
-            self.meeples_standard = dict()
-            self.meeples_standard_layout = QtW.QGridLayout()
-            self.meeples_standard_layout.setHorizontalSpacing(0)
-            self.meeples_standard_layout.setVerticalSpacing(0)
+            self.Carcassonne.meeples = dict()
+            self.Carcassonne.materials = list()
+            
+            # self.meeples_standard = dict()
+            # self.meeples_standard_layout = QtW.QGridLayout()
+            # self.meeples_standard_layout.setHorizontalSpacing(0)
+            # self.meeples_standard_layout.setVerticalSpacing(0)
             
             # Start with 7 standard meeples
-            self.meeple_types = ['meeples_standard']
-            for idx in range(7):
-                meeple = Meeples.Meeple_standard(self.Carcassonne)
-                self.meeples_standard[idx] = meeple
-                self.meeples_standard_layout.addWidget(meeple, np.floor((idx)/4).astype(int), idx%4, 1, 1)
+            # self.meeple_types = ['meeples_standard']
+            # for idx in range(7):
+            #     meeple = Meeples.Meeple_standard(self.Carcassonne)
+            #     self.meeples_standard[idx] = meeple
+            #     self.meeples_standard_layout.addWidget(meeple, np.floor((idx)/4).astype(int), idx%4, 1, 1)
             # FIXME: maybe it's more convenient to add these to self.Carcassonne instead.
             # FIXME: when doing that, change self._Meeples_enable accordingly.
             # self.Carcassonne.meeple_types = ['meeples_standard']
@@ -139,7 +145,7 @@ class Game_screen_vis(QtW.QWidget):
             #     self.Carcassonne.meeples_standard_layout.addWidget(meeple, np.floor((idx)/4).astype(int), idx%4, 1, 1) # max 4 per row
             
             self.inventory = QtW.QGridLayout()
-            self.inventory.addLayout(self.meeples_standard_layout, 0, 0, 1, 3)
+            # self.inventory.addLayout(self.meeples_standard_layout, 0, 0, 1, 3)
             
             # End turn
             self.button_end_turn = QtW.QPushButton('End turn')
@@ -198,12 +204,67 @@ class Game_screen_vis(QtW.QWidget):
         self.main_layout.addLayout(_Game_left_column(),                       4, 0, 1, 1) # leave column 1 out for correct padding around board
         self.main_layout.addLayout(_Game_right_column(),                      4, 2, 1, 1)
     
-    def _Add_meeple_to_inventory(self, meeple_type):
-        if meeple_type == 'standard':
-            meeple = Meeples.Meeple_standard(self.Carcassonne)
-            self.meeples['standard'] += [meeple]
-            self.meeples_standard_layout.addWidget(self.meeples_standard[idx], np.floor((idx)/4).astype(int), idx%4, 1, 1)
-        pass
+    def Tile_placed(self, row, col, file, tile_idx, tile_letter, rotation):
+        # Add new row if necessary
+        if row < self.Carcassonne.board_rows[0]:
+            self._Board_new_row_above()
+        elif row > self.Carcassonne.board_rows[1]:
+            self._Board_new_row_below()
+        
+        # Add new col if necessary
+        if col < self.Carcassonne.board_cols[0]:
+            self._Board_new_col_left()
+        elif col > self.Carcassonne.board_cols[1]:
+            self._Board_new_col_right()
+            
+        # Place tile
+        board_tile = self.Carcassonne.board_tiles[row][col]
+        board_tile.coords = (row, col)
+        board_tile.set_tile(file, tile_idx, tile_letter, self.Carcassonne.materials)
+        board_tile.disable()
+        self.Carcassonne.last_placed_tile = board_tile
+        
+        # Rotating
+        rotations = int(np.floor(rotation%360/90))
+        if rotations < 0:
+            for idx in range(-rotations):
+                board_tile.rotate(-90)
+        elif rotations > 0:
+            for idx in range(rotations):
+                board_tile.rotate(90)
+        board_tile.rotating = False
+        
+        # Update possessions
+        self.Carcassonne.Possessions.Update_possessions(board_tile.material_data, row, col)
+        
+        # Reset new tile
+        file = r'.\Images\tile_logo.png'
+        self.new_tile.draw_image(file)
+        self.new_tile.disable()
+
+    def Tile_taken(self, player, file, tile_idx, tile_letter):
+        '''Handle feed event when a new tile is taken.'''
+        # Swap out new_tile image for new tile
+        # self.game.new_tile_anim.swap_image(file, tile_idx, tile_letter, 500)
+        # self.game.new_tile_anim.swap(file, tile_idx, tile_letter, username)
+        self.new_tile.set_tile(file, tile_idx, tile_letter)
+        if player == self.Carcassonne.username:
+            self.new_tile.enable()
+            self.Carcassonne.Tiles.Show_options()
+        else:
+            self.new_tile.disable()
+            
+        # Update tiles left
+        if self.Carcassonne.tiles[tile_idx][tile_letter] > 1:
+            self.Carcassonne.tiles[tile_idx][tile_letter] -= 1 # decrease number of tiles by 1
+        else:
+            if len(self.Carcassonne.tiles[tile_idx].keys()) > 1:
+                self.Carcassonne.tiles[tile_idx].pop(tile_letter) # delete tile if none left
+            else:
+                self.Carcassonne.tiles.pop(tile_idx) # delete expansion if no tiles left
+        
+        # Update tiles left label
+        self.Carcassonne.Tiles.Update_tiles_left_label()
         
     def _Meeples_enable(self, enable):
         '''
@@ -211,19 +272,30 @@ class Game_screen_vis(QtW.QWidget):
             True: will enable all available meeples
             False: will disable all meeples
         '''
-        available_meeple_types = self.Carcassonne.game_vis.meeple_types
-        for meeple_type in ['meeples_standard', 'meeples_abbot', 'meeples_big']:
-            # Check if meeple type is in game
-            if meeple_type in available_meeple_types:
-                # Get all meeples from the type
-                meeples = getattr(self.Carcassonne.game_vis, meeple_type)
-                for meeple in meeples.values():
-                    if enable == True:
-                        # If meeple is available, enable it to be clicked on
-                        if meeple.available == True:
-                            meeple.enable()
-                    else: # When disabling, all should be disabled
-                        meeple.disable()
+        # available_meeple_types = self.Carcassonne.game_vis.meeple_types
+        # for meeple_type in ['meeples_standard', 'meeples_abbot', 'meeples_big']:
+        #     # Check if meeple type is in game
+        #     if meeple_type in available_meeple_types:
+        #         # Get all meeples from the type
+        #         meeples = getattr(self.Carcassonne.game_vis, meeple_type)
+        #         for meeple in meeples.values():
+        #             if enable == True:
+        #                 # If meeple is available, enable it to be clicked on
+        #                 if meeple.available == True:
+        #                     meeple.enable()
+        #             else: # When disabling, all should be disabled
+        #                 meeple.disable()
+        available_meeple_types = self.Carcassonne.meeples.keys()
+        for meeple_type in available_meeple_types:
+        # Get all selected meeple types
+            for meeple in self.Carcassonne.meeples[meeple_type]:
+            # Get all meeples from the type
+                if enable == True:
+                # If meeple is available, enable it to be clicked on
+                    if meeple.available == True:
+                        meeple.enable()
+                else: # When disabling, all should be disabled
+                    meeple.disable()
     
     #%% Feed handling, receiving
     def _Feed_receive_pass_turn(self, data):
@@ -246,3 +318,35 @@ class Game_screen_vis(QtW.QWidget):
             # Enable clickable stuff
             self._Meeples_enable(True)
             pass
+    
+    def _Feed_receive_tile_placed(self, data):
+        # FIXME: event not implemented in feed
+        # Import data
+        player = data['user']
+        row = data['row']
+        col = data['col']
+        file = data['file']
+        tile_idx = data['tile_idx']
+        tile_letter = data['tile_letter']
+        rotation = data['rotation']
+        
+        # Function
+        if player == self.Carcassonne.username:
+        # The player who sent this event has performed this action already.
+            return
+        else:
+            self.Tile_placed(row, col, file, tile_idx, tile_letter, rotation)
+    
+    def _Feed_receive_tile_taken(self, data):
+        # Import data
+        player = data['user']
+        file = data['file']
+        tile_idx = data['tile_idx']
+        tile_letter = data['tile_letter']
+        
+        # Function
+        if player == self.Carcassonne.username:
+        # The player who sent this event has performed this action already.
+            return
+        else:
+            self.Tile_taken(file, tile_idx, tile_letter)
