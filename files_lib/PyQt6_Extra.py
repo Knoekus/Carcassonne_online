@@ -163,6 +163,12 @@ class ClickableImage(QImage):
                 self.clicked_r.emit()
 
 class Tile(ClickableImage):
+    # Maybe:
+    # test = QtW.QStackedLayout()
+    # test.setStackingMode(QtW.QStackedLayout.StackingMode.StackAll)
+    # 
+    # or:
+    # QtW.QGraphicsView()
     def __init__(self, file, size=None, Carcassonne=None, rotating=False):
         super().__init__(file, size, size)
         self.reset()
@@ -278,6 +284,7 @@ class NewTile(ClickableImage):
         self.letter = None
         self.rotation = 0
         self.material_data = dict()
+        self.possessions = dict()
     
     def mousePressEvent(self, QMouseEvent):
         if self.clickable == True:
@@ -289,27 +296,6 @@ class NewTile(ClickableImage):
                 
             # Event push for the rest
             self.Carcassonne.game_func._Feed_send_tile_rotated(rotation)
-    
-    def set_tile(self, file, tile_idx, tile_letter):
-        # Draw image
-        self.index = tile_idx
-        self.letter = tile_letter
-        self.draw_image(file)
-        
-        # Material data
-        self.material_data = tile_data.tiles[tile_idx][tile_letter]
-        
-        # Add meeple list for each connection
-        for idx in range(50):
-            player_list_dict = self.Carcassonne.Refs('connections').get()
-            if type(player_list_dict) == type(dict()):
-                player_list = player_list_dict.keys()
-                break
-            else:
-                time.sleep(0.1)
-        else:
-            raise Exception('No connections found after 5 seconds.')
-        self.meeples = {player:list() for player in player_list}
         
     def rotate(self, angle):
         if angle not in [-90, 90]:
@@ -334,6 +320,35 @@ class NewTile(ClickableImage):
                         new_row += [self.material_data[material][len(self.material_data[material])-1-col][row]]
                 material_data_new[material] += [new_row]
         self.material_data = material_data_new
+    
+    def set_tile(self, file, tile_idx, tile_letter):
+        # Draw image
+        self.index = tile_idx
+        self.letter = tile_letter
+        self.draw_image(file)
+        
+        # Material data
+        self.material_data = tile_data.tiles[tile_idx][tile_letter]
+        
+        # Add meeple list for each connection
+        for idx in range(50):
+            player_list_dict = self.Carcassonne.Refs('connections').get()
+            if type(player_list_dict) == type(dict()):
+                player_list = player_list_dict.keys()
+                break
+            else:
+                time.sleep(0.1)
+        else:
+            raise Exception('No connections found after 5 seconds.')
+        self.meeples = {player:list() for player in player_list}
+    
+    def update_possessions(self, material, mat_idx, pos_idx):
+        if material not in self.possessions.keys():
+        # Make material entry in possessions list if it doesn't exist yet
+            self.possessions[material] = dict()
+        
+        # Give possession index for material index
+        self.possessions[material][mat_idx] = pos_idx
 
 def GreenScreenPixmap(file, before=(0, 255, 0, 255), after=(0, 0, 0, 0)):
     if len(before) == 3:

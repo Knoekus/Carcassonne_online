@@ -6,6 +6,8 @@ import PyQt6.QtWidgets as QtW
 import PyQt6_Extra     as QtE
 
 # Custom classes
+import Visualisations.Meeple_placement_screen_vis as MeepleVis
+import Functionalities.Meeple_placement_screen_func as MeepleFunc
 import Classes.Expansions #as Expansions
 import Classes.Possessions #as Possessions
 import Classes.Tiles #as Tiles
@@ -90,21 +92,6 @@ class Game_screen_func():
         
         # Send feed message
         self._Feed_send_pass_turn(previous_player, next_player)
-    
-    def _End_turn_old(self, init=False):
-        # Give turn to the next player
-        if self.lobby.lobby_key == 'test2':
-            next_player = self.current_player
-        else:
-            current_player_idx = self.player_list.index(self.current_player)
-            next_player_idx = (current_player_idx + 1) % len(self.player_list)
-            next_player = self.player_list[next_player_idx]
-            
-        if init == True:
-            print('not switching player')
-            self.Player_at_turn(self.current_player)
-        else:
-            self.Player_at_turn(next_player)
 
     def _Leave_game(self, close_event=False):
         title = 'Leave game?'
@@ -131,7 +118,13 @@ class Game_screen_func():
             #         Meeples.En_dis_able_meeples(self, enable=False) # disable all meeples
             # else:
             #     raise Exception(f'Unknown meeple type: {meeple.meeple_type}')
-            pass
+            
+            # Visualisation
+            self.Carcassonne.meeple_vis = MeepleVis.Meeple_placement_screen_vis(self.Carcassonne, self.Carcassonne.last_placed_tile, meeple)
+            
+            # Functionality
+            self.Carcassonne.meeple_func = MeepleFunc.Meeple_placement_screen_func(self.Carcassonne)
+            
         return clicked
 
     def _Take_new_tile(self, start_tile=False):
