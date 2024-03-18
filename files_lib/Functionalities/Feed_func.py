@@ -18,7 +18,8 @@ class Feed_func():
                              'player_left_lobby',
                              'start_game',
                             ]
-        self.game_events = ['pass_turn',
+        self.game_events = ['meeple_placed',
+                            'pass_turn',
                             'tile_rotated',
                             'tile_taken',
                            ]
@@ -89,7 +90,11 @@ class Feed_func():
         # All events that can occur while in the game screen
         event_type = event.data['event']
         
-        if event_type == 'pass_turn':
+        if event_type == 'meeple_placed':
+            '''A player placed a meeple on the board.'''
+            self.Carcassonne.game_vis._Feed_receive_meeple_placed(event.data)
+        
+        elif event_type == 'pass_turn':
             '''The turn is passed on from previous_player to next_player.'''
             self.Carcassonne.game_vis._Feed_receive_pass_turn(event.data)
             self.Carcassonne.game_func._Feed_receive_pass_turn(event.data)
