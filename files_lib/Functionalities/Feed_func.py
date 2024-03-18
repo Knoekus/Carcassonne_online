@@ -19,6 +19,7 @@ class Feed_func():
                              'start_game',
                             ]
         self.game_events = ['pass_turn',
+                            'tile_rotated',
                             'tile_taken',
                            ]
         
@@ -93,8 +94,16 @@ class Feed_func():
             self.Carcassonne.game_vis._Feed_receive_pass_turn(event.data)
             self.Carcassonne.game_func._Feed_receive_pass_turn(event.data)
             
+        elif event_type == 'tile_placed':
+            '''The new tile was placed on the board.'''
+            self.Carcassonne.game_vis._Feed_receive_tile_placed(event.data)
+        
+        elif event_type == 'tile_rotated':
+            '''The new tile was rotated.'''
+            self.Carcassonne.game_vis._Feed_receive_tile_rotated(event.data)
+            
         elif event_type == 'tile_taken':
-            '''A new tile is taken from the pile.'''
+            '''A new tile was taken from the pile.'''
             self.Carcassonne.game_vis._Feed_receive_tile_taken(event.data)
     
     def _Lobby_events(self, event):

@@ -74,7 +74,7 @@ class Game_screen_func():
         for idx in range(50):
             player_list_dict = self.Carcassonne.Refs('connections').get()
             if type(player_list_dict) == type(dict()):
-                player_list = player_list_dict.keys()
+                player_list = list(player_list_dict.keys())
                 break
             else:
                 time.sleep(0.1)
@@ -83,7 +83,7 @@ class Game_screen_func():
         
         # Get previous player index
         previous_index = player_list.index(previous_player)
-        if previous_index == len(player_list):
+        if previous_index == len(player_list)-1:
             next_player = player_list[0]
         else:
             next_player = player_list[previous_index+1]
@@ -168,6 +168,10 @@ class Game_screen_func():
         self.Carcassonne.feed.Event_send(event)
     
     def _Feed_send_pass_turn(self, previous_player, next_player):
+        # For single player testing
+        if previous_player == next_player:
+            previous_player = 'A'
+        
         # Make feed message
         event = {'event':'pass_turn',
                  'previous_player':previous_player,
@@ -177,7 +181,6 @@ class Game_screen_func():
         self.Carcassonne.feed.Event_send(event)
     
     def _Feed_send_tile_placed(self, row, col, file, tile_idx, tile_letter, rotation):
-        # FIXME: event not implemented in feed
         # Do client visualisation for speed improvement
         self.game_vis.Tile_placed(row, col, file, tile_idx, tile_letter, rotation)
         
@@ -189,6 +192,18 @@ class Game_screen_func():
                  'file':file,
                  'tile_idx':tile_idx,
                  'tile_letter':tile_letter,
+                 'rotation':rotation}
+        
+        # Send message to feed
+        self.Carcassonne.feed.Event_send(event)
+    
+    def _Feed_send_tile_rotated(self, rotation):
+        # Do client visualisation for speed improvement
+        self.game_vis.Tile_rotated(self.Carcassonne.username, rotation)
+        
+        # Make feed message
+        event = {'event':'tile_rotated',
+                 'user':self.Carcassonne.username,
                  'rotation':rotation}
         
         # Send message to feed
@@ -225,4 +240,3 @@ class Game_screen_func():
                 self._Take_new_tile(start_tile=True)
             else:
                 self._Take_new_tile()
-            print('FEED RECEIVE EVENT: pass turn')

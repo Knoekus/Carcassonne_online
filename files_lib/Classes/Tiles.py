@@ -115,7 +115,8 @@ class Tiles():
                 opt_row, opt_col = option
                 tile = self.Carcassonne.board_tiles[opt_row][opt_col]
                 tile.disable()
-                tile.set_tile(None, None, None, self.Carcassonne.materials)
+                # tile.set_tile(None, None, None, self.Carcassonne.materials)
+                tile.set_tile(None, None, None)
             
             # Enable/disable 'end turn' button and meeples
             # if self.Carcassonne.username == self.Carcassonne.current_player:
@@ -123,7 +124,7 @@ class Tiles():
             # else:
             #     self.Carcassonne.button_end_turn.setEnabled(0) # FIXME: should never occur since this function can only run if current player is yourself
             # Meeples.En_dis_able_meeples(self.game, enable=True)
-            self.Carcassonne.button_end_turn.setEnabled(True)
+            self.game_vis.button_end_turn.setEnabled(True)
             self.game_vis._Meeples_enable(True)
         return clicked
     
@@ -136,7 +137,7 @@ class Tiles():
             row, col = option
             tile = self.Carcassonne.board_tiles[row][col]
             tile.disable()
-            tile.set_tile(None, None, None, self.Carcassonne.materials)
+            tile.set_tile(None, None, None)
         
         # Get new options
         self.Carcassonne.options = self.Tile_options(tile_idx, tile_letter)
@@ -149,7 +150,8 @@ class Tiles():
             row, col = option
             tile = self.Carcassonne.board_tiles[row][col]
             tile.enable()
-            tile.set_tile(file, None, None, self.Carcassonne.materials)
+            # tile.set_tile(file, None, None, self.Carcassonne.materials)
+            tile.set_tile(file, None, None)
             try: tile.clicked.disconnect()
             except: None
             tile.clicked.connect(self.Option_clicked(row, col))

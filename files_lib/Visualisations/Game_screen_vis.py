@@ -102,10 +102,8 @@ class Game_screen_vis(QtW.QWidget):
         def _Game_left_column():
             # New tile
             new_tile_size = 200
-            # if __name__ == '__main__': # independent call
-            #     self.new_tile = QtE.Tile(r'..\Images\tile_logo.png', new_tile_size, game=self, rotating=True)
-            # else: # call from lobby
-            self.new_tile = QtE.Tile(r'.\Images\tile_logo.png', new_tile_size, Carcassonne=self.Carcassonne, rotating=True)
+            # self.new_tile = QtE.Tile(r'.\Images\tile_logo.png', new_tile_size, Carcassonne=self.Carcassonne, rotating=True)
+            self.new_tile = QtE.NewTile(r'.\Images\tile_logo.png', new_tile_size, self.Carcassonne)
             
             # self.new_tile_anim = Animations.Animation(self.new_tile)
             # self.new_tile_anim = Animations.New_tile_swap(self, self.new_tile)
@@ -207,20 +205,25 @@ class Game_screen_vis(QtW.QWidget):
     def Tile_placed(self, row, col, file, tile_idx, tile_letter, rotation):
         # Add new row if necessary
         if row < self.Carcassonne.board_rows[0]:
-            self._Board_new_row_above()
+            # self._Board_new_row_above()
+            self.Carcassonne.Tiles._Board_new_row_above()
         elif row > self.Carcassonne.board_rows[1]:
-            self._Board_new_row_below()
+            # self._Board_new_row_below()
+            self.Carcassonne.Tiles._Board_new_row_below()
         
         # Add new col if necessary
         if col < self.Carcassonne.board_cols[0]:
-            self._Board_new_col_left()
+            # self._Board_new_col_left()
+            self.Carcassonne.Tiles._Board_new_col_left()
         elif col > self.Carcassonne.board_cols[1]:
-            self._Board_new_col_right()
+            # self._Board_new_col_right()
+            self.Carcassonne.Tiles._Board_new_col_right()
             
         # Place tile
         board_tile = self.Carcassonne.board_tiles[row][col]
         board_tile.coords = (row, col)
-        board_tile.set_tile(file, tile_idx, tile_letter, self.Carcassonne.materials)
+        # board_tile.set_tile(file, tile_idx, tile_letter, self.Carcassonne.materials)
+        board_tile.set_tile(file, tile_idx, tile_letter)
         board_tile.disable()
         self.Carcassonne.last_placed_tile = board_tile
         
@@ -241,6 +244,14 @@ class Game_screen_vis(QtW.QWidget):
         file = r'.\Images\tile_logo.png'
         self.new_tile.draw_image(file)
         self.new_tile.disable()
+    
+    def Tile_rotated(self, player, rotation):
+        # Rotate new_tile
+        self.new_tile.rotate(rotation)
+        
+        # Show options after rotating
+        if player == self.Carcassonne.username:
+            self.Carcassonne.Tiles.Show_options()
 
     def Tile_taken(self, player, file, tile_idx, tile_letter):
         '''Handle feed event when a new tile is taken.'''
@@ -312,15 +323,14 @@ class Game_screen_vis(QtW.QWidget):
         
         if previous_player == self.Carcassonne.username:
             # Disable clickable stuff
-            pass
+            self.button_end_turn.setEnabled(False)
         
         elif next_player == self.Carcassonne.username:
             # Enable clickable stuff
-            self._Meeples_enable(True)
+            # self._Meeples_enable(True)
             pass
     
     def _Feed_receive_tile_placed(self, data):
-        # FIXME: event not implemented in feed
         # Import data
         player = data['user']
         row = data['row']
@@ -337,6 +347,18 @@ class Game_screen_vis(QtW.QWidget):
         else:
             self.Tile_placed(row, col, file, tile_idx, tile_letter, rotation)
     
+    def _Feed_receive_tile_rotated(self, data):
+        # Import data
+        player = data['user']
+        rotation = data['rotation']
+        
+        # Function
+        if player == self.Carcassonne.username:
+        # The player who sent this event has performed this action already.
+            return
+        else:
+            self.Tile_rotated(player, rotation)
+    
     def _Feed_receive_tile_taken(self, data):
         # Import data
         player = data['user']
@@ -349,4 +371,4 @@ class Game_screen_vis(QtW.QWidget):
         # The player who sent this event has performed this action already.
             return
         else:
-            self.Tile_taken(file, tile_idx, tile_letter)
+            self.Tile_taken(player, file, tile_idx, tile_letter)

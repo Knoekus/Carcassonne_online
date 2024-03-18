@@ -42,7 +42,6 @@ class Carcassonne_online(QtW.QMainWindow):
             OK_dialog = OKDialog(self, self, title, text)
             OK_dialog.exec()
         
-        
     def __init__(self):
         super().__init__()
         self._Window_properties()
