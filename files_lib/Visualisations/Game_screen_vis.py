@@ -41,7 +41,7 @@ class Game_screen_vis(QtW.QWidget):
             self.players_points = dict()
             
             # Get player list
-            for idx in range(50):
+            for idx in range(10):
                 player_list_dict = self.Carcassonne.Refs('connections').get()
                 if type(player_list_dict) == type(dict()):
                     player_list = player_list_dict.keys()
@@ -49,7 +49,7 @@ class Game_screen_vis(QtW.QWidget):
                 else:
                     time.sleep(0.1)
             else:
-                raise Exception('No connections found after 5 seconds.')
+                raise Warning('No connections found after 1 second.')
             
             # Add each player to player list
             for idx, player in enumerate(player_list):
@@ -183,13 +183,13 @@ class Game_screen_vis(QtW.QWidget):
     
     def Meeple_placed(self, player, meeple_type, og_tile_info, sub_length, sub_tile):
         # Unpack information
-        (index, letter, og_coords, file, rotation) = og_tile_info
+        (index, letter, og_coords, file, rotation) = og_tile_info # use self.Carcassonne.last_placed_tile instead?
         (og_row, og_col) = og_coords
         (material, mat_idx, pos_idx) = sub_tile
         
-        # Recreate pixmap with correct rotation
-        pixmap_og = QtG.QPixmap(file)
-        pixmap_og = pixmap_og.transformed(QtG.QTransform().rotate(rotation), QtC.Qt.TransformationMode.FastTransformation)
+        # Recreate tile pixmap with correct rotation
+        pixmap_tile = QtG.QPixmap(file)
+        pixmap_tile = pixmap_tile.transformed(QtG.QTransform().rotate(rotation), QtC.Qt.TransformationMode.FastTransformation)
         
         # Add strength to possession # FIXME: functionality?
         pos_n = self.Carcassonne.possessions[material][pos_idx]
@@ -206,41 +206,26 @@ class Game_screen_vis(QtW.QWidget):
             # (x,y) -> (y,len-1-x)
             meeple_position = (meeple_position[1], len_mat-1-meeple_position[0])
         
-        # Compare meeple image size to subtile size
-        Meeples.Get_meeple_file(meeple_type, material)
-        
+        # Get meeple pixmap
         colour = self.Carcassonne.Refs(f'players/{player}/colour').get()
-        pixmap = Meeples.Colour_fill_file(file, colour)
-        img1 = PIL.Image.fromqpixmap(pixmap)
-        pixels1 = img1.load()
+        file_meeple = Meeples.Get_meeple_file(meeple_type, material)
+        pixmap_meeple = Meeples.Colour_fill_file(self.Carcassonne, file_meeple, colour)
         
-        # Get bounding box to replace with meeple image
-        x_start, y_start, width, height = Meeple_bounding_box(len_mat, sub_length, pixmap, meeple_position)
-        
-        # Make full tile image
-        img2 = PIL.Image.fromqpixmap(pixmap_og)
-        pixels2 = img2.load()
-        for x in range(width):
-            for y in range(height):
-                if pixels1[x,y][3] > 0: # only copy if not transparent
-                    pixels2[x+x_start, y+y_start] = pixels1[x, y]
-        img3 = ImageQt(img2).copy()
-        pixmap = QtG.QPixmap.fromImage(img3)
+        # Get combined tile and meeple pixmap
+        pixmap_combined = Meeples.Get_meeple_on_tile_pixmap(self.Carcassonne, pixmap_tile, pixmap_meeple, len_mat, sub_length, meeple_position)
         # meeple_tile = QtE.Tile(pixmap, 320*prop_s.tile_size)
-        game.board_tiles[og_row][og_col].setPixmap(pixmap)
+        self.Carcassonne.board_tiles[og_row][og_col].setPixmap(pixmap_combined)
         
         # Set tile information
-        # self.game.board_tiles[row][col].meeples[material][mat_idx] = self.meeple.meeple_type
-        game.board_tiles[og_row][og_col].meeples[player] += [(material, mat_idx, meeple_type)] # FIXME: add stacked layer later
+        self.Carcassonne.board_tiles[og_row][og_col].meeples[player] += [(material, mat_idx, meeple_type)] # FIXME: add stacked layer later
         
         # Finish possession if you claimed a finished possession
         if pos_n['open'] == False: # finished!
-            game.pos_class.Possession_finished(pos_n, material)
-        
-        # Disable meeple if you have placed it
+            self.Carcassonne.Possessions.Possession_finished(pos_n, material)
+            
+        # Disable further meeple placement
         if player == self.Carcassonne.username:
-            # self.meeple.make_unavailable()
-            pass
+            self._Meeples_enable(False)
     
     def Tile_placed(self, row, col, file, tile_idx, tile_letter, rotation):
         # Add new row if necessary
@@ -262,7 +247,6 @@ class Game_screen_vis(QtW.QWidget):
         # Place tile
         board_tile = self.Carcassonne.board_tiles[row][col]
         board_tile.coords = (row, col)
-        # board_tile.set_tile(file, tile_idx, tile_letter, self.Carcassonne.materials)
         board_tile.set_tile(file, tile_idx, tile_letter)
         board_tile.disable()
         self.Carcassonne.last_placed_tile = board_tile
@@ -275,7 +259,7 @@ class Game_screen_vis(QtW.QWidget):
         elif rotations > 0:
             for idx in range(rotations):
                 board_tile.rotate(90)
-        board_tile.rotating = False
+        # board_tile.rotating = False
         
         # Update possessions
         self.Carcassonne.Possessions.Update_possessions(board_tile.material_data, row, col)
@@ -342,14 +326,14 @@ class Game_screen_vis(QtW.QWidget):
         meeple_type = data['meeple_type']
         og_tile_info = data['og_tile_info']
         sub_length = data['sub_length']
-        sub_tile_selected = data['sub_tile_selected']
+        sub_tile = data['sub_tile']
         
         # Function
         if player == self.Carcassonne.username:
         # The player who sent this event has performed this action already.
             return
         else:
-            self.Meeple_placed(player, meeple_type, og_tile_info, sub_length, sub_tile_selected)
+            self.Meeple_placed(player, meeple_type, og_tile_info, sub_length, sub_tile)
     
     def _Feed_receive_pass_turn(self, data):
         # Import data

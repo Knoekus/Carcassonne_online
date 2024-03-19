@@ -178,7 +178,7 @@ class Game_screen_func():
         self.game_vis.Tile_placed(row, col, file, tile_idx, tile_letter, rotation)
         
         # Make feed message
-        event = {'event':'tile_taken',
+        event = {'event':'tile_placed',
                  'user':self.Carcassonne.username,
                  'row':row,
                  'col':col,

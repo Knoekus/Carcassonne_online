@@ -20,6 +20,7 @@ class Feed_func():
                             ]
         self.game_events = ['meeple_placed',
                             'pass_turn',
+                            'tile_placed',
                             'tile_rotated',
                             'tile_taken',
                            ]

@@ -9,12 +9,14 @@ import PyQt6_Extra     as QtE
 import Classes.Animations as Animations
 
 # Other packages
+import numpy as np
 import time
 
 #%% Possessions class
 class Possessions():
     def __init__(self, Carcassonne):
         self.Carcassonne = Carcassonne
+        self.game_vis = self.Carcassonne.game_vis
         # self.finished_anim = Animations.AnimationGroup_parallel(3)
     
     def Setup(self):
@@ -22,7 +24,7 @@ class Possessions():
         
     def Connections(self):
         '''Get an up-to-date player list of the current connections to the lobby.'''
-        for idx in range(50):
+        for idx in range(20):
             player_list_dict = self.Carcassonne.Refs('connections').get()
             if type(player_list_dict) == type(dict()):
                 player_list = player_list_dict.keys()
@@ -30,7 +32,7 @@ class Possessions():
             else:
                 time.sleep(0.1)
         else:
-            raise Exception('No connections found after 5 seconds.')
+            raise Warning('No connections found after 2 seconds.')
         return player_list
         
     def Update_possessions(self, tile_data, row, col):
@@ -72,7 +74,8 @@ class Possessions():
         for material in tile_data.keys():
         # For all material of the placed tile
             mat_data = tile_data[material]
-            for mat_idx in range(1, max(max(mat_data))+1):
+            # for mat_idx in range(1, max(max(mat_data))+1):
+            for mat_idx in range(1, np.max(mat_data)+1): # FIXME: new
             # Check each patch of material in the tile
                 neighbours, edges = get_neighbours(material, mat_data, mat_idx)
                 if len(neighbours) == 0:
@@ -334,7 +337,10 @@ class Possessions():
                 else:
                     raise Exception(f'Unknown meeple type {meeple_type}.')
             if strength > winner[1]:
-                winner = (player, strength)
+                winner = ([player], strength)
+            elif strength == winner[1]: # FIXME: new
+                winners = winner[0] + [player] # FIXME: new
+                winner = (winners, strength) # FIXME: new
         
         if winner[0] != None: # the possession was claimed by someone
             # Calculate points
@@ -369,11 +375,11 @@ class Possessions():
             # Play animation
             self.Possession_finished_anim(pos_n, winner[0], points, material)
         
-    def Possession_finished_anim(self, pos_n, winner, points, material):
+    def Possession_finished_anim(self, pos_n, winners, points, material):
         if False:
         # For some reason, this animation breaks when in lobby
             # Intermediate state of points
-            points_label = self.Carcassonne.players_points[winner]
+            points_label = self.game_vis.players_points[winner]
             points_before = int(points_label.text())
             points_label.setText(f'{points_before} + {int(points)}')
             
@@ -394,15 +400,19 @@ class Possessions():
             self.finished_anim.finished.connect(anim_finished)
             self.finished_anim.start()
         else:
-            points_label = self.Carcassonne.players_points[winner]
-            points_before = int(points_label.text())
-            points_after = int(points_before + points)
-            points_label.setText(f'{points_after}')
-            self.Carcassonne.Refs(f'players/{winner}/points').set(points_after)
-            
-            self.Give_back_meeples(winner, pos_n, material)
+            for winner_player in winners: # FIXME: new
+                # points_label = self.game_vis.players_points[winner]
+                points_label = self.game_vis.players_points[winner_player]
+                points_before = int(points_label.text())
+                points_after = int(points_before + points)
+                points_label.setText(f'{points_after}')
+                # self.Carcassonne.Refs(f'players/{winner}/points').set(points_after)
+                self.Carcassonne.Refs(f'players/{winner_player}/points').set(points_after)
+                
+            # self.Give_back_meeples(winner, pos_n, material)
+            self.Give_back_meeples(winners, pos_n, material) # FIXME: new
     
-    def Give_back_meeples(self, winner, pos_n, material):
+    def Give_back_meeples_old(self, winner, pos_n, material):
         # Find meeples that are on the possession
         for tile, mat_idx in pos_n['tiles']:
         # Search each tile
@@ -415,6 +425,25 @@ class Possessions():
                         if self.Carcassonne.username == winner:
                         # Give back first unavailable meeple of winner
                             for meeple_button in self.Carcassonne.meeples_standard.values():
+                                if meeple_button.available == False:
+                                    meeple_button.make_available()
+                                    break
+                                
+    def Give_back_meeples(self, winners, pos_n, material):
+        # Find meeples that are on the possession
+        for tile, mat_idx in pos_n['tiles']:
+        # Search each tile of the possession
+            for winner in winners:
+            # Consider all possible winners
+                for meeple in tile.meeples[winner]:
+                # Find all the winner's meeples that are on the tile
+                    if meeple[:2] == (material, mat_idx):
+                    # Only give back meeples of finished possession
+                        tile.reset_image() # FIXME: this currently deletes all meeples from tile
+                        if self.Carcassonne.username == winner:
+                            meeple_type = meeple[2]
+                            # Give back first unavailable meeple of winner
+                            for meeple_button in self.Carcassonne.meeples[meeple_type]:
                                 if meeple_button.available == False:
                                     meeple_button.make_available()
                                     break
