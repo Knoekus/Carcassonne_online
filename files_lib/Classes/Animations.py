@@ -1,8 +1,17 @@
+#%% Imports
+# PyQt6
+import PyQt6.QtCore    as QtC
 import PyQt6.QtGui     as QtG
 import PyQt6.QtWidgets as QtW
-import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
+# Custom classes
+# ...
+
+# Other packages
+# ...
+
+#%% Expansions classes
 class AnimationGroup_parallel(QtC.QParallelAnimationGroup):
     def __init__(self, loop_count=-1):
         super().__init__()
@@ -141,6 +150,10 @@ class Animation(QtC.QSequentialAnimationGroup):
         self.start()
     
     #%% Stopping
+    def start_loop(self):
+        self.repeat = True
+        self.start()
+        
     def stop_animation(self):
         self.repeat = False
     
@@ -148,11 +161,12 @@ class Animation(QtC.QSequentialAnimationGroup):
         if self.repeat == True:
             self.start()
             self.State.Running
-        else:
-            # Enable button
-            try: self.parent_obj.enable()
-            except Exception as e:
-                print(f'Error: {e}')
+        # else:
+        #     # Enable button
+        #     try: self.parent_obj.enable()
+        #     except Exception as e:
+        #         print(f'Error: {e}')
+        #     print('Trying to reset animation, but ')
 
 class New_tile_swap(QtC.QSequentialAnimationGroup):
     def __init__(self, game, new_tile, time=500):

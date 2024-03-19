@@ -6,6 +6,7 @@ import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
 # Custom classes
+import Classes.Animations as Animations
 import tile_data
 
 # Other packages
@@ -29,10 +30,13 @@ class Meeple_placement_screen_vis(QtW.QDialog):
         self.setWindowTitle('Place your meeple')
     
     def Parameters(self, tile, meeple):
-        # self.animation_groups = [Animations.AnimationGroup_parallel(), Animations.AnimationGroup_parallel()]
+        # Data
         self.original_tile = tile
         self.meeple = meeple
         self.sub_tile_selected = None
+        
+        # Groups
+        self.animation_groups = [Animations.AnimationGroup_parallel(), Animations.AnimationGroup_parallel()]
         self.patches = {material:dict() for material in self.Carcassonne.materials}
     
     def Layout(self):
@@ -196,27 +200,25 @@ class Meeple_placement_screen_vis(QtW.QDialog):
             # Material patch selected update
             self.sub_tile_selected = (material, mat_idx, pos_idx)
             
-            # # Visualise
-            # # ...
-            # # OR Paint meeple on corresponding material patch
-            # # OR Make material patch blink
-            # if self.animation_groups[0].repeat == True:
-            # # Animation 1 is running, so let it finish while using 2
-            #     self.animation_groups[0].stop_animation()
-            #     animation_group = self.animation_groups[1]
-            # else:
-            # # Animation 1 can be used
-            #     self.animation_groups[1].stop_animation()
-            #     animation_group = self.animation_groups[0]
-            # animation_group.clear()
-            
-            # patch_tiles = self.patches[material][mat_idx]
-            # for coords in patch_tiles:
-            #     sub_tile = self.sub_tiles[coords]
-            #     animation = Animations.Animation(sub_tile)
-            #     animation.add_blinking(1, 0.6, 2000, 0)
-            #     animation_group.add(animation)
-            # animation_group.start_animation()
+            # Animation
+            if True:
+                if self.animation_groups[0].repeat == True:
+                # Animation 1 is running, so let it finish while using 2
+                    self.animation_groups[0].stop_animation()
+                    animation_group = self.animation_groups[1]
+                else:
+                # Animation 1 can be used
+                    self.animation_groups[1].stop_animation()
+                    animation_group = self.animation_groups[0]
+                animation_group.clear()
+                
+                patch_tiles = self.patches[material][mat_idx]
+                for coords in patch_tiles:
+                    sub_tile = self.sub_tiles[coords]
+                    animation = Animations.Animation(sub_tile)
+                    animation.add_blinking(1, 0.6, 2000, 0)
+                    animation_group.add(animation)
+                animation_group.start_animation()
             
             # Enable and default the confirm button
             self.y_button.setEnabled(True)

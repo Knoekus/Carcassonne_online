@@ -54,7 +54,7 @@ class Meeple(QtE.ClickableImage):
 class Meeple_standard(Meeple):
     def __init__(self, Carcassonne):
         super().__init__(Carcassonne, meeple_type='standard')
-        self.power = 1
+        # self.power = 1
 
 class Meeple_big(Meeple):
     def __init__(self, Carcassonne):

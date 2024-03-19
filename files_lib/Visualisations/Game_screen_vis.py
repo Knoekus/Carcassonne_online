@@ -6,6 +6,7 @@ import PyQt6.QtWidgets as QtW
 import PyQt6_Extra     as QtE
 
 # Custom classes
+import Classes.Animations as Animations
 import Classes.Meeples as Meeples
 import tile_data
 
@@ -55,7 +56,7 @@ class Game_screen_vis(QtW.QWidget):
             for idx, player in enumerate(player_list):
                 self.Carcassonne.Refs(f'players/{player}/points').set(0)
                 
-                player_hbox = QtW.QHBoxLayout()
+                # Indicator
                 colour = QtW.QLabel('', alignment=QtC.Qt.AlignmentFlag.AlignRight)
                 colour.setScaledContents(True)
                 colour.setFixedSize(25, 25)
@@ -69,13 +70,17 @@ class Game_screen_vis(QtW.QWidget):
                 col_pixmap = QtE.GreenScreenPixmap(file, (255, 0, 0), rgb_col)
                 colour.setPixmap(col_pixmap)
                 
+                # Name
                 name = QtW.QLabel(f'{player}', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
                 font = self.Carcassonne.Properties.Font(size=1, bold=False)
                 name.setFont(font)
                 
+                # Combined indicator + name HBox
+                player_hbox = QtW.QHBoxLayout()
                 player_hbox.addWidget(colour, alignment=QtC.Qt.AlignmentFlag.AlignRight)
                 player_hbox.addWidget(name, alignment=QtC.Qt.AlignmentFlag.AlignLeft)
                 
+                # Points label
                 points = QtW.QLabel('0', alignment=QtC.Qt.AlignmentFlag.AlignCenter)
                 font = self.Carcassonne.Properties.Font(size=1, bold=False)
                 points.setFont(font)
@@ -84,11 +89,11 @@ class Game_screen_vis(QtW.QWidget):
                 self.players_grid.addWidget(points,      2, idx)
                 
                 
-                # # Blinking animation
+                # Blinking animation
                 # if self.lobby.lobby_key == 'test2':
-                #     animation = Animations.Animation(name)
-                #     animation.add_blinking(1, 0.1, 2500, 200)
-                #     self.players_name_anims[player] = animation
+                animation = Animations.Animation(name)
+                animation.add_blinking(1, 0.1, 2500, 200)
+                self.players_name_anims[player] = animation
                 
                 # Save references
                 self.players_name_labels[player] = name
@@ -259,7 +264,6 @@ class Game_screen_vis(QtW.QWidget):
         elif rotations > 0:
             for idx in range(rotations):
                 board_tile.rotate(90)
-        # board_tile.rotating = False
         
         # Update possessions
         self.Carcassonne.Possessions.Update_possessions(board_tile.material_data, row, col)
@@ -341,11 +345,10 @@ class Game_screen_vis(QtW.QWidget):
         next_player = data['next_player']
         
         # Function
-        # # Blinking animation
-        # if self.Carcassonne.lobby_key == 'test':
-        #     animation = Animations.Animation(name)
-        #     animation.add_blinking(1, 0.1, 2500, 200)
-        #     self.players_name_anims[player] = animation
+        if previous_player != 0:
+        # Stop blinking animation of previous player
+            self.players_name_anims[previous_player].stop_animation()
+        self.players_name_anims[next_player].start_loop()
         
         if previous_player == self.Carcassonne.username:
             # Disable clickable stuff

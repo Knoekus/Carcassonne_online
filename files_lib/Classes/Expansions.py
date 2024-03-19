@@ -42,7 +42,8 @@ class Expansions():
         self.Carcassonne.meeples['standard'] = list()
         n_cols = self.Carcassonne.Properties.standard_meeple_cols
         for idx in range(7):
-            meeple = Meeples.Meeple_standard(self.Carcassonne)
+            # meeple = Meeples.Meeple_standard(self.Carcassonne)
+            meeple = Meeples.Meeple(self.Carcassonne, meeple_type='standard')
             self.Carcassonne.meeples['standard'] += [meeple]
             self.Carcassonne.meeples_standard_layout.addWidget(meeple, np.floor((idx)/n_cols).astype(int), idx%n_cols, 1, 1)
         self.Carcassonne.game_vis.inventory.addLayout(self.Carcassonne.meeples_standard_layout, 0, 0, 1, 3)

@@ -300,6 +300,7 @@ class NewTile(ClickableImage):
         # Draw image
         self.index = tile_idx
         self.letter = tile_letter
+        self.rotation = 0
         self.draw_image(file)
         
         # Material data
