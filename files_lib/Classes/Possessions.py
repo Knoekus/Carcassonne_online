@@ -323,7 +323,7 @@ class Possessions():
         pos_n['open'] = False
         
         # Decide on winner
-        winner = (None, 0)
+        winner = (list(), 0)
         for player in self.Connections():
             strength = 0
             meeples = pos_n['player_strength'][player]
@@ -338,11 +338,11 @@ class Possessions():
                     raise Exception(f'Unknown meeple type {meeple_type}.')
             if strength > winner[1]:
                 winner = ([player], strength)
-            elif strength == winner[1]: # FIXME: new
+            elif strength == winner[1] and strength > 0: # FIXME: new
                 winners = winner[0] + [player] # FIXME: new
                 winner = (winners, strength) # FIXME: new
         
-        if winner[0] != None: # the possession was claimed by someone
+        if winner[0] != list(): # the possession was claimed by someone
             # Calculate points
             if material == 'grass':
                 # Can only happen at the end of the game

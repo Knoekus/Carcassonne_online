@@ -112,14 +112,14 @@ class Menu_screen_func():
                             self._Save_connection_to_lobby()
                             self._Open_lobby_screen()
                         else:
-                            QtW.QMessageBox.warning(self, 'Username taken', 'That username is already taken in the lobby. Please choose a different username.')
+                            QtW.QMessageBox.warning(self.menu_vis, 'Username taken', 'That username is already taken in the lobby. Please choose a different username.')
                     else:
                         # User canceled the username dialog
                         pass
                 else:
-                    QtW.QMessageBox.warning(self, 'Lobby closed', 'The specified lobby is not open to new users.')
+                    QtW.QMessageBox.warning(self.menu_vis, 'Lobby closed', 'The specified lobby is not open to new users.')
             else:
-                QtW.QMessageBox.warning(self, 'Invalid lobby key', 'Please enter a valid lobby key.')
+                QtW.QMessageBox.warning(self.menu_vis, 'Invalid lobby key', 'Please enter a valid lobby key.')
 
     def _Open_lobby_screen(self):
         # Visualisation
