@@ -38,6 +38,7 @@ class Meeple_placement_screen_func():
         og_tile_info = (og_tile.index, og_tile.letter, og_tile.coords, og_tile.file, og_tile.rotation)
         
         # Do client visualisation for speed improvement
+        self.meeple_vis._Meeple_placed() # make meeple unavailable to client
         self.Carcassonne.game_vis.Meeple_placed(self.Carcassonne.username, self.meeple_vis.meeple.meeple_type, og_tile_info, self.meeple_vis.sub_length, self.meeple_vis.sub_tile_selected)
         
         # Make feed message

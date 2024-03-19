@@ -65,7 +65,7 @@ class Tiles():
                 break
             elif True:
                 print(f'\n{tile_idx}{tile_letter} is infeasible\n')
-                raise Exception('stop')
+                # raise Exception('stop')
         
         # Make feed event
         self.Carcassonne.game_func._Feed_send_tile_taken(file, tile_idx, tile_letter)

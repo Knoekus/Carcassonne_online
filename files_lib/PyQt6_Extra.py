@@ -169,47 +169,26 @@ class Tile(ClickableImage):
     # 
     # or:
     # QtW.QGraphicsView()
-    def __init__(self, file, size=None, Carcassonne=None, rotating=False):
-        super().__init__(file, size, size)
-        self.reset()
-        self.Carcassonne = Carcassonne
-        self.rotating = rotating
-        self.possessions = dict()
-        self.coords = ()
-    
-    def update_possessions(self, material, mat_idx, pos_idx):
-        if material not in self.possessions.keys():
-        # Make material entry in possessions list if it doesn't exist yet
-            self.possessions[material] = dict()
+    # def __init__(self, file, size=None, Carcassonne=None, rotating=False):
         
-        # Give possession index for material index
-        self.possessions[material][mat_idx] = pos_idx
-    
-    def mousePressEvent(self, QMouseEvent):
-        if self.clickable == True:
-            self.clicked.emit()
-            if self.rotating == True:
-                if QMouseEvent.button() == QtC.Qt.MouseButton.LeftButton:
-                    rotation = -90
-                elif QMouseEvent.button() == QtC.Qt.MouseButton.RightButton:
-                    rotation = 90
-                    
-                # Event push for the rest
-                self.game.lobby.send_feed_message(event    = 'new_tile_rotated',
-                                                  rotation = rotation)
-                # For the player at turn
-                self.rotate(rotation)
-                self.game.Tiles.Show_options()
-    
-    def reset(self, image=None):
-        self.disable()
+    def __init__(self, file, size=None, Carcassonne=None):
+        super().__init__(file, size, size)
+        self.Carcassonne = Carcassonne
         self.index = None
         self.letter = None
         self.rotation = 0
+        self.coords = ()
         self.material_data = dict()
-        
-        # if image != None:
-        #     self.draw_image(image)
+        self.possessions = dict()
+    
+    def mousePressEvent(self, QMouseEvent):
+        if self.clickable == True and self.index == None and self.letter == None:
+        # Option tile
+            self.clicked.emit()
+        elif self.clickable == True:
+        # Tile placed on the board
+            # Open meeple placement window
+            pass
     
     def reset_image(self):
         # Pixmap
@@ -217,21 +196,37 @@ class Tile(ClickableImage):
         pixmap_new = pixmap_old.transformed(QtG.QTransform().rotate(self.rotation), QtC.Qt.TransformationMode.FastTransformation)
         self.setPixmap(pixmap_new)
     
+    def rotate(self, angle):
+        if angle not in [-90, 90]:
+            raise Exception('The rotation angle must be either -90 or 90.')
+        self.rotation = (self.rotation + angle) % 360
+        
+        # Pixmap
+        pixmap_old = QtG.QPixmap(self.file)
+        pixmap_new = pixmap_old.transformed(QtG.QTransform().rotate(self.rotation), QtC.Qt.TransformationMode.FastTransformation)
+        self.setPixmap(pixmap_new)
+        
+        # Material data
+        material_data_new = dict()
+        for material in self.material_data.keys():
+            material_data_new[material] = list()
+            for row in range(len(self.material_data[material])):
+                new_row = []
+                for col in range(len(self.material_data[material])):
+                    if angle == -90: # for left hand rotation
+                        new_row += [self.material_data[material][col][len(self.material_data[material])-1-row]]
+                    elif angle == 90: # for right hand rotation
+                        new_row += [self.material_data[material][len(self.material_data[material])-1-col][row]]
+                material_data_new[material] += [new_row]
+        self.material_data = material_data_new
+    
     def set_tile(self, file, tile_idx, tile_letter):
         self.index = tile_idx
         self.letter = tile_letter
+        self.rotation = 0 # start with a fresh file, so no rotation
         
         self.draw_image(file)
-        # if tile_idx != None: # only do this if an actual tile is set
-        #     # for material in all_materials:
-        #     #     try:
-        #     #         self.material_data[material] = tile_data.tiles[tile_idx][tile_letter][material]
-        #     #     except: None # ignore material if it's not in the game or the tile has no information about it
-        #     self.material_data = tile_data.tiles[tile_idx][tile_letter]
-        #     # self.meeples = {material:
-        #     #                     {mat_idx:0 for mat_idx in range(1, max(max(self.material_data[material]))+1)}
-        #     #                 for material in self.material_data.keys()}
-        #     self.meeples = {player:list() for player in self.game.connections}
+        
         if tile_letter != None: # only do this if an actual tile is set
             # Add material data
             self.material_data = tile_data.tiles[tile_idx][tile_letter]
@@ -247,35 +242,15 @@ class Tile(ClickableImage):
             else:
                 raise Exception('No connections found after 5 seconds.')
             self.meeples = {player:list() for player in player_list}
+    
+    def update_possessions(self, material, mat_idx, pos_idx):
+        if material not in self.possessions.keys():
+        # Make material entry in possessions list if it doesn't exist yet
+            self.possessions[material] = dict()
         
-    def rotate(self, angle):
-        if angle not in [-90, 90]:
-            raise Exception('The rotation angle must be either -90 or 90.')
-        self.rotation = (self.rotation + angle) % 360
+        # Give possession index for material index
+        self.possessions[material][mat_idx] = pos_idx
         
-        # Pixmap
-        pixmap_old = QtG.QPixmap(self.file)
-        pixmap_new = pixmap_old.transformed(QtG.QTransform().rotate(self.rotation), QtC.Qt.TransformationMode.FastTransformation)
-        self.setPixmap(pixmap_new)
-        
-        # Material data
-        material_data_new = dict()
-        try:
-            for material in self.material_data.keys():
-                material_data_new[material] = list()
-                for row in range(len(self.material_data[material])):
-                    new_row = []
-                    for col in range(len(self.material_data[material])):
-                        if angle == -90: # for left hand rotation
-                            new_row += [self.material_data[material][col][len(self.material_data[material])-1-row]]
-                        elif angle == 90: # for right hand rotation
-                            new_row += [self.material_data[material][len(self.material_data[material])-1-col][row]]
-                    material_data_new[material] += [new_row]
-        except:
-            None
-                
-        self.material_data = material_data_new
-
 class NewTile(ClickableImage):
     def __init__(self, file, size, Carcassonne):
         super().__init__(file, size, size)
@@ -331,7 +306,7 @@ class NewTile(ClickableImage):
         self.material_data = tile_data.tiles[tile_idx][tile_letter]
         
         # Add meeple list for each connection
-        for idx in range(50):
+        for idx in range(10):
             player_list_dict = self.Carcassonne.Refs('connections').get()
             if type(player_list_dict) == type(dict()):
                 player_list = player_list_dict.keys()
@@ -339,7 +314,7 @@ class NewTile(ClickableImage):
             else:
                 time.sleep(0.1)
         else:
-            raise Exception('No connections found after 5 seconds.')
+            raise Warning('No connections found after 1 second.')
         self.meeples = {player:list() for player in player_list}
     
     def update_possessions(self, material, mat_idx, pos_idx):

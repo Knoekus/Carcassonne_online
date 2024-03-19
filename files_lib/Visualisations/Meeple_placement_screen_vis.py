@@ -36,7 +36,7 @@ class Meeple_placement_screen_vis(QtW.QDialog):
         self.patches = {material:dict() for material in self.Carcassonne.materials}
     
     def Layout(self):
-        def _Make_sub_tile(pixmap, row, col):
+        def _Make_sub_tile_old(pixmap, row, col):
             # Find out if material patch is occupied
             for material in self.main_tile.material_data.keys():
                 mat_idx = self.main_tile.material_data[material][row][col]
@@ -56,7 +56,7 @@ class Meeple_placement_screen_vis(QtW.QDialog):
                     if sum(total_strengths) == 0:
                     # Possession has not yet been claimed
                         sub_tile = QtE.ClickableImage(pixmap, self.sub_length, self.sub_length)
-                        sub_tile.clicked.connect(self.Position_selected(sub_tile, material, mat_idx, pos_idx))
+                        sub_tile.clicked.connect(self._Position_selected(sub_tile, material, mat_idx, pos_idx))
                         sub_tile.enable()
                         self.tile_layout.addWidget(sub_tile, row, col)
                     else:
@@ -72,6 +72,48 @@ class Meeple_placement_screen_vis(QtW.QDialog):
                         self.tile_layout.addWidget(overlay_widget, row, col)
                         
                     self.sub_tiles[(row, col)] = sub_tile
+        
+        def _Make_sub_tile(pixmap, row, col):
+            # Find out if material patch is occupied
+            for material in self.main_tile.material_data.keys():
+                mat_idx = self.main_tile.material_data[material][row][col]
+                if mat_idx > 0:
+                # Material patch found
+                    # Add subtile to patch
+                    try:
+                        self.patches[material][mat_idx] += [(row, col)]
+                    except:
+                        self.patches[material][mat_idx] = [(row, col)]
+                    
+                    # Get strength information
+                    try:
+                        pos_idx = self.original_tile.possessions[material][mat_idx]
+                    except:
+                        print(self.original_tile.possessions)
+                    pos = self.Carcassonne.possessions[material][pos_idx]
+                    player_strength = pos['player_strength']
+                    total_strengths = [sum(player_strength[meeple].values()) for meeple in player_strength.keys()]
+                    if sum(total_strengths) == 0:
+                    # Possession has not yet been claimed
+                        sub_tile = QtE.ClickableImage(pixmap, self.sub_length, self.sub_length)
+                        sub_tile.clicked.connect(self._Position_selected(sub_tile, material, mat_idx, pos_idx))
+                        sub_tile.enable()
+                        self.tile_layout.addWidget(sub_tile, row, col)
+                        break
+            else:
+            # Possession cannot be claimed, so blur out
+                sub_tile = QtE.QImage(pixmap, self.sub_length, self.sub_length)
+                self.tile_layout.addWidget(sub_tile, row, col)
+                
+                # Blur layer
+                overlay_layer = QtG.QImage(self.sub_length, self.sub_length, QtG.QImage.Format.Format_RGBA64)
+                colour = QtG.QColor(0, 0, 0, 150)
+                overlay_layer.fill(colour)
+                overlay_widget = QtE.QImage(overlay_layer, self.sub_length, self.sub_length)
+                self.tile_layout.addWidget(overlay_widget, row, col)
+            
+            # Finalise
+            self.sub_tiles[(row, col)] = sub_tile
         
         def _Recreate_tile(tile, all_materials):
             # Properties
@@ -145,7 +187,10 @@ class Meeple_placement_screen_vis(QtW.QDialog):
         layout.addWidget(self.y_button, 1, 1)
         self.setLayout(layout)
         
-    def Position_selected(self, sub_tile, material, mat_idx, pos_idx):
+    def _Meeple_placed(self):
+        self.meeple.make_unavailable()
+    
+    def _Position_selected(self, sub_tile, material, mat_idx, pos_idx):
         # sub_tile callback function
         def clicked():
             # Material patch selected update
@@ -177,116 +222,3 @@ class Meeple_placement_screen_vis(QtW.QDialog):
             self.y_button.setEnabled(True)
             self.y_button.setDefault(True)
         return clicked
-
-    def Meeple_placed(self, event_push=True):
-        # Remove meeple from inventory
-        self.meeple.make_unavailable()
-        
-        # Push to event log
-        original_tile_info = (self.original_tile.rotation, self.original_tile.index, self.original_tile.letter, self.original_tile.coords, self.original_tile.file, self.original_tile.rotation)
-        self.game.send_feed_message(event              = 'placed_meeple',
-                                    meeple_type        = self.meeple.meeple_type,
-                                    sub_length         = self.sub_length,
-                                    sub_tile           = self.sub_tile_selected,
-                                    original_tile_info = original_tile_info)
-        
-    # def Meeple_placed_event(self, event_data):
-    #     # Extract event data
-    #     event, meeple_type, original_tile_info, sub_tile, username = event_data.values()
-    #     rotation, index, letter, og_coords, file, rotation = original_tile_info
-    #     og_row, og_col = og_coords
-        
-    #     pixmap_og = QtG.QPixmap(file)
-    #     pixmap_og = pixmap_og.transformed(QtG.QTransform().rotate(rotation), QtC.Qt.TransformationMode.FastTransformation)
-    #     print(file, rotation)
-        
-    #     player = username
-        
-    #     # Add strength to possession
-    #     material, mat_idx, pos_idx = sub_tile
-    #     pos_n = self.game.possessions[material][pos_idx]
-    #     pos_n['player_strength'][player][meeple_type] += 1 # self.meeple.power
-        
-    #     # # Remove meeple from inventory
-    #     # self.meeple.make_unavailable()
-        
-    #     # Find meeple subtile position
-    #     meeple_position = tile_data.tiles[index][f'{letter}_m'][material][mat_idx]
-    #     self.len_mat = len(tile_data.tiles[index][letter][material][0]) # number of rows/cols in tile data
-    #     for rotate in range(int(numpy.floor(rotation%360/90))):
-    #         # Find subtile position for meeple placement according to
-    #         # (1,1) -> (1,5) -> (5,5) -> (5,1)
-    #         # (1,2) -> (2,5) -> (5,4) -> (4,1)
-    #         # (0,1) -> (1,6) -> (6,5) -> (5,0)
-    #         # (x,y) -> (y,len-1-x)
-    #         meeple_position = (meeple_position[1], self.len_mat-1-meeple_position[0])
-        
-    #     # Compare meeple image size to subtile size
-    #     if meeple_type == 'standard':
-    #         if material == 'grass':
-    #             file = './Images/Meeples/_Default/1SF_2.png'
-    #         else:
-    #             file = './Images/Meeples/_Default/1SF_1.png'
-    #     elif meeple_type == 'big':
-    #         if material == 'grass':
-    #             file = './Images/Meeples/_Default/1BF_2.png'
-    #         else:
-    #             file = './Images/Meeples/_Default/1BF_1.png'
-    #     elif meeple_type == 'abbot':
-    #         file = './Images/Meeples/_Default/AB.png'
-    #     else:
-    #         raise Exception(f'Meeple type {meeple_type} unknown.')
-        
-    #     if 'test' in self.game.lobby.lobby_key:
-    #         file = '.'+file
-        
-    #     colour = self.game.lobby.Refs(f'players/{player}/colour').get()
-    #     pixmap = Colour_fill_file(file, colour)
-    #     img1 = PIL.Image.fromqpixmap(pixmap)
-    #     pixels1 = img1.load()
-        
-    #     # Get bounding box to replace with meeple image
-    #     x_start, y_start, width, height = self.Meeple_bounding_box(pixmap, meeple_position)
-        
-    #     # Make full tile image
-    #     if False:
-    #         # meeple_overlay contains just the meeple on transparent tile
-    #         tile_layer = QtG.QImage(320, 320, QtG.QImage.Format.Format_RGBA64)
-    #         tile_layer.fill(QtG.QColor(0, 0, 0, 0))
-    #         img2 = PIL.Image.fromqimage(tile_layer)
-    #         pixels2 = img2.load()
-    #         for x in range(width):
-    #             for y in range(height):
-    #                 pixels2[x+x_start, y+y_start] = pixels1[x, y]
-    #         img3 = ImageQt(img2).copy()
-    #         pixmap = QtG.QPixmap.fromImage(img3)
-    #         meeple_overlay = QtE.Tile(pixmap, 320*prop_s.tile_size, self.game)
-            
-    #         # Find tile coords on board
-    #         row, col = Tiles.Board_tile_coords(self.original_tile, self.game.board)
-            
-    #         # FIXME: This probably has to be a stacked widget, such that, when a 
-    #         # FIXME: meeple is given back, its layer can be removed.
-    #         # FIXME: That might mean that each tile has to be a separate 
-    #         # FIXME: QGridLayout, because that can display multiple widgets at once
-    #         row_layout = self.game.board.itemAt(row).layout()
-    #         row_layout.replaceWidget(self.original_tile, meeple_overlay)
-    #     else:
-    #         img2 = PIL.Image.fromqpixmap(pixmap_og)
-    #         pixels2 = img2.load()
-    #         for x in range(width):
-    #             for y in range(height):
-    #                 if pixels1[x,y][3] > 0: # only copy if not transparent
-    #                     pixels2[x+x_start, y+y_start] = pixels1[x, y]
-    #         img3 = ImageQt(img2).copy()
-    #         pixmap = QtG.QPixmap.fromImage(img3)
-    #         # meeple_tile = QtE.Tile(pixmap, 320*prop_s.tile_size)
-    #         self.game.board_tiles[og_row][og_col].setPixmap(pixmap)
-        
-    #     # Set tile information
-    #     # self.game.board_tiles[row][col].meeples[material][mat_idx] = self.meeple.meeple_type
-    #     self.game.board_tiles[og_row][og_col].meeples[player] += [(material, mat_idx, meeple_type)] # FIXME: add stacked layer later
-        
-    #     # Finish possession if you claimed a finished possession
-    #     if pos_n['open'] == False: # finished!
-    #         self.game.pos_class.Possession_finished(pos_n, material)
