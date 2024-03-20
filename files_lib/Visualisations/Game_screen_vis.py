@@ -347,7 +347,7 @@ class Game_screen_vis(QtW.QWidget):
         # Function
         if previous_player != 0:
         # Stop blinking animation of previous player
-            self.players_name_anims[previous_player].stop_animation()
+            self.players_name_anims[previous_player].stop_loop()
         self.players_name_anims[next_player].start_loop()
         
         if previous_player == self.Carcassonne.username:

@@ -17,7 +17,7 @@ class Possessions():
     def __init__(self, Carcassonne):
         self.Carcassonne = Carcassonne
         self.game_vis = self.Carcassonne.game_vis
-        # self.finished_anim = Animations.AnimationGroup_parallel(3)
+        self.finished_anim = Animations.AnimationGroup_parallel(3)
     
     def Setup(self):
         self.Carcassonne.possessions = {material:dict() for material in self.Carcassonne.materials}
@@ -36,7 +36,7 @@ class Possessions():
         return player_list
         
     def Update_possessions(self, tile_data, row, col):
-        def get_neighbours(material, data, idx):
+        def Get_neighbours(material, data, idx):
             # Get neighbouring tiles and number of edges the material patch covers
             edges = 0
             neighbours = []
@@ -70,14 +70,17 @@ class Possessions():
                     neighbours += [(tile, mat_idx_n)]
             return neighbours, edges
         
+        # First check if possessions are finished, if not: enable end turn button
+        self.end_turn = True
+        
         # Update directly connected possessions
         for material in tile_data.keys():
         # For all material of the placed tile
             mat_data = tile_data[material]
-            # for mat_idx in range(1, max(max(mat_data))+1):
-            for mat_idx in range(1, np.max(mat_data)+1): # FIXME: new
+            for mat_idx in range(1, np.max(mat_data)+1):
             # Check each patch of material in the tile
-                neighbours, edges = get_neighbours(material, mat_data, mat_idx)
+                neighbours, edges = Get_neighbours(material, mat_data, mat_idx)
+                
                 if len(neighbours) == 0:
                 # The material patch does not touch any neighbours
                     self._New_possession(edges, material, mat_idx, row, col)
@@ -89,7 +92,7 @@ class Possessions():
                     pos_idx = tile_n.possessions[material][mat_idx_n]
                     self.Carcassonne.board_tiles[row][col].update_possessions(material, mat_idx, pos_idx) # update tile reference
                     pos_n = possessions[material][pos_idx]
-                    self._Append_possession(pos_n, edges, material, mat_idx, row, col)
+                    self._Append_possession(pos_n, 1, edges, material, mat_idx, row, col) # 1 for only 1 neighbouring possession
                     
                 elif len(neighbours) > 1:
                 # There are multiple neighbouring tiles, join them together
@@ -102,7 +105,13 @@ class Possessions():
                 if 'monastery' in tile_n.material_data.keys():
                     pos_idx = tile_n.possessions['monastery'][1]
                     pos_n = self.Carcassonne.possessions['monastery'][pos_idx]
-                    self._Append_possession(pos_n, edges, material, mat_idx, row, col)
+                    material = 'monastery'
+                    self._Append_possession(pos_n, 1, edges, material, mat_idx, row, col)
+        
+        # Enable end turn button if no possessions were finished
+        if self.end_turn == True:
+            self.game_vis.button_end_turn.setEnabled(True)
+            self.game_vis._Meeples_enable(True)
                 
     def _New_possession(self, edges, material, mat_idx, row, col):
         possessions = self.Carcassonne.possessions
@@ -208,9 +217,8 @@ class Possessions():
             if attribute == 'open':
                 pass # ignore open attribute
             
-            
             elif attribute == 'player_strength':
-            # player strength
+            # player strength (weird dictionary)
                 pos_merged['player_strength'] = {player: 
                                          {meeple_type:0 for meeple_type in self.Carcassonne.meeples.keys()}
                                          for player in self.Connections()}
@@ -221,17 +229,19 @@ class Possessions():
                             
             elif attribute in ['tiles']:
             # list
-                pos_merged[attribute] = list()
+                pos_merged[attribute] = set()
                 for pos_n in pos_neighs.values():
-                    pos_merged[attribute] += [pos_n[attribute]]
-                    
+                    pos_merged[attribute] |= set(pos_n[attribute])
+                pos_merged[attribute] = list(pos_merged[attribute])
+                
             elif attribute in ['open_edges', 'finished_cities', 'shield_tiles']:
             # integer
                 pos_merged[attribute] = 0
                 for pos_n in pos_neighs.values():
                     pos_merged[attribute] += pos_n[attribute]
-                    if attribute == 'open_edges':
-                        pos_merged[attribute] -= 2 # tiles touch so each touch is -2 open edges
+                    # if attribute == 'open_edges':
+                    #     pos_merged[attribute] -= 2 # tiles touch so each touch is -2 open edges
+                    # COMMENT: this is fixed in self._Append_possession
                     
             elif attribute in ['inn', 'cathedral']:
             # boolean
@@ -240,9 +250,9 @@ class Possessions():
                     pos_merged[attribute] = pos_merged[attribute] or pos_n[attribute]
         
         # Append placed tile to merged possession
-        self._Append_possession(pos_merged, edges, material, mat_idx, row, col)
+        self._Append_possession(pos_merged, len(neighbours), edges, material, mat_idx, row, col)
     
-    def _Append_possession(self, pos_n, edges, material, mat_idx, row, col):
+    def _Append_possession(self, pos_n, n_neighbours, edges, material, mat_idx, row, col):
         # Append tile to an existing possession
         tile = self.Carcassonne.board_tiles[row][col]
         
@@ -252,7 +262,7 @@ class Possessions():
         
         # Update open edges
         if 'open_edges' in pos_n.keys():
-            pos_n['open_edges'] += edges-2
+            pos_n['open_edges'] += edges-(2*n_neighbours)
             # Close possession if open_edges == 0
             if pos_n['open_edges'] == 0:
                 self.Possession_finished(pos_n, material)
@@ -320,6 +330,10 @@ class Possessions():
         return False
         
     def Possession_finished(self, pos_n, material):
+        # Wait for animation before enabling end turn button
+        self.end_turn = False
+        
+        # Close possession
         pos_n['open'] = False
         
         # Decide on winner
@@ -338,14 +352,15 @@ class Possessions():
                     raise Exception(f'Unknown meeple type {meeple_type}.')
             if strength > winner[1]:
                 winner = ([player], strength)
-            elif strength == winner[1] and strength > 0: # FIXME: new
-                winners = winner[0] + [player] # FIXME: new
-                winner = (winners, strength) # FIXME: new
+            elif strength == winner[1] and strength > 0:
+                winners = winner[0] + [player]
+                winner = (winners, strength)
         
         if winner[0] != list(): # the possession was claimed by someone
             # Calculate points
             if material == 'grass':
                 # Can only happen at the end of the game
+                # FIXME: calculate the number of finished cities
                 pass
             elif material == 'road':
                 points = len(pos_n['tiles'])
@@ -357,6 +372,7 @@ class Possessions():
                             points = 0
                         
             elif material == 'city':
+                # FIXME: add a function to increase finished_cities of surrounding fields
                 points = 2*len(pos_n['tiles'])
                 points += 2*pos_n['shield_tiles']
                 if 'cathedral' in pos_n.keys() and r'Inns && Cathedrals' in self.Carcassonne.expansions:
@@ -374,63 +390,72 @@ class Possessions():
                 
             # Play animation
             self.Possession_finished_anim(pos_n, winner[0], points, material)
+        else:
+            # Enable end turn button
+            self.game_vis.button_end_turn.setEnabled(True)
+            self.game_vis._Meeples_enable(True)
         
     def Possession_finished_anim(self, pos_n, winners, points, material):
-        if False:
-        # For some reason, this animation breaks when in lobby
-            # Intermediate state of points
-            points_label = self.game_vis.players_points[winner]
-            points_before = int(points_label.text())
-            points_label.setText(f'{points_before} + {int(points)}')
-            
+        if True:
             # Animate finishing possession and giving points
             def anim_finished():
-                points_after = int(points_before + points)
-                points_label.setText(f'{points_after}')
-                self.Carcassonne.Refs(f'players/{winner}/points').set(points_after)
+                # End state of points
+                for winner_player in winners:
+                    points_after = self.points_after[winner_player]
+                    points_label.setText(f'{points_after}')
+                    
+                # Give back meeples
+                self.Give_back_meeples(winners, pos_n, material)
                 
-                self.Give_back_meeples(winner, pos_n, material)
+                # Enable end turn button
+                self.game_vis.button_end_turn.setEnabled(True)
+                self.game_vis._Meeples_enable(True)
+                    
+            # Intermediate state of points
+            self.points_after = dict()
+            for winner_player in winners:
+                # Get current points
+                points_label = self.game_vis.players_points[winner_player]
+                points_before = int(points_label.text())
+                # Intermediate label
+                points_label.setText(f'{points_before} + {int(points)}')
+                # End points calculation
+                points_after = self.points_after[winner_player] = int(points_before + points)
+                # Database
+                if winner_player == self.Carcassonne.username: # do this only once per player
+                    self.Carcassonne.Refs(f'players/{winner_player}/points').set(points_after)
             
+            # Make animation for blinking possession
+            self.Carcassonne.game_vis.button_end_turn.setEnabled(False) # Disable end turn button
             self.finished_anim.clear()
             for tile in pos_n['tiles']:
-                animation = Animations.Animation(tile[0])
+                if type(tile[0]) == QtE.Tile:
+                # single entry, so tuple
+                    animation = Animations.Animation(tile[0])
+                else:
+                # multiple entries, so list of tuples
+                    animation = Animations.Animation(tile[0][0])
                 animation.add_blinking(1, 0.6, 1000, 0)
                 self.finished_anim.add(animation)
             self.finished_anim.finished.disconnect()
             self.finished_anim.finished.connect(anim_finished)
             self.finished_anim.start()
-        else:
-            for winner_player in winners: # FIXME: new
-                # points_label = self.game_vis.players_points[winner]
-                points_label = self.game_vis.players_points[winner_player]
-                points_before = int(points_label.text())
-                points_after = int(points_before + points)
-                points_label.setText(f'{points_after}')
-                # self.Carcassonne.Refs(f'players/{winner}/points').set(points_after)
-                self.Carcassonne.Refs(f'players/{winner_player}/points').set(points_after)
+        # else:
+        #     # FIXME: obsolete (if everything goes well)
+        #     for winner_player in winners: # FIXME: new
+        #         # points_label = self.game_vis.players_points[winner]
+        #         points_label = self.game_vis.players_points[winner_player]
+        #         points_before = int(points_label.text())
+        #         points_after = int(points_before + points)
+        #         points_label.setText(f'{points_after}')
+        #         # self.Carcassonne.Refs(f'players/{winner}/points').set(points_after)
+        #         self.Carcassonne.Refs(f'players/{winner_player}/points').set(points_after)
                 
-            # self.Give_back_meeples(winner, pos_n, material)
-            self.Give_back_meeples(winners, pos_n, material) # FIXME: new
+        #     self.Give_back_meeples(winners, pos_n, material)
     
-    def Give_back_meeples_old(self, winner, pos_n, material):
-        # Find meeples that are on the possession
-        for tile, mat_idx in pos_n['tiles']:
-        # Search each tile
-            for meeple in tile.meeples[winner]:
-            # Give back all meeples that belong to you
-                if meeple[:2] == (material, mat_idx):
-                # Only give back meeples of finished possession
-                    if meeple[2] == 'standard':
-                        tile.reset_image()
-                        if self.Carcassonne.username == winner:
-                        # Give back first unavailable meeple of winner
-                            for meeple_button in self.Carcassonne.meeples_standard.values():
-                                if meeple_button.available == False:
-                                    meeple_button.make_available()
-                                    break
-                                
     def Give_back_meeples(self, winners, pos_n, material):
         # Find meeples that are on the possession
+        # for tile, mat_idx in pos_n['tiles']:
         for tile, mat_idx in pos_n['tiles']:
         # Search each tile of the possession
             for winner in winners:

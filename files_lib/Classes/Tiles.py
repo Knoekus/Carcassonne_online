@@ -124,8 +124,9 @@ class Tiles():
             # else:
             #     self.Carcassonne.button_end_turn.setEnabled(0) # FIXME: should never occur since this function can only run if current player is yourself
             # Meeples.En_dis_able_meeples(self.game, enable=True)
-            self.game_vis.button_end_turn.setEnabled(True)
-            self.game_vis._Meeples_enable(True)
+            
+            # self.game_vis.button_end_turn.setEnabled(True)
+            # self.game_vis._Meeples_enable(True)
         return clicked
     
     #%% Options
