@@ -154,7 +154,7 @@ class Animation(QtC.QSequentialAnimationGroup):
         self.repeat = True
         self.start()
         
-    def stop_animation(self):
+    def stop_loop(self):
         self.repeat = False
     
     def _reset(self):

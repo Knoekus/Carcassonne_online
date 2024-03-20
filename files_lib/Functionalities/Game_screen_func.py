@@ -163,7 +163,7 @@ class Game_screen_func():
     def _Feed_send_pass_turn(self, previous_player, next_player):
         # For single player testing
         if previous_player == next_player:
-            previous_player = 'A'
+            previous_player = 0
         
         # Make feed message
         event = {'event':'pass_turn',
