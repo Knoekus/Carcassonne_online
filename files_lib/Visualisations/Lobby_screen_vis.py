@@ -335,6 +335,9 @@ class Lobby_screen_vis(QtW.QWidget):
             
             if admin != self.Carcassonne.username:
                 expansion_switch.setEnabled(False)
+            elif expansion in ['The River', r'Inns && Cathedrals', 'The Abbot']:
+            # Expansions that are not yet available
+                expansion_switch.setEnabled(False)
     
     def _Expansions_list_vars(self):
         self.expansions_switches = dict()
