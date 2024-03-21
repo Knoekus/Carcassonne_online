@@ -8,9 +8,9 @@ import PyQt6_Extra     as QtE
 # Custom classes
 import Visualisations.Meeple_placement_screen_vis as MeepleVis
 import Functionalities.Meeple_placement_screen_func as MeepleFunc
-import Classes.Expansions #as Expansions
-import Classes.Possessions #as Possessions
-import Classes.Tiles #as Tiles
+import Classes.Expansions
+import Classes.Possessions
+import Classes.Tiles
 from Dialogs.YesNo import YesNoDialog
 
 # Other packages
@@ -51,7 +51,8 @@ class Game_screen_func():
     
     def Connect_buttons(self):
         # Game buttons
-        self.game_vis.leave_button.clicked.connect(self._Leave_game)
+        if self.Carcassonne.test == True:
+            self.game_vis.leave_button.clicked.connect(self._Leave_game)
         self.game_vis.button_end_turn.clicked.connect(self._End_turn)
         
         # Meeple buttons
@@ -107,18 +108,6 @@ class Game_screen_func():
     
     def _Meeple_clicked(self, meeple):
         def clicked():
-            # if meeple.meeple_type == 'standard':
-            #     # In no instance can this meeple be placed on another tile but the
-            #     # placed tile, so no need to highlight options before opening dialog.
-            #     meepleWindow = Meeples.MeeplePlaceWindow(self.last_placed_tile, self, meeple)
-            #     result = meepleWindow.exec()
-            #     if result == QtW.QDialog.DialogCode.Accepted:
-            #         meepleWindow.Meeple_placed()
-            #         # meepleWindow.Meeple_placed_event()
-            #         Meeples.En_dis_able_meeples(self, enable=False) # disable all meeples
-            # else:
-            #     raise Exception(f'Unknown meeple type: {meeple.meeple_type}')
-            
             # Visualisation
             self.Carcassonne.meeple_vis = MeepleVis.Meeple_placement_screen_vis(self.Carcassonne, self.Carcassonne.last_placed_tile, meeple)
             
@@ -134,13 +123,11 @@ class Game_screen_func():
                 # Default start with tile H
                 file = self.Carcassonne.Tiles.Choose_tile(1, 'H')[2]
                 self._Feed_send_tile_taken(file, 1, 'H')
-                # self.Carcassonne.Tiles.Place_tile(file, 1, 'H', 0, 0)
                 self._Feed_send_tile_placed(0, 0, file, 1, 'H', 0)
             else:
                 # Start with a spring
                 file = self.Carcassonne.Tiles.Choose_tile(2, 'D')[2]
                 self._Feed_send_tile_taken(file, 2, 'D')
-                # self.Carcassonne.Tiles.Place_tile(file, 2, 'D', 0, 0)
                 self._Feed_send_tile_placed(0, 0, file, 2, 'D', 0)
         
         # Take new tile
@@ -161,9 +148,9 @@ class Game_screen_func():
         self.Carcassonne.feed.Event_send(event)
     
     def _Feed_send_pass_turn(self, previous_player, next_player):
-        # For single player testing
-        if previous_player == next_player:
-            previous_player = 0
+        # # For single player testing
+        # if previous_player == next_player:
+        #     previous_player = 0
         
         # Make feed message
         event = {'event':'pass_turn',
@@ -226,7 +213,7 @@ class Game_screen_func():
             # Do stuff
             pass
         
-        elif next_player == self.Carcassonne.username:
+        if next_player == self.Carcassonne.username:
             # Take a new tile, send it to feed
             if self.Carcassonne.last_placed_tile == None:
             # Place start tile if there are no tiles yet

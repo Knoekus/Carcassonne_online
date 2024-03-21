@@ -3,10 +3,8 @@
 import PyQt6.QtCore    as QtC
 import PyQt6.QtGui     as QtG
 import PyQt6.QtWidgets as QtW
-import PyQt6_Extra     as QtE
 
 # Custom classes
-# import Classes.Animations as Animations
 import tile_data
 
 # Other packages
@@ -42,8 +40,6 @@ class ClickableLabel(QtW.QLabel):
             self.setCursor(QtG.QCursor(QtC.Qt.CursorShape.PointingHandCursor))
     
     def mousePressEvent(self, event):
-        # self.new_admin = self.text()
-        # self.clicked.emit()
         if self.enabled == True:
             self.clicked.emit()
     
@@ -66,8 +62,6 @@ class QHSeparationLine(QtW.QFrame):
         
         self.setFrameShape(QtW.QFrame.Shape.HLine)
         self.setFrameShadow(QtW.QFrame.Shadow.Plain)
-        # self.setSizePolicy(QtW.QSizePolicy.Preferred, QtW.QSizePolicy.Minimum)
-        # policy = QtW.QSizePolicy.setHorizontalStretch(self, 0.8)
         
         pal = self.palette()
         pal.setColor(QtG.QPalette.ColorRole.WindowText, QtG.QColor(colour[0], colour[1], colour[2]))
@@ -85,7 +79,6 @@ class QVSeparationLine(QtW.QFrame):
         
         self.setFrameShape(QtW.QFrame.Shape.VLine)
         self.setFrameShadow(QtW.QFrame.Shadow.Plain)
-        # self.setSizePolicy(QtW.QSizePolicy.Minimum, QtW.QSizePolicy.Preferred)
         
         pal = self.palette()
         pal.setColor(QtG.QPalette.ColorRole.WindowText, QtG.QColor(colour[0], colour[1], colour[2]))
@@ -126,10 +119,8 @@ class QImage(QtW.QLabel):
             self.pixmap = QtG.QPixmap(file)
             self.setPixmap(self.pixmap)
         elif type(file) == type(QtG.QPixmap()):
-            # self.file = None
             self.setPixmap(file)
         elif file == None:
-            # self.file = None
             self.setPixmap(QtG.QPixmap())
             
         elif type(file) == type(QtG.QImage()):
@@ -187,7 +178,7 @@ class Tile(ClickableImage):
             self.clicked.emit()
         elif self.clickable == True:
         # Tile placed on the board
-            # Open meeple placement window
+            '''Open meeple placement window, for example when there are multiple tiles that a meeple can be placed on.'''
             pass
     
     def reset_image(self):
@@ -335,7 +326,6 @@ def GreenScreenPixmap(file, before=(0, 255, 0, 255), after=(0, 0, 0, 0)):
     if type(file) == str:
         img1 = PIL.Image.open(file)
     elif type(file) == type(QtG.QPixmap()):
-        # img1 = file.toImage()
         img1 = PIL.Image.fromqpixmap(file)
         
     pixels1 = img1.load()

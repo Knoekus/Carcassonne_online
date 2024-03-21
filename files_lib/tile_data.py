@@ -1,16 +1,18 @@
 # Tiles currently modelled as 32x32 pixels, upscaled x10
-# NOTE TO SELF
-# FIXME: the corners of CITIES are now filled in instead of left blank.
-# FIXME: if problems occur with possession merging or tile placement, check this.
 
-# grass     = list
-# road      = list
-# city      = list
-# monastery = list
-# water     = list # The River
-# cathedral = list # Inns & Cathedrals
-# inns      = list # Inns & Cathedrals
-# garden    = list # The Abbot
+'''
+grass     = list
+road      = list
+city      = list
+monastery = list
+water     = list (The River)
+cathedral = list (Inns & Cathedrals)
+inns      = list (Inns & Cathedrals)
+garden    = list (The Abbot)
+
+{}_m indicates meeple position per material patch
+{}   indicates material patches per material
+'''
 
 tiles = dict()
 data_steps = 7

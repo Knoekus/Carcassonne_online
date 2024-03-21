@@ -1,17 +1,11 @@
-# import prop_s
-
-import PyQt6.QtGui as QtG
 import PyQt6.QtWidgets as QtW
-# import PyQt5.QtCore as QtC
 
 class OKDialog(QtW.QDialog):
     def __init__(self, Carcassonne, parent=None, title=None, text=None):
         super().__init__(parent)
-        # super().__init__()
         self.Carcassonne = Carcassonne
     
         self.setWindowTitle(title)
-        # self.setFixedSize(300, 100)
 
         label = QtW.QLabel(text)
         font = self.Carcassonne.Properties.Font(size=0, bold=False)

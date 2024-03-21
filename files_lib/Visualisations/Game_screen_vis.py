@@ -90,7 +90,6 @@ class Game_screen_vis(QtW.QWidget):
                 
                 
                 # Blinking animation
-                # if self.lobby.lobby_key == 'test2':
                 animation = Animations.Animation(name)
                 animation.add_blinking(1, 0.1, 2500, 200)
                 self.players_name_anims[player] = animation
@@ -179,12 +178,14 @@ class Game_screen_vis(QtW.QWidget):
         # Layout
         self.main_layout = QtW.QGridLayout()
         self.setLayout(self.main_layout)
-        self.main_layout.addWidget(_Leave_button(),                           0, 0, 1, 3)
         self.main_layout.addWidget(_Title(),                                  1, 0, 1, 3)
         self.main_layout.addWidget(QtE.QHSeparationLine(colour=(80, 80, 80)), 2, 0, 1, 3) # slightly grey line
         self.main_layout.addLayout(_Game_players(),                           3, 0, 1, 3)
         self.main_layout.addLayout(_Game_left_column(),                       4, 0, 1, 1) # leave column 1 out for correct padding around board
         self.main_layout.addLayout(_Game_right_column(),                      4, 2, 1, 1)
+        
+        if self.Carcassonne.test == True:
+            self.main_layout.addWidget(_Leave_button(),                           0, 0, 1, 3)
     
     def Meeple_placed(self, player, meeple_type, og_tile_info, sub_length, sub_tile):
         # Unpack information
@@ -195,10 +196,6 @@ class Game_screen_vis(QtW.QWidget):
         # Recreate tile pixmap with correct rotation
         pixmap_tile = QtG.QPixmap(file)
         pixmap_tile = pixmap_tile.transformed(QtG.QTransform().rotate(rotation), QtC.Qt.TransformationMode.FastTransformation)
-        
-        # Add strength to possession # FIXME: functionality?
-        pos_n = self.Carcassonne.possessions[material][pos_idx]
-        pos_n['player_strength'][player][meeple_type] += 1 # self.meeple.power
         
         # Find meeple subtile position
         meeple_position = tile_data.tiles[index][f'{letter}_m'][material][mat_idx]
@@ -218,11 +215,14 @@ class Game_screen_vis(QtW.QWidget):
         
         # Get combined tile and meeple pixmap
         pixmap_combined = Meeples.Get_meeple_on_tile_pixmap(self.Carcassonne, pixmap_tile, pixmap_meeple, len_mat, sub_length, meeple_position)
-        # meeple_tile = QtE.Tile(pixmap, 320*prop_s.tile_size)
         self.Carcassonne.board_tiles[og_row][og_col].setPixmap(pixmap_combined)
         
         # Set tile information
         self.Carcassonne.board_tiles[og_row][og_col].meeples[player] += [(material, mat_idx, meeple_type)] # FIXME: add stacked layer later
+        
+        # Add strength to possession # FIXME: functionality?
+        pos_n = self.Carcassonne.possessions[material][pos_idx]
+        pos_n['player_strength'][player][meeple_type] += 1
         
         # Finish possession if you claimed a finished possession
         if pos_n['open'] == False: # finished!
@@ -235,18 +235,14 @@ class Game_screen_vis(QtW.QWidget):
     def Tile_placed(self, row, col, file, tile_idx, tile_letter, rotation):
         # Add new row if necessary
         if row < self.Carcassonne.board_rows[0]:
-            # self._Board_new_row_above()
             self.Carcassonne.Tiles._Board_new_row_above()
         elif row > self.Carcassonne.board_rows[1]:
-            # self._Board_new_row_below()
             self.Carcassonne.Tiles._Board_new_row_below()
         
         # Add new col if necessary
         if col < self.Carcassonne.board_cols[0]:
-            # self._Board_new_col_left()
             self.Carcassonne.Tiles._Board_new_col_left()
         elif col > self.Carcassonne.board_cols[1]:
-            # self._Board_new_col_right()
             self.Carcassonne.Tiles._Board_new_col_right()
             
         # Place tile
@@ -288,6 +284,11 @@ class Game_screen_vis(QtW.QWidget):
         # self.game.new_tile_anim.swap(file, tile_idx, tile_letter, username)
         self.new_tile.set_tile(file, tile_idx, tile_letter)
         if player == self.Carcassonne.username:
+            # First place tile before doing anything
+            self.button_end_turn.setEnabled(False)
+            self._Meeples_enable(False)
+            self.new_tile.rotation = 0
+            
             self.new_tile.enable()
             self.Carcassonne.Tiles.Show_options()
         else:
@@ -352,11 +353,10 @@ class Game_screen_vis(QtW.QWidget):
         
         if previous_player == self.Carcassonne.username:
             # Disable clickable stuff
-            self.button_end_turn.setEnabled(False)
+            pass
         
-        elif next_player == self.Carcassonne.username:
+        if next_player == self.Carcassonne.username:
             # Enable clickable stuff
-            # self._Meeples_enable(True)
             pass
     
     def _Feed_receive_tile_placed(self, data):
