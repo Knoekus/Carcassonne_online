@@ -6,7 +6,7 @@ import PyQt6.QtCore    as QtC
 import PyQt6_Extra     as QtE
 
 # Custom classes
-import Properties
+# ...
 
 # Other packages
 import PIL
@@ -20,6 +20,7 @@ class Meeple(QtE.ClickableImage):
         
         self.init_vars()
         super().__init__(self.pixmap, self.size, self.size)
+        self.disable()
     
     def init_vars(self):
         self.available = True
@@ -50,21 +51,6 @@ class Meeple(QtE.ClickableImage):
     def make_unavailable(self):
         self.available = False
         self.setPixmap(self.pixmap_grey)
-            
-class Meeple_standard(Meeple):
-    def __init__(self, Carcassonne):
-        super().__init__(Carcassonne, meeple_type='standard')
-        # self.power = 1
-
-class Meeple_big(Meeple):
-    def __init__(self, Carcassonne):
-        super().__init__(Carcassonne, meeple_type='big')
-        pass
-
-class Meeple_abbot(Meeple):
-    def __init__(self, Carcassonne):
-        super().__init__(Carcassonne, meeple_type='abbot')
-        pass
 
 #%% Meeple functions
 def Colour_fill_file(Carcassonne, file, colour):

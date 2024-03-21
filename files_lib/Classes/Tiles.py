@@ -6,7 +6,6 @@ import PyQt6.QtWidgets as QtW
 import PyQt6_Extra     as QtE
 
 # Custom classes
-# import Classes.Animations as Animations
 import tile_data
 
 # Other packages
@@ -40,10 +39,6 @@ class Tiles():
     
     def New_tile(self, tile_idx_in=None, tile_letter_in=None):
         '''Find a new tile that is placable on the current board. Place that tile in the new_tile position.'''
-        self.game_vis.button_end_turn.setEnabled(0) # FIXME: should be unnecessary and done when turn ends
-        self.game_vis._Meeples_enable(False) # FIXME: should be unnecessary and done when turn ends
-        self.game_vis.new_tile.rotation = 0 # start a new tile with 0 rotation # FIXME: should be unnecessary and done when turn ends
-        
         # Get a new tile
         while True:
             tile_idx, tile_letter, file = self.Choose_tile(tile_idx_in, tile_letter_in)
@@ -55,7 +50,7 @@ class Tiles():
             for idx in range(4): # try each orientation
                 options |= self.Tile_options(tile_idx, tile_letter)
                 if len(options) > 0: 
-                    # if options are found before trying all rotations, don't try the rest and rotate back
+                # If options are found before trying all rotations, don't try the rest and rotate back
                     for idx2 in range(idx):
                         self.game_vis.new_tile.rotate(-90)
                     break
@@ -63,9 +58,9 @@ class Tiles():
                     self.game_vis.new_tile.rotate(90)
             if len(options) > 0:
                 break
-            elif True:
+            elif False:
+            # Debugging
                 print(f'\n{tile_idx}{tile_letter} is infeasible\n')
-                # raise Exception('stop')
         
         # Make feed event
         self.Carcassonne.game_func._Feed_send_tile_taken(file, tile_idx, tile_letter)
@@ -74,11 +69,11 @@ class Tiles():
         '''Choose a tile from the pile, and get its information.'''
         # Choose new tile
         if tile_idx == None and tile_letter == None:
-            # New idx and letter
+        # New idx and letter
             tile_idx    = rnd.choice(list(self.Carcassonne.tiles.keys()))
             tile_letter = rnd.choice(list(self.Carcassonne.tiles[tile_idx].keys()))
         elif tile_idx != None and tile_letter == None: # if only expansion is given (e.g. for river building)
-            # Only new letter
+        # Only new letter
             tile_letter = rnd.choice(list(self.Carcassonne.tiles[tile_idx].keys()))
             
         # Get expansion title
@@ -115,18 +110,7 @@ class Tiles():
                 opt_row, opt_col = option
                 tile = self.Carcassonne.board_tiles[opt_row][opt_col]
                 tile.disable()
-                # tile.set_tile(None, None, None, self.Carcassonne.materials)
                 tile.set_tile(None, None, None)
-            
-            # Enable/disable 'end turn' button and meeples
-            # if self.Carcassonne.username == self.Carcassonne.current_player:
-            #     self.Carcassonne.button_end_turn.setEnabled(1)
-            # else:
-            #     self.Carcassonne.button_end_turn.setEnabled(0) # FIXME: should never occur since this function can only run if current player is yourself
-            # Meeples.En_dis_able_meeples(self.game, enable=True)
-            
-            # self.game_vis.button_end_turn.setEnabled(True)
-            # self.game_vis._Meeples_enable(True)
         return clicked
     
     #%% Options
@@ -151,7 +135,6 @@ class Tiles():
             row, col = option
             tile = self.Carcassonne.board_tiles[row][col]
             tile.enable()
-            # tile.set_tile(file, None, None, self.Carcassonne.materials)
             tile.set_tile(file, None, None)
             try: tile.clicked.disconnect()
             except: None
@@ -205,25 +188,24 @@ class Tiles():
                                     data_n = data_n_all[material]
                                     data_t = data_t_all[material]
                                     if pos == 0: # north
-                                        # south of neighbour should match north of tile
+                                    # south of neighbour should match north of tile
                                         edge_n = get_edge(data_n, 'S')
                                         edge_t = get_edge(data_t, 'N')
                                     elif pos == 1: # east
-                                        # west of neighbour should match east of tile
+                                    # west of neighbour should match east of tile
                                         edge_n = get_edge(data_n, 'W')
                                         edge_t = get_edge(data_t, 'E')
                                     elif pos == 2: # south
-                                        # north of neighbour should match south of tile
+                                    # north of neighbour should match south of tile
                                         edge_n = get_edge(data_n, 'N')
                                         edge_t = get_edge(data_t, 'S')
                                     elif pos == 3: # west
-                                        # east of neighbour should match west of tile
+                                    # east of neighbour should match west of tile
                                         edge_n = get_edge(data_n, 'E')
                                         edge_t = get_edge(data_t, 'W')
                                     else:
                                         raise Exception("Unknown position of tile.")
                                     if edge_n != edge_t:
-                                        # print(f'   {material} does not match {coords}: \n     {[int(x) for x in edge_n]}\n     {[int(x) for x in edge_t]}')
                                         options.remove(coords)
                                         options_deleted.add(coords)
                                         break # stop trying materials
@@ -232,23 +214,22 @@ class Tiles():
                                 elif (material in data_n_all.keys()) and (material not in data_t_all.keys()):
                                     data_n = data_n_all[material]
                                     if pos == 0: # north
-                                        # south of neighbour should match north of tile
+                                    # south of neighbour should match north of tile
                                         edge_n = get_edge(data_n, 'S')
                                     elif pos == 1: # east
-                                        # west of neighbour should match east of tile
+                                    # west of neighbour should match east of tile
                                         edge_n = get_edge(data_n, 'W')
                                     elif pos == 2: # south
-                                        # north of neighbour should match south of tile
+                                    # north of neighbour should match south of tile
                                         edge_n = get_edge(data_n, 'N')
                                     elif pos == 3: # west
-                                        # east of neighbour should match west of tile
+                                    # east of neighbour should match west of tile
                                         edge_n = get_edge(data_n, 'E')
                                     else:
                                         raise Exception("Unknown position of tile.")
                                         
                                     if sum(edge_n) > 0:
-                                        # Remove option if unique material is on edge of importance
-                                        # print(f'   {material} is unique in NEW and does not match {coords}')
+                                    # Remove option if unique material is on edge of importance
                                         options.remove(coords)
                                         options_deleted.add(coords)
                                         break # stop trying materials
@@ -257,23 +238,22 @@ class Tiles():
                                 elif (material not in data_n_all.keys()) and (material in data_t_all.keys()):
                                     data_t = data_t_all[material]
                                     if pos == 0: # north
-                                        # south of neighbour should match north of tile
+                                    # south of neighbour should match north of tile
                                         edge_t = get_edge(data_t, 'N')
                                     elif pos == 1: # east
-                                        # west of neighbour should match east of tile
+                                    # west of neighbour should match east of tile
                                         edge_t = get_edge(data_t, 'E')
                                     elif pos == 2: # south
-                                        # north of neighbour should match south of tile
+                                    # north of neighbour should match south of tile
                                         edge_t = get_edge(data_t, 'S')
                                     elif pos == 3: # west
-                                        # east of neighbour should match west of tile
+                                    # east of neighbour should match west of tile
                                         edge_t = get_edge(data_t, 'W')
                                     else:
                                         raise Exception("Unknown position of tile.")
                                         
                                     if sum(edge_t) > 0:
-                                        # Remove option if unique material is on edge of importance
-                                        # print(f'   {material} is unique in TILE and does not match {coords}')
+                                    # Remove option if unique material is on edge of importance
                                         options.remove(coords)
                                         options_deleted.add(coords)
                                         break # stop trying materials
@@ -333,17 +313,14 @@ class Tiles():
         
         # Add row to vertical base
         self.game_vis.board_base.insertLayout(insert_idx, new_row)
-        # print(f'Added row {new_row_idx} at {insert_idx}')
     
     def _Board_new_col_left(self):
-        # self.__Board_new_col(1)
         self.Carcassonne.board_cols[0] -= 1
         new_col_idx = self.Carcassonne.board_cols[0]-1
         insert_idx = 1
         self.__Board_new_col(new_col_idx, insert_idx)
     
     def _Board_new_col_right(self):
-        # self.__Board_new_col(-2)
         self.Carcassonne.board_cols[1] += 1
         new_col_idx = self.Carcassonne.board_cols[1]+1
         insert_idx = len(self.Carcassonne.board[0])-1
@@ -354,16 +331,10 @@ class Tiles():
         for row_idx in range(self.Carcassonne.board_rows[0]-1, self.Carcassonne.board_rows[1]+2):
             row = self.Carcassonne.board[row_idx]
             row.insertWidget(insert_idx, self._New_tile(row_idx, new_col_idx))
-        # print(f'Added col {new_col_idx} at {insert_idx}')
     
     def _New_tile(self, row, col):
-        # if self.lobby_key == 'test2':
-        #     file = '..\\Images\\Coin_icon.png'
-        # else: # call from lobby
-        #     file = '.\\Images\\Coin_icon.png'
-        file = None
         size = self.Carcassonne.Properties.tile_size * 320 # 320 is the current px size for tiles
-        empty_tile = QtE.Tile(file, size, self.Carcassonne)
+        empty_tile = QtE.Tile(None, size, self.Carcassonne)
         self.Carcassonne.board_tiles[row][col] = empty_tile
         return empty_tile
     

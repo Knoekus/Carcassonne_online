@@ -20,7 +20,6 @@ class AnimationGroup_parallel(QtC.QParallelAnimationGroup):
         
         if loop_count == -1:
             self.setLoopCount(1)
-            # self.repeat = True
         else:
             self.setLoopCount(loop_count) # -1: run until stopped
     
@@ -81,7 +80,6 @@ class Animation(QtC.QSequentialAnimationGroup):
         
         # Swap image
         def Redraw_image():
-            # parent.draw_image(new_image)
             self.parent_obj.set_tile(new_image, tile_idx, tile_letter, self.parent_obj.parent().materials)
             self.removeAnimation(animation1)
             self.addAnimation(animation2)
@@ -110,45 +108,6 @@ class Animation(QtC.QSequentialAnimationGroup):
         self.finished.connect(Redraw_image)
         self.start()
     
-    def DEPRECATED_swap_image(self, file, tile_idx, tile_letter, time):
-        if type(self.parent_obj) != type(QtE.Tile(None)):
-            raise Exception("Swap image of a QtE.Tile object.")
-        
-        # Blink in and out
-        effect = QtW.QGraphicsOpacityEffect(self.parent_obj)
-        self.parent_obj.setGraphicsEffect(effect)
-        
-        animation1 = QtC.QPropertyAnimation(effect, b"opacity")
-        animation1.setEasingCurve(QtC.QEasingCurve.Type.InQuad)
-        animation1.setStartValue(1)
-        animation1.setEndValue(0)
-        animation1.setDuration(time/2)
-        
-        animation2 = QtC.QPropertyAnimation(effect, b"opacity")
-        animation2.setEasingCurve(QtC.QEasingCurve.Type.OutQuad)
-        animation2.setStartValue(0)
-        animation2.setEndValue(1)
-        animation2.setDuration(time/2)
-        
-        # Swap image
-        def Redraw_image():
-            # parent.draw_image(new_image)
-            print('animation file:', file)
-            self.parent_obj.set_tile(file, tile_idx, tile_letter, self.parent_obj.parent().materials)
-            self.removeAnimation(animation1)
-            self.addAnimation(animation2)
-            self.finished.disconnect()
-            self.finished.connect(self._reset)
-            self.start()
-        
-        self.clear()
-        self.addAnimation(animation1)
-        self.finished.disconnect()
-        self.finished.connect(Redraw_image)
-        animation1.start()
-        self.finished.connect(self.swap_finished)
-        self.start()
-    
     #%% Stopping
     def start_loop(self):
         self.repeat = True
@@ -161,12 +120,6 @@ class Animation(QtC.QSequentialAnimationGroup):
         if self.repeat == True:
             self.start()
             self.State.Running
-        # else:
-        #     # Enable button
-        #     try: self.parent_obj.enable()
-        #     except Exception as e:
-        #         print(f'Error: {e}')
-        #     print('Trying to reset animation, but ')
 
 class New_tile_swap(QtC.QSequentialAnimationGroup):
     def __init__(self, game, new_tile, time=500):

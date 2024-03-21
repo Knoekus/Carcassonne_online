@@ -51,11 +51,6 @@ class Menu_screen_func():
             
             self._Save_lobby_to_database()
             self._Open_lobby_screen()
-            
-            # # Add player 2
-            # self.Carcassonne.Refs('connections/fake_user').set(0)
-            # self.Carcassonne.Refs('players/fake_user/colour').set(prop_s.colours[1]) # give colour
-            # self.Carcassonne.Refs(f'colours/{prop_s.colours[1]}').set(1)
         else:
             # Open the username dialog
             username_dialog = UsernameDialog(self.Carcassonne, self.menu_vis)

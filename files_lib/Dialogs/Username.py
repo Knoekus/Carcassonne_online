@@ -1,8 +1,5 @@
-# import prop_s
-
-import PyQt6.QtGui as QtG
-import PyQt6.QtWidgets as QtW
 import PyQt6.QtCore as QtC
+import PyQt6.QtWidgets as QtW
 
 class UsernameDialog(QtW.QDialog):
     def __init__(self, Carcassonne, parent=None):

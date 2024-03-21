@@ -110,6 +110,7 @@ class Possessions():
         
         # Enable end turn button if no possessions were finished
         if self.end_turn == True:
+        # Don't enable on initial tile
             self.game_vis.button_end_turn.setEnabled(True)
             self.game_vis._Meeples_enable(True)
                 
@@ -239,9 +240,6 @@ class Possessions():
                 pos_merged[attribute] = 0
                 for pos_n in pos_neighs.values():
                     pos_merged[attribute] += pos_n[attribute]
-                    # if attribute == 'open_edges':
-                    #     pos_merged[attribute] -= 2 # tiles touch so each touch is -2 open edges
-                    # COMMENT: this is fixed in self._Append_possession
                     
             elif attribute in ['inn', 'cathedral']:
             # boolean
@@ -262,7 +260,7 @@ class Possessions():
         
         # Update open edges
         if 'open_edges' in pos_n.keys():
-            pos_n['open_edges'] += edges-(2*n_neighbours)
+            pos_n['open_edges'] += edges-(2*n_neighbours) # 2*n_neighbours to account for possible multiple touching edges
             # Close possession if open_edges == 0
             if pos_n['open_edges'] == 0:
                 self.Possession_finished(pos_n, material)
@@ -360,8 +358,8 @@ class Possessions():
             # Calculate points
             if material == 'grass':
                 # Can only happen at the end of the game
-                # FIXME: calculate the number of finished cities
-                pass
+                points = 3*len(pos_n['finished_cities'])
+                
             elif material == 'road':
                 points = len(pos_n['tiles'])
                 if 'inn' in pos_n.keys() and r'Inns && Cathedrals' in self.Carcassonne.expansions:
@@ -440,22 +438,9 @@ class Possessions():
             self.finished_anim.finished.disconnect()
             self.finished_anim.finished.connect(anim_finished)
             self.finished_anim.start()
-        # else:
-        #     # FIXME: obsolete (if everything goes well)
-        #     for winner_player in winners: # FIXME: new
-        #         # points_label = self.game_vis.players_points[winner]
-        #         points_label = self.game_vis.players_points[winner_player]
-        #         points_before = int(points_label.text())
-        #         points_after = int(points_before + points)
-        #         points_label.setText(f'{points_after}')
-        #         # self.Carcassonne.Refs(f'players/{winner}/points').set(points_after)
-        #         self.Carcassonne.Refs(f'players/{winner_player}/points').set(points_after)
-                
-        #     self.Give_back_meeples(winners, pos_n, material)
     
     def Give_back_meeples(self, winners, pos_n, material):
         # Find meeples that are on the possession
-        # for tile, mat_idx in pos_n['tiles']:
         for tile, mat_idx in pos_n['tiles']:
         # Search each tile of the possession
             for winner in winners:
@@ -464,7 +449,9 @@ class Possessions():
                 # Find all the winner's meeples that are on the tile
                     if meeple[:2] == (material, mat_idx):
                     # Only give back meeples of finished possession
-                        tile.reset_image() # FIXME: this currently deletes all meeples from tile
+                        tile.reset_image() 
+                        # FIXME: this currently deletes all meeples from tile, instead of specific meeples.
+                        # FIXME: this will become a problem when more than 1 meeple can be placed on a tile.
                         if self.Carcassonne.username == winner:
                             meeple_type = meeple[2]
                             # Give back first unavailable meeple of winner

@@ -215,26 +215,6 @@ class Lobby_screen_vis(QtW.QWidget):
                 admin.setText('')
             username.setText(player)
             
-        # Make placeholders invisible (this does NOT work!)
-        # if len(player) > 20:
-        #     admin.setVisible(False)
-        #     indicator.setVisible(False)
-        #     username.setVisible(False)
-        # else:
-        #     # Admin
-        #     admin.setVisible(True)
-        #     if player != self.Carcassonne.Refs('admin').get():
-        #         admin.setText('(leader)')
-        #     else:
-        #         admin.setText('')
-                
-        #     # Indicator
-        #     indicator.setVisible(True)
-            
-        #     # Username
-        #     username.setVisible(True)
-        #     username.setText(player)
-        
         # Add to layout
         row_idx = self.player_list_grid.rowCount()
         self.player_list_grid.addWidget(admin,     row_idx, 0, alignment=QtC.Qt.AlignmentFlag.AlignCenter)

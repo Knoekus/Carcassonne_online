@@ -42,7 +42,6 @@ class Expansions():
         self.Carcassonne.meeples['standard'] = list()
         n_cols = self.Carcassonne.Properties.standard_meeple_cols
         for idx in range(7):
-            # meeple = Meeples.Meeple_standard(self.Carcassonne)
             meeple = Meeples.Meeple(self.Carcassonne, meeple_type='standard')
             self.Carcassonne.meeples['standard'] += [meeple]
             self.Carcassonne.meeples_standard_layout.addWidget(meeple, np.floor((idx)/n_cols).astype(int), idx%n_cols, 1, 1)
@@ -52,7 +51,6 @@ class Expansions():
         numbers = [8, 9, 4, 1, 3, 3, 3, 4, 5, 4, 2, 1, 2, 3, 2, 3, 2, 3, 2, 3, 1, 1, 2, 1]
         self.Carcassonne.Tiles.Add_tiles(1, numbers)
         self.Carcassonne.materials += ['city', 'grass', 'monastery', 'road']
-        # self.game.meeple_types += ['standard']
     
     def _Exp_The_River(self):
         # Tiles
@@ -64,7 +62,7 @@ class Expansions():
         # Add big meeple to inventory
         self.Carcassonne.meeples['big'] = list()
         for idx in range(1):
-            meeple = Meeples.Meeple_big(self.Carcassonne)
+            meeple = Meeples.Meeple(self.Carcassonne, meeple_type='big')
             self.Carcassonne.meeples['big'] += [meeple]
             row, col = self._Find_empty_ìnventory_position(cols=self.Carcassonne.Properties.inventory_cols)
             self.Carcassonne.game_vis.inventory.addWidget(meeple, row, col, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
@@ -73,13 +71,12 @@ class Expansions():
         numbers = [1 for x in range(10)] + [2] + [1 for x in range(6)]
         self.Carcassonne.Tiles.Add_tiles(3, numbers)
         self.Carcassonne.materials += ['cathedral', 'inn']
-        # self.game.meeple_types += ['big']
         
     def _Exp_The_Abbot(self):
         # Add abbot meeple to inventory
         self.Carcassonne.meeples['abbot'] = list()
         for idx in range(1):
-            meeple = Meeples.Meeple_abbot(self.Carcassonne)
+            meeple = Meeples.Meeple(self.Carcassonne, meeple_type='abbot')
             self.Carcassonne.meeples['abbot'] = [meeple]
             row, col = self._Find_empty_ìnventory_position(cols=self.Carcassonne.Properties.inventory_cols)
             self.Carcassonne.game_vis.inventory.addWidget(meeple, row, col, alignment=QtC.Qt.AlignmentFlag.AlignCenter)
@@ -88,7 +85,6 @@ class Expansions():
         numbers = [1 for x in range(8)]
         self.Carcassonne.Tiles.Add_tiles(4, numbers)
         self.Carcassonne.materials += ['garden']
-        # self.game.meeple_types += ['abbot']
     
     def _Find_empty_ìnventory_position(self, rows=int(1e6), cols=int(1e6)):
         '''
