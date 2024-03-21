@@ -20,10 +20,22 @@ def Firebase_init():
     # Firebase initialisation
     if not fb._apps: # only initialize if app doesn't exist
         # Initialize Firebase Admin SDK
-        cred = fb.credentials.Certificate(r'..\SDK_KEY_KEEP_SAFE\clientserver1-firebase-adminsdk-roo18-d3927e4c28.json')
+        cred = fb.credentials.Certificate({
+            'type': 'service_account',
+            'project_id': 'clientserver1',
+            'private_key_id': 'd3927e4c28b101022c7a60fb5db99c1c90cedb3f',
+            'private_key': '-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCyBl5P0adDGBsK\nm42BD7nhuJB24/X/r3rIn+LQ2hMBFb5UlJbD5DIQDpO2uTFNEFZ1AvZrF+qJTMfc\nBPVIVKWfINl/1G1U2EE31XL+24K93TIkKw3Reci2psc+Ix5yLOc+gv8ZzotFknqo\nDm1+kZqSNnCnCbVVTLKhMs8OvpQApKPkMjC95zuP7jaIPariFkbuMS7An9qOJoLM\nxHWSJlT7cpwmkd9a2dJMNNZhDg+BtU5TYCC13LpRte7xaKd49v0FW7J2t1Msva9w\np3ojsBKztxhNIKRiolI4Ol9hg/dZ1YGRF0MBUJ/ExiPsJOs7VmnboTmUN0B34cpI\nOpOULSPJAgMBAAECggEABLFNSB5XIdofUFrEUpwXAr+qMzAUGm7GNkacpHOzH4qy\nrykRhk1cEndH5n+gMI9XMBNpam5BdOgMtpx82LC+guDLSubPEPb4VR/vvY8MtbOA\ncFqgLR7gLwxbYSRs14aee9PZJJWAr09Ko2Zp9XWiFOuRcZ28ZWi1prEfqxxT62Zg\nU3A2cEu/wkZLuvqsfyw2C6OM+OrLc6BrOE4tcNeK8P79og0j+UwtzIRmVyHWMCzb\nBoUQrHO//B47wSnJlN4Qv0ashGNOdCrWjXgdSzxp1ucvMJFrvxsQYIv4ghRQJNod\n8+BUJHcvY6oR0/q4WZnKLeHhdHNHBEVeKi23UM+0twKBgQDiY1nKpBsBCqIPfkwH\nz5AlxQ8+bsmoq4A6bFqToDSDM5ddnuLqJoWjGobohMID1nqOFGYCHUuc7Qiwxoj3\na9aruEsjgKKO2vnSZo4oFqzZ5o2FGowvgDVu25GgYjJQ22ICqqocDb9jcokzOpfR\nHK4FtHzmtLSn27utpAWeMvT/FwKBgQDJT5DqNjj+IRy7CnoM50uixqU4MnRogWGe\ncT+clrxHzyC6Cn7dua2adI7ne8xn14g5ogeAjDRIUGqTZIOM+yxgz3wHD5ibM0TB\nzQT6tuIEEpYcdYu9pG976H/8RFQP+0NvyR3w918rJ0TLo3dE5kAY66JiYlQRrMNt\nGi9BBvfAHwKBgFU+PaAs3LIus8kLsEs8n7VpFw1WH/6v3Q+inxR5PWytr3AkFKNA\nMA+zPFsvKfLR/sGi8qoXJ9KF+kC98PLhGyr7sOdEV3FdCLZtwVdc+mbuBhm5XlHA\nf94nNRVkBDgn8ya35me70XX7uaedh27I0sn5JRKltmSCO4/tc+QWoeOvAoGAP7du\nT6M/4LeMR2smfEUM/IVRL/tQOu+QfTys/Jv9FeFqI1hFFVq6puNzg7L8XHWsiUlO\nhJJbzfOd9+7dcFbjkfS59eYq0BynC4wfolcWLGHRn0pZI3oTSy2orKjXzoMhshT+\n5BD3z0nLjYS8sFMMQJb8O5WRtFJxPGwIPtW8vtMCgYA/uIGvgXHBwJxVxcsejcpP\ny0sWI6768o+M4Szw7wBymKkL0osWHJ4SEOs+BZNZmpTrAsMlKo5n8hKfBk/x/sbv\nGsOdKStbaGge4hLgpGqB22isHEklbQVIgPio8TQjw7pO41q9hfC+6ZoqZMJ3VMN0\nmRre/8Td4cXwElrWoWETAw==\n-----END PRIVATE KEY-----\n',
+            'client_email': 'firebase-adminsdk-roo18@clientserver1.iam.gserviceaccount.com',
+            'client_id': '108137925135950690842',
+            'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
+            'token_uri': 'https://oauth2.googleapis.com/token',
+            'auth_provider_x509_cert_url': 'https://www.googleapis.com/oauth2/v1/certs',
+            'client_x509_cert_url': 'https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-roo18%40clientserver1.iam.gserviceaccount.com',
+            'universe_domain': 'googleapis.com'
+            })
         fb.initialize_app(cred, {
             'databaseURL': 'https://clientserver1-default-rtdb.europe-west1.firebasedatabase.app/'
-        })
+            })
 
 class Carcassonne_online(QtW.QMainWindow):
     def closeEvent(self, event):
@@ -56,7 +68,7 @@ class Carcassonne_online(QtW.QMainWindow):
     
     def _Parameters(self):
         # Own choice
-        self.test = True
+        self.test = False
         self.default_font_size = 5 # 0-15
         
         # Classes
