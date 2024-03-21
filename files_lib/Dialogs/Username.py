@@ -1,26 +1,27 @@
-import prop_s
-
-import PyQt6.QtGui as QtG
-import PyQt6.QtWidgets as QtW
 import PyQt6.QtCore as QtC
+import PyQt6.QtWidgets as QtW
 
 class UsernameDialog(QtW.QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, Carcassonne, parent=None):
         super().__init__(parent)
+        self.Carcassonne = Carcassonne
     
         self.setWindowTitle('Enter username')
 
         layout = QtW.QVBoxLayout()
         
         label = QtW.QLabel('Your username should have 2-20 characters.')
-        label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+parent.font_size]))
+        font = self.Carcassonne.Properties.Font(size=0, bold=False)
+        label.setFont(font)
         
         self.username_input = QtW.QLineEdit(alignment=QtC.Qt.AlignmentFlag.AlignCenter)
-        self.username_input.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+parent.font_size]))
+        font = self.Carcassonne.Properties.Font(size=0, bold=False)
+        self.username_input.setFont(font)
         self.username_input.setPlaceholderText('Enter username...')
         
         self.ok_button = QtW.QPushButton('OK')
-        self.ok_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[-2+parent.font_size]))
+        font = self.Carcassonne.Properties.Font(size=-2, bold=False)
+        self.ok_button.setFont(font)
         self.ok_button.clicked.connect(self.button_clicked)
         
         layout.addWidget(label)

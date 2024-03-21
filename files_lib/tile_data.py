@@ -1,16 +1,18 @@
 # Tiles currently modelled as 32x32 pixels, upscaled x10
-# NOTE TO SELF
-# FIXME: the corners of CITIES are now filled in instead of left blank.
-# FIXME: if problems occur with possession merging or tile placement, check this.
 
-# grass     = list
-# road      = list
-# city      = list
-# monastery = list
-# water     = list # The River
-# cathedral = list # Inns & Cathedrals
-# inns      = list # Inns & Cathedrals
-# garden    = list # The Abbot
+'''
+grass     = list
+road      = list
+city      = list
+monastery = list
+water     = list (The River)
+cathedral = list (Inns & Cathedrals)
+inns      = list (Inns & Cathedrals)
+garden    = list (The Abbot)
+
+{}_m indicates meeple position per material patch
+{}   indicates material patches per material
+'''
 
 tiles = dict()
 data_steps = 7
@@ -556,7 +558,7 @@ tiles[1]['R'] = {'grass': [[0, 0, 0, 0, 0, 0, 0],
              }
 tiles[1]['S_m'] = {'grass': {1: (5, 2)},
                    'city': {1: (0, 3), 2: (3, 6)}}
-tiles[1]['S'] = {'grass': [[0, 0, 0, 0, 0, 0, 1],
+tiles[1]['S'] = {'grass': [[0, 0, 0, 0, 0, 0, 0],
                         [1, 1, 0, 0, 0, 1, 0],
                         [1, 1, 1, 1, 1, 0, 0],
                         [1, 1, 1, 1, 1, 0, 0],
@@ -571,7 +573,7 @@ tiles[1]['S'] = {'grass': [[0, 0, 0, 0, 0, 0, 1],
                         [0, 0, 0, 0, 0, 2, 2],
                         [0, 0, 0, 0, 0, 0, 2],
                         [0, 0, 0, 0, 0, 0, 2]],
-             } # FIXME: the top right corner is GRASS, not CITY here
+             }
 tiles[1]['T_m'] = {'grass': {1: (6, 3)},
                    'city': {1: (2, 2)}}
 tiles[1]['T'] = {'grass': [[0, 0, 0, 0, 0, 0, 0],
