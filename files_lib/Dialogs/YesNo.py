@@ -1,26 +1,24 @@
-import prop_s
-
-import PyQt6.QtGui as QtG
 import PyQt6.QtWidgets as QtW
-# import PyQt5.QtCore as QtC
 
 class YesNoDialog(QtW.QDialog):
-    def __init__(self, parent=None, title=None, text=None):
+    def __init__(self, Carcassonne, parent=None, title=None, text=None):
         super().__init__(parent)
-        # super().__init__()
+        self.Carcassonne = Carcassonne
     
         self.setWindowTitle(title)
-        # self.setFixedSize(300, 100)
 
         label = QtW.QLabel(text)
-        label.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[0+parent.font_size]))
+        font = self.Carcassonne.Properties.Font(size=0, bold=False)
+        label.setFont(font)
         
         self.y_button = QtW.QPushButton('Yes')
-        self.y_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[-2+parent.font_size]))
+        font = self.Carcassonne.Properties.Font(size=-2, bold=False)
+        self.y_button.setFont(font)
         self.y_button.clicked.connect(self.accept)
         
         self.n_button = QtW.QPushButton('No')
-        self.n_button.setFont(QtG.QFont(prop_s.font, prop_s.font_sizes[-2+parent.font_size]))
+        font = self.Carcassonne.Properties.Font(size=-2, bold=False)
+        self.n_button.setFont(font)
         self.n_button.clicked.connect(self.close)
         
         layout = QtW.QVBoxLayout()
