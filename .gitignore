@@ -65,5 +65,5 @@ node_modules/
 # dotenv environment variables file
 .env
 
-# SDK key
+# SDK key folder
 SDK_KEY/
