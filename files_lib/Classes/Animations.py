@@ -6,7 +6,7 @@ import PyQt6.QtWidgets as QtW
 import PyQt6_Extra     as QtE
 
 # Custom classes
-# ...
+from Dialogs.OK_dialog    import OKDialog
 
 # Other packages
 # ...
@@ -44,7 +44,6 @@ class Animation(QtC.QSequentialAnimationGroup):
         self.repeat = False
         self.finished.connect(self._reset)
     
-    #%% Effects
     def add_blinking(self, op_start, op_end, time, pause, loop_count=-1):
         # Define effect type
         effect = QtW.QGraphicsOpacityEffect(self.parent_obj)
@@ -53,15 +52,15 @@ class Animation(QtC.QSequentialAnimationGroup):
         # Fade out
         animation1 = QtC.QPropertyAnimation(effect, b"opacity")
         animation1.setEasingCurve(QtC.QEasingCurve.Type.InQuad)
-        animation1.setStartValue(op_start)
         animation1.setEndValue(op_end)
+        animation1.setStartValue(op_start)
         animation1.setDuration(time/2)
         
         # Fade in
         animation2 = QtC.QPropertyAnimation(effect, b"opacity")
         animation2.setEasingCurve(QtC.QEasingCurve.Type.OutQuad)
-        animation2.setStartValue(op_end)
         animation2.setEndValue(op_start)
+        animation2.setStartValue(op_end)
         animation2.setDuration(time/2)
         
         # Add both fades to the animation
@@ -108,7 +107,6 @@ class Animation(QtC.QSequentialAnimationGroup):
         self.finished.connect(Redraw_image)
         self.start()
     
-    #%% Stopping
     def start_loop(self):
         self.repeat = True
         self.start()
@@ -196,50 +194,85 @@ class New_tile_swap(QtC.QSequentialAnimationGroup):
     def stopped(self):
         print('Finished animation')
 
-class New_tile_swap2(QtC.QPropertyAnimation):
-    def __init__(self, game, new_tile, time=500):
-        self.game = game
-        self.new_tile = new_tile
-        self.time = time
+class Final_animation():
+    def __init__(self, Carcassonne):
+        self.Carcassonne = Carcassonne
+        self.animations = dict()
+        self.count = 0
         
-        effect = QtW.QGraphicsOpacityEffect(self.new_tile)
-        self.new_tile.setGraphicsEffect(effect)
-        
-        super().__init__(effect, b"opacity")
-        self.setDuration(self.time/2)
-        
-    def swap(self, file, index, letter, player):
-        self.file = file
-        self.index = index
-        self.letter = letter
-        self.player = player
-        
-        # Blink in
-        self.setEasingCurve(QtC.QEasingCurve.Type.InQuad)
-        self.setStartValue(1)
-        self.setEndValue(0)
-        self.finished.connect(self._Finish1)
-        print('Checkpoint 1')
-        self.start()
+    def add_possession(self, pos_n, winners, points, material):
+        '''Add possession to list of possessions to be animated.'''
+        self.animations[len(self.animations)] = [pos_n, winners, points, material]
     
-    def _Finish1(self):
-        print('Checkpoint 2')
-        # Replace tile
-        self.new_tile.set_tile(self.file, self.index, self.letter)
-        
-        # Blink in
-        self.setEasingCurve(QtC.QEasingCurve.Type.OutQuad)
-        self.setStartValue(0)
-        self.setEndValue(1)
-        
-        # self.finished.disconnect()
-        self.finished.connect(self._Finish2)
-        self.start()
-        print('Checkpoint 3')
+    def start(self):
+        '''Animate all possessions in the animations list.'''
+        self.animate_possession()
     
-    def _Finish2(self):
-        print('Checkpoint 4')
-        self.finished.disconnect()
-        if self.game.username == self.player:
-            self.new_tile.enable()
-        print('Checkpoint 5')
+    def animate_possession(self):
+        '''Animate the possession of the current self.count counter.'''
+        pos_n, winners, points, material = self.animations[self.count]
+        
+        # Change points labels
+        for winner_player in winners:
+            points_label = self.Carcassonne.game_vis.players_points[winner_player]
+            points_before = int(points_label.text())
+            
+            # Intermediate label
+            points_label.setText(f'{points_before} + {int(points)}') # int() to ignore possible floats
+            
+            # Database
+            if winner_player == self.Carcassonne.username: # Do this only once per player
+                self.Carcassonne.Refs(f'players/{winner_player}/points').set(points_before + points)
+                
+        # Make animation for blinking possession
+        self.animation_group = AnimationGroup_parallel(3)
+        for tile in pos_n['tiles']:
+            if type(tile[0]) == QtE.Tile:
+            # Single entry, so tuple
+                animation = Animation(tile[0])
+            else:
+            # Multiple entries, so list of tuples
+                animation = Animation(tile[0][0])
+            animation.add_blinking(1, 0.6, 1000, 0, 1)
+            self.animation_group.add(animation)
+        
+        # Play animation
+        self.animation_group.finished.connect(self._inter_finished)
+        self.animation_group.start()
+    
+    def _inter_finished(self):
+        '''After each animation, process end result and check for next animation.'''
+        # End current animation
+        pos_n, winners, points, material = self.animations[self.count]
+        
+        # End state of points
+        for winner_player in winners:
+            points_label = self.Carcassonne.game_vis.players_points[winner_player]
+            points_after = eval(points_label.text())
+            points_label.setText(f'{points_after}')
+            
+        # Give back meeples
+        self.Carcassonne.Possessions.Give_back_meeples(winners, pos_n, material)
+        
+        if self.count+1 in self.animations.keys():
+        # Start next animation
+            self.count += 1
+            self.animate_possession()
+        else:
+        # Next animation does not exist
+            self._on_finished()
+    
+    def _on_finished(self):
+        '''When all animations are finished, end the game.'''
+        # Dialog box for the winner
+        winner = (None, 0)
+        for player in self.Carcassonne.Possessions.Connections():
+            points = self.Carcassonne.Refs(f'players/{player}/points').get()
+            if points > winner[1]:
+                winner = (player, points)
+                
+        title = f'{player} won!'
+        text = f'Congratulations to {player} for winning the game!'
+        OK_dialog = OKDialog(self.Carcassonne, self.Carcassonne.game_vis, title, text)
+        OK_dialog.exec()
+        

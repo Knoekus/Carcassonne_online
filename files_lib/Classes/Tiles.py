@@ -30,7 +30,8 @@ class Tiles():
         self.Carcassonne.tiles[prefix] = dict()
         for idx, number in enumerate(numbers):
             letter = string.ascii_uppercase[idx]
-            self.Carcassonne.tiles[prefix][letter] = number
+            if number > 0:
+                self.Carcassonne.tiles[prefix][letter] = number
     
     #%% New tile placement
     def Update_tiles_left_label(self):

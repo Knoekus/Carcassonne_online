@@ -49,6 +49,7 @@ class Expansions():
                 
         # Tiles
         numbers = [8, 9, 4, 1, 3, 3, 3, 4, 5, 4, 2, 1, 2, 3, 2, 3, 2, 3, 2, 3, 1, 1, 2, 1]
+        # numbers = [0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0] # 11-tile test pile
         self.Carcassonne.Tiles.Add_tiles(1, numbers)
         self.Carcassonne.materials += ['city', 'grass', 'monastery', 'road']
     
