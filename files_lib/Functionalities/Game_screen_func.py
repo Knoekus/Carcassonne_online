@@ -94,7 +94,7 @@ class Game_screen_func():
         # Send feed message
         self._Feed_send_pass_turn(previous_player, next_player)
 
-    def _Leave_game(self, close_event=False):
+    def _Leave_game(self):
         title = 'Leave game?'
         text = 'Are you sure you want to leave the game?'
         yesNoDialog = YesNoDialog(self.Carcassonne, self.game_vis, title, text)
@@ -102,9 +102,6 @@ class Game_screen_func():
         if result == QtW.QDialog.DialogCode.Accepted:
             self._Feed_send_player_left_game()
             self.Carcassonne.stacked_widget.setCurrentWidget(self.Carcassonne.menu_vis) # Go back to menu screen
-        
-        if close_event == True:
-            return result
     
     def _Meeple_clicked(self, meeple):
         def clicked():
@@ -209,12 +206,16 @@ class Game_screen_func():
         previous_player = data['previous_player']
         next_player = data['next_player']
         
+        if len(self.Carcassonne.tiles) == 0:
+        # No tiles left, so finish the game
+            return
+        
         if previous_player == self.Carcassonne.username:
-            # Do stuff
+        # Do stuff
             pass
         
         if next_player == self.Carcassonne.username:
-            # Take a new tile, send it to feed
+        # Take a new tile, send it to feed
             if self.Carcassonne.last_placed_tile == None:
             # Place start tile if there are no tiles yet
                 self._Take_new_tile(start_tile=True)
