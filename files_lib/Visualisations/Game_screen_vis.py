@@ -24,6 +24,19 @@ class Game_screen_vis(QtW.QWidget):
         self.Parameters()
         self.Layout()
     
+    def Connections(self):
+        '''Get an up-to-date player list of the current connections to the lobby.'''
+        for idx in range(20):
+            player_list_dict = self.Carcassonne.Refs('connections').get()
+            if type(player_list_dict) == dict:
+                player_list = player_list_dict.keys()
+                break
+            else:
+                time.sleep(0.1)
+        else:
+            raise Warning('No connections found after 2 seconds.')
+        return player_list
+    
     def Window_properties(self):
         self.Carcassonne.setWindowTitle('Carcassonne Online')
     
@@ -42,15 +55,17 @@ class Game_screen_vis(QtW.QWidget):
             self.players_points = dict()
             
             # Get player list
-            for idx in range(10):
-                player_list_dict = self.Carcassonne.Refs('connections').get()
-                if type(player_list_dict) == type(dict()):
-                    player_list = player_list_dict.keys()
-                    break
+            player_list = None
+            while player_list == None:
+                for idx in range(20):
+                    player_list_dict = self.Carcassonne.Refs('connections').get()
+                    if type(player_list_dict) == type(dict()):
+                        player_list = player_list_dict.keys()
+                        break
+                    else:
+                        time.sleep(0.25)
                 else:
-                    time.sleep(0.1)
-            else:
-                raise Warning('No connections found after 1 second.')
+                    raise Warning('No connections found after 5 seconds.')
             
             # Add each player to player list
             for idx, player in enumerate(player_list):
@@ -63,8 +78,6 @@ class Game_screen_vis(QtW.QWidget):
                 font = self.Carcassonne.Properties.Font(size=1, bold=False)
                 colour.setFont(font)
                 file = './Images/Colour_indicator.png'
-                if self.Carcassonne.lobby_key == 'test2':
-                    file = '.'+file
                 hex_col = self.Carcassonne.Refs(f'players/{player}/colour').get()
                 rgb_col = tuple(int(hex_col[i:i+2], 16) for i in (0, 2, 4, 6))
                 col_pixmap = QtE.GreenScreenPixmap(file, (255, 0, 0), rgb_col)
@@ -186,6 +199,21 @@ class Game_screen_vis(QtW.QWidget):
         
         if self.Carcassonne.test == True:
             self.main_layout.addWidget(_Leave_button(),                           0, 0, 1, 3)
+    
+    def _Finish_game(self):
+        '''No tiles are left, so finish all the possessions and end the game.'''
+        # Disable all buttons
+        self.new_tile.disable()
+        self._Meeples_enable(False)
+        
+        # End all possessions
+        self.Carcassonne.Possessions.End_game()
+        
+        # Convert end_button to leave_game button
+        self.button_end_turn.setText('Leave game')
+        self.button_end_turn.clicked.disconnect()
+        self.button_end_turn.clicked.connect(self.Carcassonne.game_func._Leave_game)
+        self.button_end_turn.setEnabled(True)
     
     def Meeple_placed(self, player, meeple_type, og_tile_info, sub_length, sub_tile):
         # Unpack information
@@ -346,6 +374,11 @@ class Game_screen_vis(QtW.QWidget):
         next_player = data['next_player']
         
         # Function
+        if len(self.Carcassonne.tiles) == 0:
+        # No tiles left, so finish the game
+            self._Finish_game()
+            return
+        
         if previous_player != 0:
         # Stop blinking animation of previous player
             self.players_name_anims[previous_player].stop_loop()

@@ -26,7 +26,7 @@ class Possessions():
         '''Get an up-to-date player list of the current connections to the lobby.'''
         for idx in range(20):
             player_list_dict = self.Carcassonne.Refs('connections').get()
-            if type(player_list_dict) == type(dict()):
+            if type(player_list_dict) == dict:
                 player_list = player_list_dict.keys()
                 break
             else:
@@ -174,8 +174,8 @@ class Possessions():
         elif material == 'monastery':
             possessions[material][pos_idx] = {'open': # can this still be used to append/merge?
                                                   True,
-                                              'tile': # tile and material index of monastery
-                                                  (tile, mat_idx),
+                                              'tiles': # tile and material index of monastery
+                                                  [(tile, mat_idx)],
                                               'player_strength': # meeple strength per player
                                                   {player: 
                                                    {meeple_type:0 for meeple_type in self.Carcassonne.meeples.keys()}
@@ -255,7 +255,7 @@ class Possessions():
         tile = self.Carcassonne.board_tiles[row][col]
         
         # Append tile to possession
-        if 'tiles' in pos_n.keys():
+        if 'tiles' in pos_n.keys() and material != 'monastery':
             pos_n['tiles'] += [(tile, mat_idx)]
         
         # Update open edges
@@ -327,7 +327,7 @@ class Possessions():
         
         return False
         
-    def Possession_finished(self, pos_n, material):
+    def Possession_finished(self, pos_n, material, end_game=False):
         # Wait for animation before enabling end turn button
         self.end_turn = False
         
@@ -335,7 +335,7 @@ class Possessions():
         pos_n['open'] = False
         
         # Add finished cities to surrounding fields
-        if material == 'city':
+        if material == 'city' and pos_n['open_edges'] == 0:
             self.Add_finished_city(pos_n)
         
         # Decide on winner
@@ -362,7 +362,7 @@ class Possessions():
         if winner[0] != list(): # the possession was claimed by someone
             if material == 'grass':
                 # Can only happen at the end of the game
-                points = 3*len(pos_n['finished_cities'])
+                points = 3*pos_n['finished_cities']
                 
             elif material == 'road':
                 points = len(pos_n['tiles'])
@@ -388,13 +388,23 @@ class Possessions():
                 
             else:
                 raise Exception(f'Unknown possession with material {material}.')
-                
+            
+            if end_game == True and material == 'city':
+                points *= 0.5
+            
+            # Animation
+            if end_game == False:
             # Play animation
-            self.Possession_finished_anim(pos_n, winner[0], points, material)
+                self.Possession_finished_anim(pos_n, winner[0], points, material)
+                self.finished_anim.start()
+            else:
+            # Add animation to final animation
+                self.final_animation.add_possession(pos_n, winner[0], points, material)
         else:
             # Enable end turn button
-            self.game_vis.button_end_turn.setEnabled(True)
-            self.game_vis._Meeples_enable(True)
+            if end_game == False:
+                self.game_vis.button_end_turn.setEnabled(True)
+                self.game_vis._Meeples_enable(True)
         
     def Possession_finished_anim(self, pos_n, winners, points, material):
         # Animate finishing possession and giving points
@@ -416,7 +426,9 @@ class Possessions():
         for winner_player in winners:
             # Get current points
             points_label = self.game_vis.players_points[winner_player]
-            points_before = int(points_label.text())
+            print('points label:', points_label.text())
+            # points_before = int(points_label.text())
+            points_before = eval(points_label.text()) # eval to account for '0+1' strings
             # Intermediate label
             points_label.setText(f'{points_before} + {int(points)}')
             # End points calculation
@@ -439,7 +451,6 @@ class Possessions():
             self.finished_anim.add(animation)
         self.finished_anim.finished.disconnect()
         self.finished_anim.finished.connect(anim_finished)
-        self.finished_anim.start()
     
     def Add_finished_city(self, pos_n):
         # FIXME: not sure if this works as intended.
@@ -489,3 +500,18 @@ class Possessions():
                                 if meeple_button.available == False:
                                     meeple_button.make_available()
                                     break
+
+    def End_game(self):
+        '''
+        Close all possessions and hand out points if needed.
+        Make one huge sequential animation that finishes all properties.
+        '''
+        self.final_animation = Animations.Final_animation(self.Carcassonne)
+        for material in ['monastery', 'road', 'city', 'grass']:
+            for pos_idx in self.Carcassonne.possessions[material].keys():
+                pos = self.Carcassonne.possessions[material][pos_idx]
+                if pos['open'] == True:
+                # Unfinished property, so finish it
+                    self.Possession_finished(pos, material, end_game=True)
+        
+        self.final_animation.start()
