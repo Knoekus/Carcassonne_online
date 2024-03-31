@@ -101,7 +101,7 @@ class Lobby_screen_vis(QtW.QWidget):
             
             # Checkmark
             if colour == self.player_colour_ref.get(): # initiate with checkmark in current colour
-                button.setIcon(QtG.QIcon(r'.\Images\checkmark_icon.png'))
+                button.setIcon(QtG.QIcon(self.Carcassonne.image_path(r'.\Images\checkmark_icon.png')))
                 button.setIconSize(QtC.QSize(50,50))
         else:
         # Button already exists, so use it
@@ -429,7 +429,7 @@ class Lobby_screen_vis(QtW.QWidget):
             self.colour_picker_buttons[old_colour].setIcon(QtG.QIcon())
             
             # Occupy newly selected colour
-            self.colour_picker_buttons[new_colour].setIcon(QtG.QIcon(r'.\Images\checkmark_icon.png'))
+            self.colour_picker_buttons[new_colour].setIcon(QtG.QIcon(self.Carcassonne.image_path(r'.\Images\checkmark_icon.png')))
             self.colour_picker_buttons[new_colour].setIconSize(QtC.QSize(50,50))
         else:
         # This player did not change the colour

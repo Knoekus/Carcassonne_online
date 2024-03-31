@@ -81,14 +81,14 @@ class Tiles():
         tile_title = self.Carcassonne.Properties.tile_titles[tile_idx-1]
         
         # Get tile folder
-        path = f'.\\Images\\{tile_title}\\{tile_idx}{tile_letter}'
+        path = self.Carcassonne.image_path(f'.\\Images\\{tile_title}\\{tile_idx}{tile_letter}')
         
         # Choose a random design
         number_of_pngs = len([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])-1
         number = rnd.choice(range(number_of_pngs))
         
         # Get file
-        file = path+f'\\{number}.png'
+        file = self.Carcassonne.image_path(path+f'\\{number}.png')
         
         return tile_idx, tile_letter, file
     
@@ -129,7 +129,7 @@ class Tiles():
         self.Carcassonne.options = self.Tile_options(tile_idx, tile_letter)
         
         # Get image
-        file = '.\\Images\\tile_available'
+        file = self.Carcassonne.image_path('.\\Images\\tile_available')
         
         # Set options' images
         for option in self.Carcassonne.options:

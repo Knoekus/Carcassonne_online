@@ -1,0 +1,6 @@
+**Ideas**
+- Add support for other languages.
+- New_tile swap animation.
+
+**Points of action**
+- Close program instead of just the window.

@@ -27,7 +27,7 @@ class Meeple(QtE.ClickableImage):
         
         self.size = 50
         colour = self.Carcassonne.Refs(f'players/{self.Carcassonne.username}/colour').get()
-        file = Get_meeple_file(self.meeple_type)
+        file = Get_meeple_file(self.Carcassonne, self.meeple_type)
         
         # Main image
         self.pixmap_original = Colour_fill_file(self.Carcassonne, file, colour)
@@ -85,7 +85,7 @@ def Colour_fill_file(Carcassonne, file, colour):
         raise Exception(f'The colour {colour} is not available.')
     return pixmap
 
-def Get_meeple_file(meeple_type, material=None):
+def Get_meeple_file(Carcassonne, meeple_type, material=None):
     if material == None:
     # Meeple image for inventory
         if meeple_type == 'standard':
@@ -112,6 +112,7 @@ def Get_meeple_file(meeple_type, material=None):
             file = './Images/Meeples/_Default/4AB.png'
         else:
             raise Exception(f'Meeple type {meeple_type} unknown.')
+    file = Carcassonne.image_path(file)
     return file
 
 def Get_meeple_on_tile_pixmap(Carcassonne, pixmap_tile, pixmap_meeple, len_mat, sub_length, meeple_pos):

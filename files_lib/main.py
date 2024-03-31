@@ -12,8 +12,10 @@ from Dialogs.OK_dialog    import OKDialog
 import Properties
 
 # Other packages
-import sys
 import firebase_admin as fb
+import os
+import string
+import sys
 
 #%% Functions
 def Firebase_init():
@@ -72,7 +74,7 @@ class Carcassonne_online(QtW.QMainWindow):
     
     def _Parameters(self):
         # Own choice
-        self.test = False
+        self.test = True
         self.default_font_size = 5 # 0-15
         
         # Classes
@@ -119,6 +121,30 @@ class Carcassonne_online(QtW.QMainWindow):
             else: # item should be added
                 entries.append(item)
             fb.db.reference(f'{prefix}/{key}').set(entries)
+    
+    def image_path(self, path):
+        # if os.path.exists(path):
+        #     return path
+        # else:
+        #     print('modifying: ', path)
+        #     for idx in len(path):
+        #         if path[idx] in string.ascii_letters:
+        #             break
+        #     path = path[:idx] + '_internal/' + path[idx:]
+        #     print('   result: ', path)
+        #     return path
+        path = Image_path(path)
+        return path
+        
+def Image_path(path):
+    if os.path.exists(path):
+        return path
+    else:
+        for idx in range(len(path)):
+            if path[idx] in string.ascii_letters:
+                break
+        path = path[:idx] + '_internal/' + path[idx:]
+        return path
         
 #%% Main
 if __name__ == '__main__':
@@ -128,7 +154,7 @@ if __name__ == '__main__':
     # Setup application
     app = QtW.QApplication(sys.argv)
     app.setStyle('Breeze') # ['Breeze', 'Oxygen', 'QtCurve', 'Windows', 'Fusion']
-    app.setWindowIcon(QtG.QIcon(r'.\Images\Coin_icon.png'))
+    app.setWindowIcon(QtG.QIcon(Image_path(r'.\Images\Coin_icon.png')))
     
     # Open menu screen
     Carcassonne = Carcassonne_online()

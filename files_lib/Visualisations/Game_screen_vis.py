@@ -12,6 +12,7 @@ import tile_data
 
 # Other packages
 import numpy as np
+import os
 import time
 
 #%% Game screen visualisation
@@ -77,7 +78,7 @@ class Game_screen_vis(QtW.QWidget):
                 colour.setFixedSize(25, 25)
                 font = self.Carcassonne.Properties.Font(size=1, bold=False)
                 colour.setFont(font)
-                file = './Images/Colour_indicator.png'
+                file = self.Carcassonne.image_path('./Images/Colour_indicator.png')
                 hex_col = self.Carcassonne.Refs(f'players/{player}/colour').get()
                 rgb_col = tuple(int(hex_col[i:i+2], 16) for i in (0, 2, 4, 6))
                 col_pixmap = QtE.GreenScreenPixmap(file, (255, 0, 0), rgb_col)
@@ -120,7 +121,8 @@ class Game_screen_vis(QtW.QWidget):
         def _Game_left_column():
             # New tile
             new_tile_size = 200
-            self.new_tile = QtE.NewTile(r'.\Images\tile_logo.png', new_tile_size, self.Carcassonne)
+            new_tile_logo = self.Carcassonne.image_path(r'.\Images\tile_logo.png')
+            self.new_tile = QtE.NewTile(new_tile_logo, new_tile_size, self.Carcassonne)
             
             # self.new_tile_anim = Animations.Animation(self.new_tile)
             # self.new_tile_anim = Animations.New_tile_swap(self, self.new_tile)
@@ -238,7 +240,7 @@ class Game_screen_vis(QtW.QWidget):
         
         # Get meeple pixmap
         colour = self.Carcassonne.Refs(f'players/{player}/colour').get()
-        file_meeple = Meeples.Get_meeple_file(meeple_type, material)
+        file_meeple = Meeples.Get_meeple_file(self.Carcassonne, meeple_type, material)
         pixmap_meeple = Meeples.Colour_fill_file(self.Carcassonne, file_meeple, colour)
         
         # Get combined tile and meeple pixmap
@@ -293,7 +295,7 @@ class Game_screen_vis(QtW.QWidget):
         self.Carcassonne.Possessions.Update_possessions(board_tile.material_data, row, col)
         
         # Reset new tile
-        file = r'.\Images\tile_logo.png'
+        file = self.Carcassonne.image_path(r'.\Images\tile_logo.png')
         self.new_tile.draw_image(file)
         self.new_tile.disable()
     
