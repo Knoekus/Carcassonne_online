@@ -74,7 +74,7 @@ class Carcassonne_online(QtW.QMainWindow):
     
     def _Parameters(self):
         # Own choice
-        self.test = True
+        self.test = False
         self.default_font_size = 5 # 0-15
         
         # Classes
@@ -123,16 +123,6 @@ class Carcassonne_online(QtW.QMainWindow):
             fb.db.reference(f'{prefix}/{key}').set(entries)
     
     def image_path(self, path):
-        # if os.path.exists(path):
-        #     return path
-        # else:
-        #     print('modifying: ', path)
-        #     for idx in len(path):
-        #         if path[idx] in string.ascii_letters:
-        #             break
-        #     path = path[:idx] + '_internal/' + path[idx:]
-        #     print('   result: ', path)
-        #     return path
         path = Image_path(path)
         return path
         
