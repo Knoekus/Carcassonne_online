@@ -393,6 +393,11 @@ class Game_screen_vis(QtW.QWidget):
         if next_player == self.Carcassonne.username:
             # Enable clickable stuff
             pass
+        else:
+            # Disable clickable stuff
+            self.new_tile.disable()
+            self._Meeples_enable(False)
+            self.button_end_turn.setEnabled(False)
     
     def _Feed_receive_tile_placed(self, data):
         # Import data

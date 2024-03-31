@@ -3,4 +3,5 @@
 - New_tile swap animation.
 
 **Points of action**
-- Close program instead of just the window.
+- Disable meeples & end button of player not at turn!
+- Close program instead of just the window. (fixed?)
