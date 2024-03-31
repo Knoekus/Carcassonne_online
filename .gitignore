@@ -67,3 +67,8 @@ node_modules/
 
 # SDK key folder
 SDK_KEY/
+
+# Packaging folder
+packaging/build/
+packaging/spec/
+packaging/exe_build.py

@@ -50,9 +50,13 @@ class Carcassonne_online(QtW.QMainWindow):
             text = 'You cannot leave the lobby when the game is still going.'
         
         if title != None:
+        # Ignore close event
             event.ignore()
             OK_dialog = OKDialog(self, self, title, text)
             OK_dialog.exec()
+        else:
+        # Properly exit the program
+            sys.exit()
         
     def __init__(self):
         super().__init__()

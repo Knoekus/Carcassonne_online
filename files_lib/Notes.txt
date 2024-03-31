@@ -1,7 +1,6 @@
 **Ideas**
-
+- Add support for other languages.
+- New_tile swap animation.
 
 **Points of action**
-- Add finished_cities to grass possessions when a city finishes.
-- Add fuction to run when all tiles are placed (close all possessions)
-- New_tile swap animation
+- Close program instead of just the window.
