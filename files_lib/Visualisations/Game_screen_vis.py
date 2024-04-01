@@ -313,12 +313,12 @@ class Game_screen_vis(QtW.QWidget):
         # self.game.new_tile_anim.swap_image(file, tile_idx, tile_letter, 500)
         # self.game.new_tile_anim.swap(file, tile_idx, tile_letter, username)
         self.new_tile.set_tile(file, tile_idx, tile_letter)
+        
+        self.button_end_turn.setEnabled(False)
+        self._Meeples_enable(False)
+        self.new_tile.rotation = 0
         if player == self.Carcassonne.username:
             # First place tile before doing anything
-            self.button_end_turn.setEnabled(False)
-            self._Meeples_enable(False)
-            self.new_tile.rotation = 0
-            
             self.new_tile.enable()
             self.Carcassonne.Tiles.Show_options()
         else:
@@ -395,9 +395,10 @@ class Game_screen_vis(QtW.QWidget):
             pass
         else:
             # Disable clickable stuff
-            self.new_tile.disable()
-            self._Meeples_enable(False)
-            self.button_end_turn.setEnabled(False)
+            # self.new_tile.disable()
+            # self._Meeples_enable(False)
+            # self.button_end_turn.setEnabled(False)
+            pass
     
     def _Feed_receive_tile_placed(self, data):
         # Import data
