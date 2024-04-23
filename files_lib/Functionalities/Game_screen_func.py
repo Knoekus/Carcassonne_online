@@ -105,6 +105,10 @@ class Game_screen_func():
     
     def _Meeple_clicked(self, meeple):
         def clicked():
+            # Disable buttons
+            self.game_vis.button_end_turn.setEnabled(False)
+            self.game_vis._Meeples_enable(False)
+            
             # Visualisation
             self.Carcassonne.meeple_vis = MeepleVis.Meeple_placement_screen_vis(self.Carcassonne, self.Carcassonne.last_placed_tile, meeple)
             

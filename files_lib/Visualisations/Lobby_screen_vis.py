@@ -23,6 +23,7 @@ class Lobby_screen_vis(QtW.QWidget):
     
     def Window_properties(self):
         self.Carcassonne.setWindowTitle(f'Lobby - {self.Carcassonne.lobby_key}')
+        self.setWindowFlag(QtC.Qt.WindowType.WindowCloseButtonHint, False)
     
     def Parameters(self):
         # Presets
@@ -376,8 +377,11 @@ class Lobby_screen_vis(QtW.QWidget):
             self.start_button.setToolTip('At least one more player is needed to start the game.')
         else:
         # You are the admin, check if all players have selected a colour
-            for player in self.player_list_usernames:
-                if self.Carcassonne.Refs(f'players/{player}/colour').get() == self.all_colours[0]:
+            for label in self.player_list_usernames.values():
+                player = label.text()
+                colour = self.Carcassonne.Refs(f'players/{player}/colour').get()
+                if colour == self.all_colours[0]:
+                    print(f'Player {player} has not yet selected a colour.')
                     self.start_button.setToolTip('All players must select a colour to start the game.')
                     break
             else:
@@ -387,7 +391,7 @@ class Lobby_screen_vis(QtW.QWidget):
         # Developing
         if self.Carcassonne.test == True:
             self.start_button.setEnabled(True)
-            self.start_button.setToolTip('Start the game!')
+            self.start_button.setToolTip('Start the game! (Developer mode)')
     
     #%% Feed handling, receiving
     def _Feed_receive_chat_message(self, event):
@@ -431,6 +435,12 @@ class Lobby_screen_vis(QtW.QWidget):
             # Occupy newly selected colour
             self.colour_picker_buttons[new_colour].setIcon(QtG.QIcon(self.Carcassonne.image_path(r'.\Images\checkmark_icon.png')))
             self.colour_picker_buttons[new_colour].setIconSize(QtC.QSize(50,50))
+            
+            # Database
+            self.Carcassonne.Refs(f'players/{player_clicked}/colour').set(new_colour)
+            if new_colour != self.all_colours[0]:
+            # If the new colour is not blank
+                self.Carcassonne.Refs(f'colours/{new_colour}').set(1)
         else:
         # This player did not change the colour
             # Enable the old colour button

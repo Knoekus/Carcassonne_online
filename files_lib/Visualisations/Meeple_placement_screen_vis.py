@@ -28,6 +28,9 @@ class Meeple_placement_screen_vis(QtW.QDialog):
     
     def Window_properties(self):
         self.setWindowTitle('Place your meeple')
+        self.setWindowFlag(QtC.Qt.WindowType.WindowStaysOnTopHint, True)
+        self.setWindowFlag(QtC.Qt.WindowType.WindowMinMaxButtonsHint, False)
+        self.setWindowFlag(QtC.Qt.WindowType.WindowCloseButtonHint, False)
     
     def Parameters(self, tile, meeple):
         # Data
@@ -92,8 +95,8 @@ class Meeple_placement_screen_vis(QtW.QDialog):
                     # Get strength information
                     try:
                         pos_idx = self.original_tile.possessions[material][mat_idx]
-                    except:
-                        print(self.original_tile.possessions)
+                    except Exception as e:
+                        print(f'Error: {e} \n {self.original_tile.possessions}')
                     pos = self.Carcassonne.possessions[material][pos_idx]
                     player_strength = pos['player_strength']
                     total_strengths = [sum(player_strength[meeple].values()) for meeple in player_strength.keys()]

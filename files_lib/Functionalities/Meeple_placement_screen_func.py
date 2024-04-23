@@ -22,14 +22,25 @@ class Meeple_placement_screen_func():
     
     def Connect_buttons(self):
         self.meeple_vis.y_button.clicked.connect(self._Accepted)
-        self.meeple_vis.n_button.clicked.connect(self.meeple_vis.close)
+        self.meeple_vis.n_button.clicked.connect(self._Closed)
     
     def _Accepted(self):
+        # Re-enable leave button
+        self.Carcassonne.game_vis.button_end_turn.setEnabled(True)
+        
         # Send feed message
         self._Feed_send_meeple_placed()
         
         # Accept dialog box
         self.meeple_vis.accept()
+    
+    def _Closed(self):
+        # Re-enable buttons
+        self.Carcassonne.game_vis.button_end_turn.setEnabled(True)
+        self.Carcassonne.game_vis._Meeples_enable(True)
+        
+        # Close dialog box
+        self.meeple_vis.close()
 
     #%% Feed handling, sending
     def _Feed_send_meeple_placed(self):

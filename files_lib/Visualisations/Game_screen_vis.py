@@ -381,6 +381,9 @@ class Game_screen_vis(QtW.QWidget):
             self._Finish_game()
             return
         
+        # Set current player
+        self.Carcassonne.current_player = next_player
+        
         if previous_player != 0:
         # Stop blinking animation of previous player
             self.players_name_anims[previous_player].stop_loop()

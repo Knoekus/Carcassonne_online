@@ -109,7 +109,7 @@ class Possessions():
                     self._Append_possession(pos_n, 1, edges, material, mat_idx, row, col)
         
         # Enable end turn button if no possessions were finished
-        if self.end_turn == True:
+        if self.end_turn == True and self.Carcassonne.current_player == self.Carcassonne.username:
         # Don't enable on initial tile
             self.game_vis.button_end_turn.setEnabled(True)
             self.game_vis._Meeples_enable(True)
@@ -402,7 +402,7 @@ class Possessions():
                 self.final_animation.add_possession(pos_n, winner[0], points, material)
         else:
             # Enable end turn button
-            if end_game == False:
+            if end_game == False and self.Carcassonne.current_player == self.Carcassonne.username:
                 self.game_vis.button_end_turn.setEnabled(True)
                 self.game_vis._Meeples_enable(True)
         
@@ -418,21 +418,23 @@ class Possessions():
             self.Give_back_meeples(winners, pos_n, material)
             
             # Enable end turn button
-            self.game_vis.button_end_turn.setEnabled(True)
-            self.game_vis._Meeples_enable(True)
+            if self.Carcassonne.current_player == self.Carcassonne.username:
+                self.game_vis.button_end_turn.setEnabled(True)
+                self.game_vis._Meeples_enable(True)
                 
         # Intermediate state of points
         self.points_after = dict()
         for winner_player in winners:
             # Get current points
             points_label = self.game_vis.players_points[winner_player]
-            print('points label:', points_label.text())
-            # points_before = int(points_label.text())
             points_before = eval(points_label.text()) # eval to account for '0+1' strings
+            
             # Intermediate label
             points_label.setText(f'{points_before} + {int(points)}')
+            
             # End points calculation
             points_after = self.points_after[winner_player] = int(points_before + points)
+            
             # Database
             if winner_player == self.Carcassonne.username: # do this only once per player
                 self.Carcassonne.Refs(f'players/{winner_player}/points').set(points_after)
